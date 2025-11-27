@@ -1,0 +1,245 @@
+
+'use client';
+
+import { useEffect, useRef } from 'react';
+import { Tenant } from '@prisma/client';
+import { TenantSettings } from '@/lib/types';
+
+interface TenantThemeProviderProps {
+  tenant: Tenant;
+  children: React.ReactNode;
+}
+
+/**
+ * Scoped Theme Provider for Multi-Tenant Theming
+ * 
+ * This component injects CSS variables into a SCOPED container
+ * (not document root) based on tenant branding settings. 
+ * This ensures BudStack.io core pages are NOT affected by tenant themes.
+ */
+export function TenantThemeProvider({ tenant, children }: TenantThemeProviderProps) {
+  const settings = (tenant.settings as TenantSettings) || {};
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Apply theme to SCOPED container only (not document root)
+    if (containerRef.current) {
+      applyThemeToContainer(containerRef.current, settings);
+    }
+  }, [settings]);
+
+  return (
+    <>
+      {/* Inject custom CSS if provided */}
+      {settings.customCSS && (
+        <style dangerouslySetInnerHTML={{ __html: settings.customCSS }} />
+      )}
+      
+      {/* Apply theme class to scoped container */}
+      <div 
+        ref={containerRef}
+        className={`tenant-theme-container ${getTenantThemeClasses(settings)}`}
+        style={{ minHeight: '100vh' }}
+      >
+        {children}
+      </div>
+    </>
+  );
+}
+
+/**
+ * Apply theme CSS variables to SCOPED container (not document root)
+ * This prevents tenant themes from affecting BudStack.io core pages
+ */
+function applyThemeToContainer(container: HTMLElement, settings: TenantSettings) {
+  const root = container;
+  const designSystem = (settings as any).designSystem;
+
+  // === COMPREHENSIVE DESIGN SYSTEM ===
+  if (designSystem) {
+    // Apply all color variables
+    if (designSystem.colors) {
+      Object.entries(designSystem.colors).forEach(([key, value]) => {
+        root.style.setProperty(`--tenant-color-${camelToKebab(key)}`, value as string);
+      });
+    }
+
+    // Apply typography variables
+    if (designSystem.typography) {
+      // Font families
+      if (designSystem.typography.fontFamily) {
+        Object.entries(designSystem.typography.fontFamily).forEach(([key, value]) => {
+          root.style.setProperty(`--tenant-font-${camelToKebab(key)}`, value as string);
+        });
+      }
+      // Font sizes
+      if (designSystem.typography.fontSize) {
+        Object.entries(designSystem.typography.fontSize).forEach(([key, value]) => {
+          root.style.setProperty(`--tenant-text-${key}`, value as string);
+        });
+      }
+      // Font weights
+      if (designSystem.typography.fontWeight) {
+        Object.entries(designSystem.typography.fontWeight).forEach(([key, value]) => {
+          root.style.setProperty(`--tenant-font-weight-${key}`, value as string);
+        });
+      }
+      // Line heights
+      if (designSystem.typography.lineHeight) {
+        Object.entries(designSystem.typography.lineHeight).forEach(([key, value]) => {
+          root.style.setProperty(`--tenant-leading-${key}`, value as string);
+        });
+      }
+    }
+
+    // Apply spacing variables
+    if (designSystem.spacing) {
+      Object.entries(designSystem.spacing).forEach(([key, value]) => {
+        root.style.setProperty(`--tenant-space-${key}`, value as string);
+      });
+    }
+
+    // Apply border radius variables
+    if (designSystem.borderRadius) {
+      Object.entries(designSystem.borderRadius).forEach(([key, value]) => {
+        root.style.setProperty(`--tenant-radius-${key}`, value as string);
+      });
+    }
+
+    // Apply shadow variables
+    if (designSystem.shadows) {
+      Object.entries(designSystem.shadows).forEach(([key, value]) => {
+        root.style.setProperty(`--tenant-shadow-${key}`, value as string);
+      });
+    }
+  }
+
+  // === BACKWARD COMPATIBILITY: Basic theme variables ===
+  root.style.setProperty('--tenant-primary', settings.primaryColor || '#059669');
+  root.style.setProperty('--tenant-secondary', settings.secondaryColor || '#34d399');
+  root.style.setProperty('--tenant-accent', settings.accentColor || '#10b981');
+  root.style.setProperty('--tenant-bg', settings.backgroundColor || '#ffffff');
+  root.style.setProperty('--tenant-text', settings.textColor || '#1f2937');
+  root.style.setProperty('--tenant-heading', settings.headingColor || '#111827');
+
+  // === TAILWIND COLOR INTEGRATION ===
+  // Map tenant colors to Tailwind's CSS variables so UI components work
+  const primaryColor = settings.primaryColor || designSystem?.colors?.primary || '#059669';
+  const secondaryColor = settings.secondaryColor || designSystem?.colors?.secondary || '#34d399';
+  const accentColor = settings.accentColor || designSystem?.colors?.accent || '#10b981';
+  
+  // Convert hex to HSL for Tailwind (approximate conversion for now)
+  root.style.setProperty('--primary', primaryColor);
+  root.style.setProperty('--primary-foreground', '#ffffff');
+  root.style.setProperty('--secondary', secondaryColor);
+  root.style.setProperty('--secondary-foreground', '#ffffff');
+  root.style.setProperty('--accent', accentColor);
+  root.style.setProperty('--accent-foreground', '#ffffff');
+
+  // === TYPOGRAPHY ===
+  const fontMap: Record<string, string> = {
+    inter: "'Inter', sans-serif",
+    playfair: "'Playfair Display', serif",
+    roboto: "'Roboto', sans-serif",
+    montserrat: "'Montserrat', sans-serif",
+    lato: "'Lato', sans-serif",
+    poppins: "'Poppins', sans-serif",
+  };
+  
+  root.style.setProperty(
+    '--tenant-font-body',
+    fontMap[settings.fontFamily || 'inter'] || settings.fontFamily || "'Inter', sans-serif"
+  );
+  root.style.setProperty(
+    '--tenant-font-heading',
+    fontMap[settings.headingFontFamily || settings.fontFamily || 'inter'] || settings.headingFontFamily || "'Inter', sans-serif"
+  );
+
+  // Font size scale
+  const fontSizeMap: Record<string, string> = {
+    small: '0.875rem',
+    medium: '1rem',
+    large: '1.125rem',
+  };
+  root.style.setProperty(
+    '--tenant-font-size-base',
+    fontSizeMap[settings.fontSize || 'medium']
+  );
+
+  // === BORDER RADIUS ===
+  const borderRadiusMap: Record<string, string> = {
+    none: '0',
+    small: '0.25rem',
+    medium: '0.5rem',
+    large: '1rem',
+  };
+  root.style.setProperty(
+    '--tenant-border-radius',
+    borderRadiusMap[settings.borderRadius || 'medium']
+  );
+
+  // Button-specific border radius
+  const buttonStyleMap: Record<string, string> = {
+    rounded: '0.5rem',
+    square: '0.25rem',
+    pill: '9999px',
+  };
+  root.style.setProperty(
+    '--tenant-button-radius',
+    buttonStyleMap[settings.buttonStyle || 'rounded']
+  );
+
+  // === SPACING ===
+  const spacingMap: Record<string, string> = {
+    compact: '0.75',
+    normal: '1',
+    comfortable: '1.5',
+  };
+  root.style.setProperty(
+    '--tenant-spacing-scale',
+    spacingMap[settings.spacing || 'normal']
+  );
+
+  // === SHADOWS ===
+  const shadowMap: Record<string, string> = {
+    none: 'none',
+    soft: '0 1px 3px 0 rgb(0 0 0 / 0.1)',
+    medium: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+    bold: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+  };
+  root.style.setProperty(
+    '--tenant-shadow',
+    shadowMap[settings.shadowStyle || 'soft']
+  );
+
+  // === BUTTON SIZE ===
+  const buttonSizeMap: Record<string, { padding: string; fontSize: string }> = {
+    small: { padding: '0.5rem 1rem', fontSize: '0.875rem' },
+    medium: { padding: '0.75rem 1.5rem', fontSize: '1rem' },
+    large: { padding: '1rem 2rem', fontSize: '1.125rem' },
+  };
+  const buttonSize = buttonSizeMap[settings.buttonSize || 'medium'];
+  root.style.setProperty('--tenant-button-padding', buttonSize.padding);
+  root.style.setProperty('--tenant-button-font-size', buttonSize.fontSize);
+}
+
+/**
+ * Convert camelCase to kebab-case
+ */
+function camelToKebab(str: string): string {
+  return str.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
+}
+
+/**
+ * Get Tailwind classes for tenant theme
+ */
+function getTenantThemeClasses(settings: TenantSettings): string {
+  const classes: string[] = [];
+
+  // Template classes
+  if (settings.template) {
+    classes.push(`template-${settings.template}`);
+  }
+
+  return classes.join(' ');
+}

@@ -1,0 +1,91 @@
+{
+  "template": "wellness-nature",
+  "logoPath": null,
+  "heroImagePath": "/templates/wellness-nature/wellness-hero.jpg",
+  "primaryColor": "#6B8E23",
+  "fontFamily": "Lora, serif",
+  "pageContent": {
+    "homeHeroTitle": "Natural Wellness, Naturally Delivered",
+    "homeHeroSubtitle": "Discover the healing power of nature with our premium organic wellness products",
+    "aboutTitle": "About Our Wellness Mission",
+    "aboutContent": "We believe in the transformative power of nature. Our carefully curated selection of organic wellness products is designed to support your journey to holistic health and natural healing."
+  },
+  "designSystem": {
+    "colors": {
+      "primary": "#6B8E23",
+      "primaryHover": "#5a7a1d",
+      "primaryLight": "#E8F5D6",
+      "secondary": "#3C2F24",
+      "secondaryHover": "#2d231b",
+      "secondaryLight": "#E8DCC8",
+      "accent": "#8B7355",
+      "accentHover": "#73604a",
+      "accentLight": "#F0E8DD",
+      "background": "#F5F1E8",
+      "surface": "#ffffff",
+      "text": "#3C2F24",
+      "textSecondary": "#7A6A5A",
+      "heading": "#3C2F24",
+      "border": "#E8DCC8",
+      "success": "#6B8E23",
+      "warning": "#D97706",
+      "error": "#DC2626",
+      "info": "#2563EB"
+    },
+    "typography": {
+      "fontFamily": {
+        "base": "Montserrat, sans-serif",
+        "heading": "Lora, serif",
+        "mono": "'Courier New', monospace"
+      },
+      "fontSize": {
+        "xs": "0.75rem",
+        "sm": "0.875rem",
+        "base": "1rem",
+        "lg": "1.125rem",
+        "xl": "1.25rem",
+        "2xl": "1.5rem",
+        "3xl": "1.875rem",
+        "4xl": "2.25rem",
+        "5xl": "3rem",
+        "6xl": "3.75rem"
+      },
+      "fontWeight": {
+        "normal": "400",
+        "medium": "500",
+        "semibold": "600",
+        "bold": "700"
+      },
+      "lineHeight": {
+        "tight": "1.25",
+        "normal": "1.5",
+        "relaxed": "1.75"
+      }
+    },
+    "spacing": {
+      "xs": "0.25rem",
+      "sm": "0.5rem",
+      "md": "1rem",
+      "lg": "1.5rem",
+      "xl": "2rem",
+      "2xl": "3rem",
+      "3xl": "4rem"
+    },
+    "borderRadius": {
+      "none": "0",
+      "sm": "0.25rem",
+      "md": "0.5rem",
+      "lg": "1rem",
+      "xl": "1.5rem",
+      "2xl": "2rem",
+      "full": "9999px"
+    },
+    "shadows": {
+      "sm": "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+      "md": "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+      "lg": "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+      "xl": "0 20px 25px -5px rgba(0, 0, 0, 0.1)",
+      "2xl": "0 25px 50px -12px rgba(0, 0, 0, 0.25)"
+    }
+  }
+}

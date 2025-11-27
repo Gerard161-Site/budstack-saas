@@ -1,0 +1,119 @@
+/* Wellness & Nature Template Styles */
+
+@import url('https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&display=swap');
+
+.wellness-template {
+  /* CSS Variables */
+  --wellness-primary: #6B8E23;
+  --wellness-secondary: #3C2F24;
+  --wellness-accent: #8B7355;
+  --wellness-background: #F5F1E8;
+  --wellness-surface: #ffffff;
+  --wellness-text: #3C2F24;
+  --wellness-text-light: #7A6A5A;
+  
+  /* Smooth transitions */
+  --transition-speed: 0.3s;
+  
+  /* Smooth scrolling */
+  scroll-behavior: smooth;
+}
+
+/* Global Typography */
+.wellness-template h1,
+.wellness-template h2,
+.wellness-template h3,
+.wellness-template h4 {
+  font-family: 'Lora', serif;
+  font-weight: 700;
+}
+
+.wellness-template p,
+.wellness-template span,
+.wellness-template a {
+  font-family: 'Montserrat', sans-serif;
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.float-animation {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Button Styles */
+.wellness-button {
+  transition: all var(--transition-speed) ease;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.wellness-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(107, 142, 35, 0.3);
+}
+
+/* Card Hover Effects */
+.wellness-card {
+  transition: all var(--transition-speed) ease;
+}
+
+.wellness-card:hover {
+  transform: translateY(-5px);
+}
+
+/* Responsive Typography */
+@media (max-width: 768px) {
+  .wellness-template h1 {
+    font-size: 2.5rem;
+  }
+  
+  .wellness-template h2 {
+    font-size: 2rem;
+  }
+}
+
+/* Organic Shapes Background */
+.organic-background {
+  position: relative;
+  overflow: hidden;
+}
+
+.organic-background::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(107, 142, 35, 0.05) 1px, transparent 1px);
+  background-size: 50px 50px;
+  opacity: 0.5;
+}
+
+/* Natural Gradient */
+.wellness-gradient {
+  background: linear-gradient(135deg, #6B8E23 0%, #8B7355 100%);
+}
+
+/* Leaf Pattern */
+.leaf-pattern {
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='https://www.shutterstock.com/image-vector/seamless-geometric-tile-pattern-featuring-260nw-2689788323.jpg fill='none' fill-rule='evenodd'%3E%3Cg fill='%236B8E23' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}

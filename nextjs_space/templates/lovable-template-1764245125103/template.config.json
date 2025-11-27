@@ -1,0 +1,83 @@
+{
+  "id": "lovable-template-1764245125103",
+  "slug": "lovable-template-1764245125103",
+  "name": "Lovable Template (Converted)",
+  "description": "A template converted from Lovable.dev structure",
+  "version": "1.0.0",
+  "author": "Lovable.dev",
+  "category": "modern",
+  "tags": [
+    "lovable",
+    "converted",
+    "modern"
+  ],
+  "features": [
+    "Converted from Lovable.dev",
+    "Responsive design",
+    "Modern UI components"
+  ],
+  "previewUrl": "",
+  "thumbnailUrl": "",
+  "screenshots": [],
+  "components": [
+    {
+      "name": "Header",
+      "path": "components/Header.tsx",
+      "required": true
+    },
+    {
+      "name": "Hero",
+      "path": "components/Hero.tsx",
+      "required": true
+    },
+    {
+      "name": "AboutHero",
+      "path": "components/AboutHero.tsx",
+      "required": true
+    },
+    {
+      "name": "ValueProps",
+      "path": "components/ValueProps.tsx",
+      "required": true
+    },
+    {
+      "name": "Cultivation",
+      "path": "components/Cultivation.tsx",
+      "required": true
+    },
+    {
+      "name": "International",
+      "path": "components/International.tsx",
+      "required": true
+    },
+    {
+      "name": "News",
+      "path": "components/News.tsx",
+      "required": true
+    },
+    {
+      "name": "Footer",
+      "path": "components/Footer.tsx",
+      "required": true
+    }
+  ],
+  "customization": {
+    "colors": {
+      "primary": "#10b981",
+      "secondary": "#0ea5e9",
+      "accent": "#8b5cf6"
+    },
+    "fonts": {
+      "base": "Inter, system-ui, sans-serif",
+      "heading": "Inter, system-ui, sans-serif"
+    }
+  },
+  "compatibility": {
+    "nextjs": "14.x",
+    "react": "18.x"
+  },
+  "dependencies": [
+    "framer-motion",
+    "lucide-react"
+  ]
+}

@@ -1,0 +1,348 @@
+'use client';
+
+import { useState } from 'react';
+import Link from 'next/link';
+import { motion } from 'framer-motion';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { 
+  Calendar, 
+  Clock, 
+  Video, 
+  FileText, 
+  CheckCircle, 
+  Shield,
+  User,
+  Phone,
+  Mail,
+  MessageSquare,
+  ArrowRight
+} from 'lucide-react';
+
+export default function ConsultationPage() {
+  const sessionResult = useSession();
+  const session = sessionResult?.data;
+  const router = useRouter();
+  const [selectedType, setSelectedType] = useState<string | null>(null);
+
+  const consultationTypes = [
+    {
+      id: 'initial',
+      title: 'Initial Consultation',
+      duration: '30 minutes',
+      price: 'Free',
+      description: 'Comprehensive assessment of your medical history and needs',
+      features: [
+        'Medical history review',
+        'Condition assessment',
+        'Treatment plan discussion',
+        'Prescription if eligible',
+        'Follow-up recommendations'
+      ],
+      icon: FileText,
+      color: 'green'
+    },
+    {
+      id: 'followup',
+      title: 'Follow-up Consultation',
+      duration: '15-20 minutes',
+      price: '€25',
+      description: 'Review progress and adjust treatment plan as needed',
+      features: [
+        'Treatment effectiveness review',
+        'Dosage adjustment',
+        'Side effects management',
+        'Prescription renewal',
+        'Ongoing support'
+      ],
+      icon: Video,
+      color: 'blue'
+    },
+    {
+      id: 'prescription',
+      title: 'Prescription Renewal',
+      duration: '10 minutes',
+      price: '€15',
+      description: 'Quick consultation for prescription renewal',
+      features: [
+        'Current treatment review',
+        'Prescription renewal',
+        'Quick health check',
+        'Document processing',
+        'Fast turnaround'
+      ],
+      icon: FileText,
+      color: 'purple'
+    }
+  ];
+
+  const bookingSteps = [
+    {
+      icon: User,
+      title: 'Sign In or Register',
+      description: 'Create your account or sign in to get started'
+    },
+    {
+      icon: Calendar,
+      title: 'Choose Date & Time',
+      description: 'Select a convenient time slot from our available schedules'
+    },
+    {
+      icon: FileText,
+      title: 'Complete Medical Form',
+      description: 'Fill out your medical history and current health information'
+    },
+    {
+      icon: Video,
+      title: 'Meet Your Doctor',
+      description: 'Connect via secure video call with a licensed physician'
+    }
+  ];
+
+  const handleBookConsultation = (type: string) => {
+    if (!session) {
+      router.push('/auth/signup');
+    } else {
+      router.push('/dashboard/consultations');
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-white via-green-50 to-white">
+      {/* Hero Section */}
+      <section className="py-20 px-4">
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-16"
+          >
+            <div className="inline-flex items-center gap-2 bg-green-100 text-green-800 px-4 py-2 rounded-full mb-6">
+              <Shield className="w-4 h-4" />
+              <span className="text-sm font-medium">INFARMED Regulated</span>
+            </div>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 font-serif">
+              Book Your Medical Cannabis
+              <span className="text-green-600 block mt-2">Consultation</span>
+            </h1>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Connect with licensed Portuguese doctors specialized in medical cannabis treatment. 
+              Safe, legal, and confidential consultations.
+            </p>
+          </motion.div>
+
+          {/* Consultation Types */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+            {consultationTypes.map((type, index) => (
+              <motion.div
+                key={type.id}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+              >
+                <Card 
+                  className={`h-full cursor-pointer transition-all hover:shadow-xl border-2 ${
+                    selectedType === type.id 
+                      ? 'border-green-500 shadow-lg' 
+                      : 'border-gray-200 hover:border-green-300'
+                  }`}
+                  onClick={() => setSelectedType(type.id)}
+                >
+                  <CardHeader>
+                    <div className={`w-12 h-12 rounded-lg bg-${type.color}-100 flex items-center justify-center mb-4`}>
+                      <type.icon className={`w-6 h-6 text-${type.color}-600`} />
+                    </div>
+                    <CardTitle className="text-2xl font-serif">{type.title}</CardTitle>
+                    <CardDescription className="text-base">{type.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between mb-6 pb-6 border-b">
+                      <div className="flex items-center gap-2 text-gray-600">
+                        <Clock className="w-4 h-4" />
+                        <span className="text-sm">{type.duration}</span>
+                      </div>
+                      <div className="text-2xl font-bold text-green-600">{type.price}</div>
+                    </div>
+                    <ul className="space-y-3">
+                      {type.features.map((feature, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
+                          <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                  <CardFooter>
+                    <Button 
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleBookConsultation(type.id);
+                      }}
+                      className="w-full medical-gradient"
+                    >
+                      Book Now
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                  </CardFooter>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Booking Process */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="bg-white rounded-2xl shadow-xl p-8 md:p-12 mb-16"
+          >
+            <h2 className="text-3xl font-bold text-gray-900 text-center mb-12 font-serif">
+              How It Works
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+              {bookingSteps.map((step, index) => (
+                <div key={index} className="text-center relative">
+                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <step.icon className="w-8 h-8 text-green-600" />
+                  </div>
+                  <h3 className="font-semibold text-gray-900 mb-2">{step.title}</h3>
+                  <p className="text-sm text-gray-600">{step.description}</p>
+                  {index < bookingSteps.length - 1 && (
+                    <div className="hidden md:block absolute top-8 left-[60%] w-[80%] h-0.5 bg-green-200">
+                      <div className="absolute right-0 top-1/2 -translate-y-1/2 w-0 h-0 border-t-4 border-t-transparent border-l-8 border-l-green-200 border-b-4 border-b-transparent" />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Trust Indicators */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.5 }}
+            className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16"
+          >
+            <Card className="text-center">
+              <CardHeader>
+                <Shield className="w-12 h-12 text-green-600 mx-auto mb-4" />
+                <CardTitle>100% Legal & Regulated</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600">
+                  All consultations follow Portuguese medical cannabis regulations
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="text-center">
+              <CardHeader>
+                <Video className="w-12 h-12 text-blue-600 mx-auto mb-4" />
+                <CardTitle>Secure Video Calls</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600">
+                  GDPR-compliant video consultations with end-to-end encryption
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="text-center">
+              <CardHeader>
+                <FileText className="w-12 h-12 text-purple-600 mx-auto mb-4" />
+                <CardTitle>Instant Prescriptions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600">
+                  Digital prescriptions sent directly to your chosen pharmacy
+                </p>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* FAQ Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.6 }}
+            className="bg-gray-50 rounded-2xl p-8 md:p-12"
+          >
+            <h2 className="text-3xl font-bold text-gray-900 text-center mb-12 font-serif">
+              Common Questions
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2">What do I need to prepare?</h3>
+                <p className="text-gray-600 text-sm">
+                  Have your medical history, current medications list, and any relevant medical documents ready.
+                </p>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2">How long until I get my prescription?</h3>
+                <p className="text-gray-600 text-sm">
+                  If approved, you'll receive your digital prescription within 24 hours of your consultation.
+                </p>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2">Can I choose my preferred time?</h3>
+                <p className="text-gray-600 text-sm">
+                  Yes, we offer flexible scheduling with appointments available 7 days a week.
+                </p>
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-2">Is my information confidential?</h3>
+                <p className="text-gray-600 text-sm">
+                  Absolutely. All consultations are GDPR-compliant with medical-grade encryption.
+                </p>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* CTA */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.7 }}
+            className="text-center mt-16"
+          >
+            <h2 className="text-3xl font-bold text-gray-900 mb-4 font-serif">
+              Ready to Start Your Journey?
+            </h2>
+            <p className="text-lg text-gray-600 mb-8">
+              {session 
+                ? "Book your consultation now and take the first step towards better health."
+                : "Create your account to schedule your free consultation today."
+              }
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              {!session && (
+                <Link href="/auth/signup">
+                  <Button size="lg" className="medical-gradient text-white px-8">
+                    Get Started - It's Free
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </Button>
+                </Link>
+              )}
+              <Link href={session ? "/dashboard/consultations" : "/how-it-works"}>
+                <Button 
+                  size="lg" 
+                  variant={session ? "default" : "outline"}
+                  className={session ? "medical-gradient px-8" : ""}
+                >
+                  {session ? "Book Consultation" : "Learn More"}
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </Button>
+              </Link>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+    </div>
+  );
+}

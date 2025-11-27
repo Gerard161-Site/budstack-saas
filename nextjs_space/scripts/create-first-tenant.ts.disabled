@@ -1,0 +1,220 @@
+import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
+import * as fs from 'fs';
+
+const prisma = new PrismaClient();
+
+async function createFirstTenant() {
+  console.log('🏗️  Creating first tenant: HealingBuds Portugal...');
+
+  // Read exported data
+  const exportedData = JSON.parse(
+    fs.readFileSync('scripts/exported-data.json', 'utf-8')
+  );
+
+  // Get first available NFT
+  const nft = await prisma.nFT.findFirst({
+    where: { status: 'AVAILABLE' },
+  });
+
+  if (!nft) {
+    throw new Error('No available NFTs found');
+  }
+
+  console.log(`✅ Using NFT: ${nft.tokenId}`);
+
+  // Get modern template
+  const modernTemplate = await prisma.template.findUnique({
+    where: { slug: 'modern' },
+  });
+
+  if (!modernTemplate) {
+    throw new Error('Modern template not found');
+  }
+
+  // Create tenant
+  const tenant = await prisma.tenant.create({
+    data: {
+      name: 'HealingBuds Portugal',
+      slug: 'healingbuds-pt',
+      subdomain: 'healingbuds-pt',
+      customDomain: 'healingbuds.pt',
+      status: 'ACTIVE',
+      nftId: nft.id,
+      subscriptionTier: 'GOLD',
+      subscriptionStatus: 'ACTIVE',
+      subscriptionStartDate: new Date(),
+      monthlyFee: 0, // Founder account - free
+      businessName: 'HealingBuds Portugal',
+      businessEmail: 'info@healingbuds.pt',
+      businessPhone: '+351 XXX XXX XXX',
+      country: 'PT',
+      currency: 'EUR',
+      language: 'pt',
+      timezone: 'Europe/Lisbon',
+      templateId: modernTemplate.id,
+      onboardingCompletedAt: new Date(),
+      activatedAt: new Date(),
+    },
+  });
+
+  console.log(`✅ Tenant created: ${tenant.name}`);
+
+  // Update NFT status
+  await prisma.nFT.update({
+    where: { id: nft.id },
+    data: {
+      status: 'ACTIVE',
+      activationDate: new Date(),
+    },
+  });
+
+  // Create tenant admin
+  const hashedPassword = await bcrypt.hash('admin123', 10);
+  const tenantAdmin = await prisma.tenantUser.create({
+    data: {
+      tenantId: tenant.id,
+      email: 'admin@healingbuds.pt',
+      password: hashedPassword,
+      firstName: 'Admin',
+      lastName: 'User',
+      role: 'OWNER',
+    },
+  });
+
+  console.log(`✅ Tenant admin created: ${tenantAdmin.email}`);
+
+  // Migrate medical conditions
+  console.log('\n📦 Migrating data...');
+  for (const condition of exportedData.medicalConditions) {
+    await prisma.medicalCondition.create({
+      data: {
+        tenantId: tenant.id,
+        name: condition.name,
+        namePortuguese: condition.namePortuguese,
+        description: condition.description,
+        descriptionPt: condition.descriptionPt,
+        category: condition.category,
+        categoryPt: condition.categoryPt,
+        symptoms: condition.symptoms || [],
+        symptomsPt: condition.symptomsPt || [],
+        isINFARMEDApproved: condition.isINFARMEDApproved,
+        prevalence: condition.prevalence,
+      },
+    });
+  }
+  console.log(`✅ Migrated ${exportedData.medicalConditions.length} medical conditions`);
+
+  // Migrate products
+  for (const product of exportedData.products) {
+    await prisma.product.create({
+      data: {
+        tenantId: tenant.id,
+        name: product.name,
+        namePortuguese: product.namePortuguese,
+        slug: product.slug,
+        description: product.description,
+        descriptionPt: product.descriptionPt,
+        strainType: product.strainType,
+        thcContent: product.thcContent,
+        cbdContent: product.cbdContent,
+        thcCbdRatio: product.thcCbdRatio,
+        price: product.price,
+        image: product.image,
+        images: product.images || [],
+        inStock: product.inStock,
+        stockQuantity: product.stockQuantity || 0,
+        dosageInfo: product.dosageInfo,
+        dosageInfoPt: product.dosageInfoPt,
+        sideEffects: product.sideEffects || [],
+        sideEffectsPt: product.sideEffectsPt || [],
+        administrationMethods: product.administrationMethods || [],
+        isEUGMPCertified: product.isEUGMPCertified,
+        isFeatured: product.isFeatured,
+      },
+    });
+  }
+  console.log(`✅ Migrated ${exportedData.products.length} products`);
+
+  // Migrate blog posts
+  for (const post of exportedData.blogPosts) {
+    await prisma.blogPost.create({
+      data: {
+        tenantId: tenant.id,
+        title: post.title,
+        titlePt: post.titlePt,
+        slug: post.slug,
+        excerpt: post.excerpt,
+        excerptPt: post.excerptPt,
+        content: post.content,
+        contentPt: post.contentPt,
+        featuredImage: post.featuredImage,
+        images: post.images || [],
+        author: post.author,
+        category: post.category,
+        categoryPt: post.categoryPt,
+        tags: post.tags || [],
+        tagsPt: post.tagsPt || [],
+        isPublished: post.isPublished,
+        isFeatured: post.isFeatured,
+        publishedAt: post.publishedAt,
+        views: post.views || 0,
+        readingTime: post.readingTime,
+      },
+    });
+  }
+  console.log(`✅ Migrated ${exportedData.blogPosts.length} blog posts`);
+
+  // Migrate FAQs
+  for (const faq of exportedData.faqs) {
+    await prisma.fAQ.create({
+      data: {
+        tenantId: tenant.id,
+        question: faq.question,
+        questionPt: faq.questionPt,
+        answer: faq.answer,
+        answerPt: faq.answerPt,
+        category: faq.category,
+        categoryPt: faq.categoryPt,
+        order: faq.order || 0,
+        isPublished: faq.isPublished,
+      },
+    });
+  }
+  console.log(`✅ Migrated ${exportedData.faqs.length} FAQs`);
+
+  // Migrate testimonials
+  for (const testimonial of exportedData.testimonials) {
+    await prisma.testimonial.create({
+      data: {
+        tenantId: tenant.id,
+        patientName: testimonial.patientName,
+        condition: testimonial.condition,
+        conditionPt: testimonial.conditionPt,
+        testimonial: testimonial.testimonial,
+        testimonialPt: testimonial.testimonialPt,
+        rating: testimonial.rating || 5,
+        location: testimonial.location,
+        isApproved: testimonial.isApproved,
+        isAnonymous: testimonial.isAnonymous,
+      },
+    });
+  }
+  console.log(`✅ Migrated ${exportedData.testimonials.length} testimonials`);
+
+  console.log('\n✨ First tenant created successfully!');
+  console.log('\n📝 Login credentials:');
+  console.log('  - Super Admin: admin@budstack.io / admin123');
+  console.log('  - Tenant Admin: admin@healingbuds.pt / admin123');
+  console.log(`  - Subdomain: ${tenant.subdomain}.budstack.io`);
+  console.log(`  - Custom Domain: ${tenant.customDomain}`);
+}
+
+createFirstTenant()
+  .catch((e) => {
+    console.error('❌ Error:', e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

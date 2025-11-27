@@ -1,0 +1,61 @@
+{
+  "slug": "wellness-nature",
+  "name": "Wellness & Nature",
+  "version": "1.0.0",
+  "description": "A serene, organic template featuring natural earth tones, spacious layouts, and a focus on holistic wellness. Perfect for CBD brands, wellness centers, and natural health products.",
+  "author": "BudStack Team",
+  "category": "wellness",
+  "tags": ["wellness", "natural", "organic", "cbd", "holistic", "earth-tones", "calming"],
+  "features": [
+    "Natural earth tone color palette",
+    "Organic, spacious layouts",
+    "Beautiful product category showcase",
+    "Customer testimonials section",
+    "Benefits highlight section",
+    "Responsive mobile design",
+    "Smooth animations",
+    "Consultation CTA",
+    "Clean, readable typography"
+  ],
+  "previewUrl": "/templates/wellness-nature/wellness-hero.jpg",
+  "thumbnailUrl": "/templates/wellness-nature/wellness-hero.jpg",
+  "screenshots": [
+    "/templates/wellness-nature/wellness-hero.jpg"
+  ],
+  "demoUrl": null,
+  "price": 0,
+  "isPremium": false,
+  "isActive": true,
+  "components": [
+    "Hero",
+    "Benefits",
+    "ProductCategories",
+    "Testimonials",
+    "ConsultationCTA",
+    "Footer"
+  ],
+  "customization": {
+    "colors": {
+      "primary": "#6B8E23",
+      "secondary": "#3C2F24",
+      "accent": "#8B7355",
+      "background": "#F5F1E8",
+      "surface": "#ffffff"
+    },
+    "fonts": {
+      "heading": "Lora, serif",
+      "body": "Montserrat, sans-serif"
+    },
+    "spacing": "spacious",
+    "borderRadius": "2xl"
+  },
+  "compatibility": {
+    "nextjs": "^14.0.0",
+    "react": "^18.0.0"
+  },
+  "dependencies": [
+    "framer-motion",
+    "lucide-react",
+    "react-intersection-observer"
+  ]
+}

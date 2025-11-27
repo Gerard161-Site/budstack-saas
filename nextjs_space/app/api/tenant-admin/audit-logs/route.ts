@@ -1,0 +1,75 @@
+
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+
+/**
+ * GET /api/tenant-admin/audit-logs
+ * 
+ * Fetch audit logs for the tenant admin's tenant
+ */
+export async function GET(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session || (session.user as any)?.role !== 'TENANT_ADMIN') {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const tenantId = (session.user as any)?.tenantId;
+    if (!tenantId) {
+      return NextResponse.json(
+        { error: 'No tenant associated with user' },
+        { status: 400 }
+      );
+    }
+
+    const { searchParams } = new URL(req.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '50');
+    const action = searchParams.get('action');
+    const entityType = searchParams.get('entityType');
+
+    const skip = (page - 1) * limit;
+
+    const where: any = { tenantId };
+
+    if (action) {
+      where.action = action;
+    }
+
+    if (entityType) {
+      where.entityType = entityType;
+    }
+
+    const [logs, total] = await Promise.all([
+      prisma.auditLog.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip,
+      }),
+      prisma.auditLog.count({ where }),
+    ]);
+
+    return NextResponse.json({
+      logs,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    console.error('[API] Error fetching tenant audit logs:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch audit logs' },
+      { status: 500 }
+    );
+  }
+}

@@ -1,0 +1,134 @@
+
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/db';
+import bcrypt from 'bcryptjs';
+import { sendEmail, emailTemplates } from '@/lib/email';
+
+const TEMPLATE_PRESETS = {
+  modern: {
+    primaryColor: '#10b981',
+    secondaryColor: '#059669',
+    accentColor: '#34d399',
+    fontFamily: 'Inter',
+  },
+  medical: {
+    primaryColor: '#3b82f6',
+    secondaryColor: '#2563eb',
+    accentColor: '#60a5fa',
+    fontFamily: 'Inter',
+  },
+  natural: {
+    primaryColor: '#84cc16',
+    secondaryColor: '#65a30d',
+    accentColor: '#a3e635',
+    fontFamily: 'Inter',
+  },
+  premium: {
+    primaryColor: '#8b5cf6',
+    secondaryColor: '#7c3aed',
+    accentColor: '#a78bfa',
+    fontFamily: 'Inter',
+  },
+};
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { businessName, email, password, subdomain, nftTokenId, contactInfo, countryCode, templateId } = body;
+
+    // Validation
+    if (!businessName || !email || !password || !subdomain || !nftTokenId || !countryCode) {
+      return NextResponse.json(
+        { error: 'Missing required fields' },
+        { status: 400 }
+      );
+    }
+
+    // Check if subdomain already exists
+    const existingTenant = await prisma.tenant.findUnique({
+      where: { subdomain },
+    });
+
+    if (existingTenant) {
+      return NextResponse.json(
+        { error: 'Subdomain already taken' },
+        { status: 400 }
+      );
+    }
+
+    // Check if email already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser) {
+      return NextResponse.json(
+        { error: 'Email already registered' },
+        { status: 400 }
+      );
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Get template branding
+    const template = TEMPLATE_PRESETS[templateId as keyof typeof TEMPLATE_PRESETS] || TEMPLATE_PRESETS.modern;
+
+    // Create tenant (inactive by default, pending approval)
+    const tenant = await prisma.tenant.create({
+      data: {
+        businessName,
+        subdomain,
+        nftTokenId,
+        countryCode: countryCode || 'PT',
+        isActive: false, // Requires super admin approval
+        settings: {
+          contactInfo,
+          templateId: templateId || 'modern',
+        },
+      },
+    });
+
+    // Create tenant branding with template colors
+    await prisma.tenantBranding.create({
+      data: {
+        tenantId: tenant.id,
+        primaryColor: template.primaryColor,
+        secondaryColor: template.secondaryColor,
+        accentColor: template.accentColor,
+        fontFamily: template.fontFamily,
+      },
+    });
+
+    // Create tenant admin user
+    await prisma.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        name: businessName,
+        role: 'TENANT_ADMIN',
+        tenantId: tenant.id,
+      },
+    });
+
+    // Send tenant welcome email (don't wait for it)
+    sendEmail({
+      to: email,
+      subject: 'Welcome to BudStack - Your Store is Ready!',
+      html: emailTemplates.tenantWelcome(businessName, businessName, subdomain),
+    }).catch((error) => {
+      console.error('Failed to send tenant welcome email:', error);
+    });
+
+    return NextResponse.json({
+      message: 'Application submitted successfully',
+      tenantId: tenant.id,
+    });
+  } catch (error) {
+    console.error('Onboarding error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}

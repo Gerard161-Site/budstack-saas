@@ -1,0 +1,163 @@
+import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
+
+const prisma = new PrismaClient();
+
+async function main() {
+  console.log('🌱 Starting multi-tenant seed...');
+
+  // ============================================
+  // 1. CREATE SUPER ADMIN
+  // ============================================
+  console.log('\n👤 Creating Super Admin...');
+  
+  const hashedPassword = await bcrypt.hash('admin123', 10);
+  
+  const superAdmin = await prisma.superAdmin.upsert({
+    where: { email: 'admin@budstack.io' },
+    update: {},
+    create: {
+      email: 'admin@budstack.io',
+      password: hashedPassword,
+      firstName: 'Super',
+      lastName: 'Admin',
+      role: 'SUPER_ADMIN',
+    },
+  });
+  
+  console.log('✅ Super Admin created:', superAdmin.email);
+
+  // ============================================
+  // 2. CREATE TEMPLATES
+  // ============================================
+  console.log('\n🎨 Creating Templates...');
+  
+  const modernTemplate = await prisma.template.upsert({
+    where: { slug: 'modern' },
+    update: {},
+    create: {
+      name: 'Modern',
+      slug: 'modern',
+      description: 'Full-width hero, card-based layout, animation-heavy. Perfect for a contemporary, vibrant brand.',
+      heroLayout: 'full-screen',
+      headerStyle: 'transparent',
+      footerStyle: 'default',
+      defaultPrimaryColor: '#10b981',
+      defaultSecondaryColor: '#059669',
+      featuredSections: {
+        hero: true,
+        process: true,
+        conditions: true,
+        testimonials: true,
+        education: true,
+        callToAction: true,
+        trustBadges: true,
+      },
+      requiredTier: 'BRONZE',
+      isActive: true,
+      sortOrder: 1,
+    },
+  });
+
+  const minimalTemplate = await prisma.template.upsert({
+    where: { slug: 'minimal' },
+    update: {},
+    create: {
+      name: 'Minimal',
+      slug: 'minimal',
+      description: 'Clean, white space, simple typography, subtle colors. Fast load times and professional.',
+      heroLayout: 'split',
+      headerStyle: 'solid',
+      footerStyle: 'minimal',
+      defaultPrimaryColor: '#1e293b',
+      defaultSecondaryColor: '#475569',
+      featuredSections: {
+        hero: true,
+        process: true,
+        conditions: true,
+        testimonials: false,
+        education: true,
+        callToAction: true,
+        trustBadges: false,
+      },
+      requiredTier: 'SILVER',
+      isActive: true,
+      sortOrder: 2,
+    },
+  });
+
+  const classicTemplate = await prisma.template.upsert({
+    where: { slug: 'classic' },
+    update: {},
+    create: {
+      name: 'Classic',
+      slug: 'classic',
+      description: 'Traditional layout with sidebar navigation, professional and conservative. Great for medical trust.',
+      heroLayout: 'split',
+      headerStyle: 'solid',
+      footerStyle: 'default',
+      defaultPrimaryColor: '#0f766e',
+      defaultSecondaryColor: '#115e59',
+      featuredSections: {
+        hero: true,
+        process: true,
+        conditions: true,
+        testimonials: true,
+        education: true,
+        callToAction: true,
+        trustBadges: true,
+      },
+      requiredTier: 'SILVER',
+      isActive: true,
+      sortOrder: 3,
+    },
+  });
+
+  console.log('✅ Templates created:');
+  console.log('  - Modern (Bronze+)');
+  console.log('  - Minimal (Silver+)');
+  console.log('  - Classic (Silver+)');
+
+  // ============================================
+  // 3. CREATE SAMPLE NFTs
+  // ============================================
+  console.log('\n💎 Creating Sample NFTs...');
+  
+  const nfts = [];
+  for (let i = 1; i <= 5; i++) {
+    const nft = await prisma.nFT.upsert({
+      where: { tokenId: `token-${i}` },
+      update: {},
+      create: {
+        tokenId: `token-${i}`,
+        contractAddress: '0x0000000000000000000000000000000000000000', // Placeholder
+        status: 'AVAILABLE',
+        metadata: {
+          name: `HealingBuds License #${i}`,
+          description: 'Medical Cannabis Dispensary License',
+          image: 'ipfs://...',
+        },
+        purchasePrice: 10000,
+        notes: 'Sample NFT - Replace with real data',
+      },
+    });
+    nfts.push(nft);
+  }
+  
+  console.log(`✅ Created ${nfts.length} sample NFTs`);
+
+  console.log('\n✨ Seed completed!');
+  console.log('\n📝 Next steps:');
+  console.log('1. Super Admin login: admin@budstack.io / admin123');
+  console.log('2. Create tenants from Super Admin dashboard');
+  console.log('3. Assign NFTs to tenants');
+}
+
+main()
+  .catch((e) => {
+    console.error('❌ Seed error:', e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

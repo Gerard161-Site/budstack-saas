@@ -1,0 +1,541 @@
+
+// Multi-Tenant Medical Cannabis SaaS Platform Schema
+// Platform: BudStack.io
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+    provider = "prisma-client-js"
+    binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+    output = "/home/ubuntu/healingbuds_website/nextjs_space/node_modules/.prisma/client"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+// ============================================
+// SUPER ADMIN LAYER
+// ============================================
+
+model SuperAdmin {
+  id          String          @id @default(cuid())
+  email       String          @unique
+  password    String
+  firstName   String
+  lastName    String
+  role        SuperAdminRole  @default(ADMIN)
+  isActive    Boolean         @default(true)
+  lastLogin   DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  
+  @@map("super_admins")
+}
+
+// ============================================
+// NFT & LICENSING LAYER
+// ============================================
+
+model NFT {
+  id                String      @id @default(cuid())
+  tokenId           String      @unique // ERC-721 Token ID
+  contractAddress   String      // Ethereum contract address (0x...)
+  walletAddress     String?     // Current owner's wallet address
+  status            NFTStatus   @default(AVAILABLE)
+  assignedTo        String?     @unique // Tenant ID if assigned
+  tenant            Tenant?     @relation(fields: [assignedTo], references: [id])
+  metadata          Json?       // NFT metadata (name, description, image)
+  purchasePrice     Float?      // Price paid for this NFT (configurable)
+  purchaseDate      DateTime?
+  activationDate    DateTime?
+  lastVerifiedAt    DateTime?   // Last blockchain verification
+  notes             String?     @db.Text
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  
+  @@index([status])
+  @@index([walletAddress])
+  @@map("nfts")
+}
+
+// ============================================
+// TENANT LAYER
+// ============================================
+
+model Tenant {
+  id                    String          @id @default(cuid())
+  name                  String          // "HealingBuds UK"
+  slug                  String          @unique // "healingbuds-uk"
+  subdomain             String?         @unique // "healingbuds-uk" (for subdomain.budstack.io)
+  customDomain          String?         @unique // "healingbuds.co.uk"
+  status                TenantStatus    @default(PENDING_SETUP)
+  
+  // NFT Relationship
+  nftId                 String          @unique
+  nft                   NFT             @relation
+  
+  // Subscription
+  subscriptionTier      SubscriptionTier @default(BRONZE)
+  subscriptionStatus    SubscriptionStatus @default(TRIAL)
+  subscriptionStartDate DateTime?
+  subscriptionEndDate   DateTime?
+  monthlyFee            Float           @default(49.00) // €49, €99, or €149
+  
+  // Branding
+  businessName          String
+  logo                  String?         // S3 cloud_storage_path
+  logoWhite             String?         // S3 cloud_storage_path (for dark backgrounds)
+  favicon               String?         // S3 cloud_storage_path
+  primaryColor          String          @default("#10b981") // Green
+  secondaryColor        String          @default("#059669")
+  accentColor           String?
+  fontFamily            String          @default("Inter")
+  
+  // Template
+  templateId            String          @default("modern")
+  template              Template        @relation(fields: [templateId], references: [id])
+  customCSS             String?         @db.Text
+  customJS              String?         @db.Text
+  
+  // Business Details
+  businessEmail         String
+  businessPhone         String?
+  businessAddress       Json?           // { street, city, postal, country }
+  taxId                 String?
+  licenseNumber         String?
+  regulatoryLicense     String?         // Medical cannabis license
+  
+  // Localization
+  country               String          @default("PT") // "UK", "PT", "ZA"
+  currency              String          @default("EUR") // "GBP", "EUR", "ZAR"
+  language              String          @default("en") // "en", "pt"
+  timezone              String          @default("UTC")
+  
+  // Doctor Green API Integration
+  doctorGreenApiKey     String?         @db.Text // Encrypted
+  doctorGreenUserId     String?         // Doctor Green user ID
+  doctorGreenConfig     Json?           // Additional API settings
+  lastProductSync       DateTime?
+  
+  // Features (based on subscription tier)
+  features              Json?           // { customDomain: true, blog: true, customCSS: true, etc. }
+  
+  // SEO
+  metaTitle             String?
+  metaDescription       String?         @db.Text
+  metaKeywords          String[]
+  
+  // Analytics
+  googleAnalyticsId     String?
+  facebookPixelId       String?
+  
+  // Relationships
+  users                 TenantUser[]
+  customers             Customer[]
+  products              Product[]
+  blogPosts             BlogPost[]
+  consultations         Consultation[]
+  prescriptions         Prescription[]
+  faqs                  FAQ[]
+  testimonials          Testimonial[]
+  contactSubmissions    ContactSubmission[]
+  medicalConditions     MedicalCondition[]
+  
+  // Metadata
+  onboardingCompletedAt DateTime?
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  activatedAt           DateTime?
+  suspendedAt           DateTime?
+  cancelledAt           DateTime?
+  
+  @@index([status])
+  @@index([subdomain])
+  @@index([customDomain])
+  @@map("tenants")
+}
+
+model TenantUser {
+  id          String      @id @default(cuid())
+  tenantId    String
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  email       String
+  password    String
+  firstName   String
+  lastName    String
+  phone       String?
+  role        TenantRole  @default(ADMIN)
+  isActive    Boolean     @default(true)
+  lastLogin   DateTime?
+  
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@map("tenant_users")
+}
+
+model Template {
+  id              String    @id @default(cuid())
+  name            String    @unique // "Modern", "Minimal", "Classic"
+  slug            String    @unique // "modern", "minimal", "classic"
+  description     String?   @db.Text
+  thumbnail       String?   // Preview image
+  
+  // Layout Configuration
+  heroLayout      String    @default("full-screen") // "full-screen", "split", "carousel"
+  headerStyle     String    @default("transparent") // "transparent", "solid", "minimal"
+  footerStyle     String    @default("default")
+  
+  // Default Colors (tenant can override)
+  defaultPrimaryColor   String @default("#10b981")
+  defaultSecondaryColor String @default("#059669")
+  
+  // Feature Sections
+  featuredSections Json    // { hero: true, process: true, testimonials: true, etc. }
+  
+  // Requirements
+  requiredTier    SubscriptionTier @default(BRONZE) // Minimum tier required
+  
+  isActive        Boolean   @default(true)
+  sortOrder       Int       @default(0)
+  
+  tenants         Tenant[]
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@map("templates")
+}
+
+// ============================================
+// CUSTOMER LAYER (End Users - Tenant Scoped)
+// ============================================
+
+model Customer {
+  id                    String      @id @default(cuid())
+  tenantId              String
+  tenant                Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  email                 String
+  password              String
+  firstName             String
+  lastName              String
+  phone                 String?
+  cartaoCidadaoNumber   String?     // National ID (Portugal)
+  cartaoCidadaoFile     String?     // S3 cloud_storage_path for uploaded ID
+  address               String?
+  city                  String?
+  postalCode            String?
+  dateOfBirth           DateTime?
+  emailVerified         DateTime?
+  image                 String?     // Profile image
+  acceptTerms           Boolean     @default(false)
+  isVerified            Boolean     @default(false)
+  preferredLanguage     String      @default("en")
+  
+  // Medical Info
+  medicalCardNumber     String?
+  medicalCardExpiry     DateTime?
+  
+  // Relationships
+  consultations         Consultation[]
+  medicalHistory        MedicalHistory[]
+  prescriptions         Prescription[]
+  
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+  
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@map("customers")
+}
+
+// ============================================
+// TENANT-SCOPED ENTITIES
+// ============================================
+
+model MedicalCondition {
+  id              String   @id @default(cuid())
+  tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  name            String
+  namePortuguese  String?
+  description     String   @db.Text
+  descriptionPt   String?  @db.Text
+  category        String   // Pain, Neurological, Mental Health, etc.
+  categoryPt      String?
+  symptoms        String[] // Array of symptoms
+  symptomsPt      String[]
+  isINFARMEDApproved Boolean @default(false)
+  prevalence      String?  // e.g., "21% of patients"
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relationships
+  consultations   Consultation[]
+  medicalHistory  MedicalHistory[]
+  products        ProductCondition[]
+  
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("medical_conditions")
+}
+
+model Product {
+  id              String   @id @default(cuid())
+  name            String
+  namePortuguese  String?
+  slug            String   @unique
+  description     String   @db.Text
+  descriptionPt   String?  @db.Text
+  strainType      StrainType // SATIVA, INDICA, HYBRID
+  thcContent      Float    // THC percentage
+  cbdContent      Float    // CBD percentage
+  thcCbdRatio     String?  // e.g., "1:1", "2:1"
+  price           Float    // Price in EUR
+  image           String?
+  images          String[] // Array of image URLs
+  inStock         Boolean  @default(true)
+  stockQuantity   Int      @default(0)
+  dosageInfo      String?  @db.Text
+  dosageInfoPt    String?  @db.Text
+  sideEffects     String[] // Array of side effects
+  sideEffectsPt   String[]
+  administrationMethods String[] // Oral, Sublingual, Vaporized, etc.
+  isEUGMPCertified Boolean @default(true)
+  isFeatured      Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relationships
+  conditions      ProductCondition[]
+  prescriptions   PrescriptionProduct[]
+  
+  @@map("products")
+}
+
+model ProductCondition {
+  id          String   @id @default(cuid())
+  productId   String
+  conditionId String
+  
+  product     Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  condition   MedicalCondition @relation(fields: [conditionId], references: [id], onDelete: Cascade)
+  
+  @@unique([productId, conditionId])
+  @@map("product_conditions")
+}
+
+model Consultation {
+  id                    String   @id @default(cuid())
+  userId                String
+  conditionId           String?
+  primarySymptoms       String   @db.Text
+  secondarySymptoms     String?  @db.Text
+  currentMedications    String?  @db.Text
+  previousCannabisUse   Boolean  @default(false)
+  previousCannabisDetails String? @db.Text
+  medicalHistory        String?  @db.Text
+  allergies             String?  @db.Text
+  smokingStatus         String?  // Non-smoker, Occasional, Regular
+  alcoholConsumption    String?  // None, Occasional, Regular, Heavy
+  preferredAdministration String? // Oral, Sublingual, Vaporized
+  urgencyLevel          UrgencyLevel @default(ROUTINE)
+  status                ConsultationStatus @default(PENDING)
+  doctorNotes           String?  @db.Text
+  doctorRecommendation  String?  @db.Text
+  appointmentDate       DateTime?
+  appointmentType       String?  // Video, Phone, In-person
+  language              String   @default("en")
+  consentDataSharing    Boolean  @default(false)
+  consentINFARMED       Boolean  @default(false)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  // Relationships
+  user                  User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  condition             MedicalCondition? @relation(fields: [conditionId], references: [id])
+  prescriptions         Prescription[]
+  
+  @@map("consultations")
+}
+
+model MedicalHistory {
+  id            String   @id @default(cuid())
+  userId        String
+  conditionId   String
+  diagnosisDate DateTime?
+  severity      String?  // Mild, Moderate, Severe
+  currentStatus String?  // Active, Managed, Resolved
+  notes         String?  @db.Text
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  user          User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  condition     MedicalCondition @relation(fields: [conditionId], references: [id])
+  
+  @@unique([userId, conditionId])
+  @@map("medical_history")
+}
+
+model Prescription {
+  id              String   @id @default(cuid())
+  userId          String
+  consultationId  String
+  prescriptionNumber String @unique // INFARMED special prescription number
+  dosage          String
+  instructions    String   @db.Text
+  instructionsPt  String?  @db.Text
+  duration        String   // e.g., "30 days", "3 months"
+  renewalsAllowed Int      @default(0)
+  renewalsUsed    Int      @default(0)
+  status          PrescriptionStatus @default(ACTIVE)
+  issuedDate      DateTime @default(now())
+  expiryDate      DateTime
+  pharmacyId      String?  // For Phase 2 pharmacy integration
+  totalCost       Float?   // Total cost in EUR
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relationships
+  user            User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  consultation    Consultation @relation(fields: [consultationId], references: [id])
+  products        PrescriptionProduct[]
+  
+  @@map("prescriptions")
+}
+
+model PrescriptionProduct {
+  id             String   @id @default(cuid())
+  prescriptionId String
+  productId      String
+  quantity       Float    // Amount prescribed
+  unit           String   // mg, ml, grams, etc.
+  frequency      String   // "Twice daily", "As needed", etc.
+  
+  prescription   Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+  product        Product @relation(fields: [productId], references: [id])
+  
+  @@unique([prescriptionId, productId])
+  @@map("prescription_products")
+}
+
+model BlogPost {
+  id            String   @id @default(cuid())
+  title         String
+  titlePt       String?
+  slug          String   @unique
+  excerpt       String?  @db.Text
+  excerptPt     String?  @db.Text
+  content       String   @db.Text
+  contentPt     String?  @db.Text
+  featuredImage String?
+  images        String[] // Array of image URLs
+  author        String
+  category      String   // Education, News, Patient Stories, etc.
+  categoryPt    String?
+  tags          String[] // Array of tags
+  tagsPt        String[]
+  isPublished   Boolean  @default(false)
+  isFeatured    Boolean  @default(false)
+  publishedAt   DateTime?
+  views         Int      @default(0)
+  readingTime   Int?     // Estimated reading time in minutes
+  metaTitle     String?
+  metaTitlePt   String?
+  metaDescription String?
+  metaDescriptionPt String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@map("blog_posts")
+}
+
+model FAQ {
+  id          String   @id @default(cuid())
+  question    String   @db.Text
+  questionPt  String?  @db.Text
+  answer      String   @db.Text
+  answerPt    String?  @db.Text
+  category    String   // General, Legal, Medical, Process, etc.
+  categoryPt  String?
+  order       Int      @default(0)
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("faqs")
+}
+
+model ContactSubmission {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  subject   String
+  message   String   @db.Text
+  type      String   @default("general") // general, consultation, support
+  language  String   @default("en")
+  status    String   @default("new") // new, read, responded
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("contact_submissions")
+}
+
+model Testimonial {
+  id          String   @id @default(cuid())
+  patientName String   // Anonymous names like "Maria S." or "Patient #123"
+  condition   String
+  conditionPt String?
+  testimonial String   @db.Text
+  testimonialPt String? @db.Text
+  rating      Int      @default(5) // 1-5 stars
+  location    String?  // "Lisbon", "Porto", etc.
+  isApproved  Boolean  @default(false)
+  isAnonymous Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("testimonials")
+}
+
+// Enums
+enum Role {
+  PATIENT
+  DOCTOR
+  ADMIN
+}
+
+enum StrainType {
+  SATIVA
+  INDICA
+  HYBRID
+}
+
+enum UrgencyLevel {
+  ROUTINE
+  URGENT
+  EMERGENCY
+}
+
+enum ConsultationStatus {
+  PENDING
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  PRESCRIPTION_ISSUED
+  CANCELLED
+}
+
+enum PrescriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+  FULFILLED
+}

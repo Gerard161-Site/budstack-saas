@@ -1,0 +1,35 @@
+{
+  "id": "gta-cannabis",
+  "name": "Vice City Cannabis",
+  "version": "1.0.0",
+  "author": "BudStack Design Team",
+  "description": "Bold retro-inspired template with vibrant comic-style aesthetics, perfect for modern medical cannabis brands that want to stand out with street-style flair.",
+  "category": "medical",
+  "tags": ["retro", "comic", "vibrant", "urban", "modern"],
+  "created_at": "2025-11-25",
+  "updated_at": "2025-11-25",
+  "preview_image": "/templates/gta-cannabis/preview.jpg",
+  "compatibility": {
+    "platform_version": "2.0+",
+    "nextjs_version": "14.x",
+    "react_version": "18.x",
+    "requires_features": ["consultation-booking", "product-catalog"]
+  },
+  "features": {
+    "retro_styling": true,
+    "bold_colors": true,
+    "comic_aesthetic": true,
+    "scroll_animations": true,
+    "dark_mode": false,
+    "multi_language": false
+  },
+  "performance": {
+    "lighthouse_score": 90,
+    "bundle_size_kb": 120
+  },
+  "accessibility": {
+    "wcag_level": "AA",
+    "screen_reader_tested": true,
+    "keyboard_navigable": true
+  }
+}
