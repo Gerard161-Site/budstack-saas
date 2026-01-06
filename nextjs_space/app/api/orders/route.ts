@@ -5,6 +5,7 @@ import { prisma } from '@/lib/db';
 import { authOptions } from '@/lib/auth';
 import { getTenantFromRequest } from '@/lib/tenant';
 import { sendEmail, emailTemplates } from '@/lib/email';
+import { createOrder as createDrGreenOrder, getCurrencyByCountry } from '@/lib/doctor-green-api';
 
 export async function POST(req: NextRequest) {
   try {
@@ -27,7 +28,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { items, shippingInfo, total } = body;
+    const { items, shippingInfo, total, clientId } = body;
 
     if (!items || items.length === 0) {
       return NextResponse.json(
@@ -41,7 +42,10 @@ export async function POST(req: NextRequest) {
     const shippingCost = 5.00;
     const calculatedTotal = subtotal + shippingCost;
 
-    // Create order with items
+    // Determine currency from shipping country (default to ZAR - South Africa, the only live site)
+    const currency = shippingInfo?.country ? getCurrencyByCountry(shippingInfo.country) : 'ZAR';
+
+    // Create order in BudStack database first
     const order = await prisma.order.create({
       data: {
         userId: session.user.id,
@@ -51,7 +55,7 @@ export async function POST(req: NextRequest) {
         total: calculatedTotal,
         status: 'PENDING',
         shippingInfo,
-        notes: shippingInfo.notes,
+        notes: shippingInfo?.notes || '',
         items: {
           create: items.map((item: any) => ({
             productId: item.productId,
@@ -65,6 +69,56 @@ export async function POST(req: NextRequest) {
         items: true,
       },
     });
+
+    // Submit order to Dr. Green API
+    let drGreenOrderId = null;
+    try {
+      const drGreenOrderData = {
+        client_id: clientId || session.user.id,
+        items: items.map((item: any) => ({
+          product_id: item.productId,
+          product_name: item.name || `Product ${item.productId}`,
+          quantity: item.quantity,
+          price: item.price,
+        })),
+        total_amount: calculatedTotal,
+        currency: currency,
+        shipping_address: shippingInfo,
+        notes: shippingInfo?.notes || '',
+        platform_order_number: order.orderNumber, // Reference to BudStack order
+      };
+
+      // Fetch tenant-specific Dr Green Config
+      const { getTenantDrGreenConfig } = await import('@/lib/tenant-config');
+      const doctorGreenConfig = await getTenantDrGreenConfig(tenant.id);
+
+      const drGreenOrder = await createDrGreenOrder(drGreenOrderData, doctorGreenConfig);
+      drGreenOrderId = drGreenOrder.id;
+
+      // Update local order with Dr. Green order ID
+      await prisma.order.update({
+        where: { id: order.id },
+        data: {
+          notes: `${shippingInfo?.notes || ''}\nDr. Green Order ID: ${drGreenOrderId}`,
+        },
+      });
+
+      console.log(`✅ Order submitted to Dr. Green API. Order ID: ${drGreenOrderId}`);
+    } catch (drGreenError: any) {
+      console.error('❌ Failed to submit order to Dr. Green API:', drGreenError);
+
+      // Update order status to indicate Dr. Green submission failed
+      await prisma.order.update({
+        where: { id: order.id },
+        data: {
+          status: 'PENDING',
+          notes: `${shippingInfo?.notes || ''}\nDr. Green API Error: ${drGreenError.message || 'Unknown error'}`,
+        },
+      });
+
+      // Don't fail the entire order - just log the error
+      // The order is created in BudStack, tenant can manually process it
+    }
 
     // Send order confirmation email
     sendEmail({
@@ -92,6 +146,8 @@ export async function POST(req: NextRequest) {
         orderNumber: order.orderNumber,
         total: order.total,
         status: order.status,
+        drGreenOrderId: drGreenOrderId,
+        drGreenSubmitted: drGreenOrderId !== null,
       },
     });
   } catch (error) {

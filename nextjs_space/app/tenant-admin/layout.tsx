@@ -13,7 +13,7 @@ export default async function TenantAdminLayout({
   children: React.ReactNode;
 }) {
   const session = await getServerSession(authOptions);
-  
+
   if (!session || (session.user.role !== 'TENANT_ADMIN' && session.user.role !== 'SUPER_ADMIN')) {
     redirect('/auth/login');
   }
@@ -41,27 +41,31 @@ export default async function TenantAdminLayout({
   const tenantUrl = getTenantUrl(tenant);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white text-slate-900 theme-force-light relative font-sans">
       {/* Header */}
-      <div className="bg-white shadow">
+      <div className="bg-white border-b border-slate-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">{tenant.businessName}</h1>
-              <p className="text-gray-600 mt-1">Store Management Dashboard</p>
+              <h1 className="text-3xl font-bold text-slate-900">{tenant.businessName}</h1>
+              <p className="text-slate-500 mt-1 font-medium italic">Store Management Dashboard</p>
             </div>
-            <Link href={tenantUrl} target="_blank">
-              <Button variant="outline">
-                <ExternalLink className="mr-2 h-4 w-4" />
-                View Live Store
-              </Button>
-            </Link>
+            <div className="flex items-center space-x-4">
+              <Link href={tenantUrl} target="_blank">
+                <Button variant="outline" className="border-slate-300 hover:bg-slate-50 text-slate-900">
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  View Live Store
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Content */}
-      {children}
+      <div className="bg-slate-50/50 min-h-[calc(100vh-116px)]">
+        {children}
+      </div>
     </div>
   );
 }

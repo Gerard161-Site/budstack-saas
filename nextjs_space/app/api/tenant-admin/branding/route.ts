@@ -28,7 +28,7 @@ export async function PUT(req: NextRequest) {
     // Extract business name and settings JSON
     const businessName = formData.get('businessName') as string;
     const settingsJSON = formData.get('settings') as string;
-    
+
     if (!settingsJSON) {
       return NextResponse.json({ error: 'Settings data is required' }, { status: 400 });
     }
@@ -57,14 +57,93 @@ export async function PUT(req: NextRequest) {
       settings.faviconPath = await uploadFile(buffer, fileName);
     }
 
-    // Update tenant
-    await prisma.tenant.update({
-      where: { id: user.tenant.id },
-      data: {
-        businessName,
-        settings: settings as any, // Cast to any for Prisma JSON field
-      },
-    });
+    // Check for active template
+    const activeTemplateId = user.tenant.activeTenantTemplateId;
+
+    if (activeTemplateId) {
+      // Fetch current template to get existing designSystem
+      const currentTemplate = await prisma.tenantTemplate.findUnique({
+        where: { id: activeTemplateId }
+      });
+
+      const currentDS = currentTemplate?.designSystem || {};
+
+      // Merge new settings into Design System structure
+      const newDesignSystem = {
+        ...currentDS,
+        colors: {
+          ...currentDS.colors,
+          primary: settings.primaryColor,
+          secondary: settings.secondaryColor,
+          accent: settings.accentColor,
+          background: settings.backgroundColor,
+          text: settings.textColor,
+          heading: settings.headingColor,
+        },
+        typography: {
+          ...currentDS.typography,
+          fontFamily: {
+            ...currentDS.typography?.fontFamily,
+            body: settings.fontFamily,
+            heading: settings.headingFontFamily,
+          },
+          fontSize: {
+            ...currentDS.typography?.fontSize,
+            base: settings.fontSize,
+          }
+        },
+        borderRadius: {
+          ...currentDS.borderRadius,
+          container: settings.borderRadius,
+          button: settings.buttonStyle,
+        },
+        spacing: {
+          ...currentDS.spacing,
+          scale: settings.spacing,
+        },
+        shadows: {
+          ...currentDS.shadows,
+          card: settings.shadowStyle,
+        }
+      };
+
+      // Handle file uploads for template
+      const updateData: any = {
+        designSystem: newDesignSystem,
+        pageContent: settings.pageContent,
+        customCss: settings.customCSS,
+      };
+
+      // Handle file mapping
+      if (settings.logoPath) updateData.logoUrl = settings.logoPath;
+      if (settings.heroImagePath) updateData.heroImageUrl = settings.heroImagePath;
+      if (settings.faviconPath) updateData.faviconUrl = settings.faviconPath;
+
+      // Update TenantTemplate
+      await prisma.tenantTemplate.update({
+        where: { id: activeTemplateId },
+        data: updateData
+      });
+
+      // ALSO update Tenant settings for fallback/consistency
+      await prisma.tenant.update({
+        where: { id: user.tenant.id },
+        data: {
+          businessName,
+          settings: settings as any,
+        },
+      });
+
+    } else {
+      // Legacy behavior: Update only Tenant settings
+      await prisma.tenant.update({
+        where: { id: user.tenant.id },
+        data: {
+          businessName,
+          settings: settings as any,
+        },
+      });
+    }
 
     return NextResponse.json({ success: true, message: 'Branding updated successfully' });
   } catch (error) {

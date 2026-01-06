@@ -11,10 +11,26 @@
   --wellness-surface: #ffffff;
   --wellness-text: #3C2F24;
   --wellness-text-light: #7A6A5A;
-  
+
+  /* Standard variables for shared pages */
+  --tenant-color-primary: var(--wellness-primary);
+  --tenant-color-secondary: var(--wellness-secondary);
+  --tenant-color-accent: var(--wellness-accent);
+  --tenant-color-background: var(--wellness-background);
+  --tenant-color-surface: var(--wellness-surface);
+  --tenant-color-text: var(--wellness-text);
+  --tenant-color-heading: var(--wellness-secondary);
+  --tenant-color-border: rgba(60, 47, 36, 0.2);
+  --tenant-color-primary-rgb: 107, 142, 35;
+  --tenant-color-secondary-rgb: 60, 47, 36;
+
+  /* Fonts */
+  --tenant-font-heading: 'Lora', serif;
+  --tenant-font-base: 'Montserrat', sans-serif;
+
   /* Smooth transitions */
   --transition-speed: 0.3s;
-  
+
   /* Smooth scrolling */
   scroll-behavior: smooth;
 }
@@ -40,6 +56,7 @@
     opacity: 0;
     transform: translateY(30px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -47,9 +64,12 @@
 }
 
 @keyframes float {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0px);
   }
+
   50% {
     transform: translateY(-10px);
   }
@@ -84,7 +104,7 @@
   .wellness-template h1 {
     font-size: 2.5rem;
   }
-  
+
   .wellness-template h2 {
     font-size: 2rem;
   }

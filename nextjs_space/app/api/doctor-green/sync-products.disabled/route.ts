@@ -11,20 +11,24 @@ export async function POST(request: NextRequest) {
   try {
     // Get tenant ID from request (will be from auth session in production)
     const { tenantId } = await request.json();
-    
+
     if (!tenantId) {
       return NextResponse.json(
         { success: false, error: 'Tenant ID required' },
         { status: 400 }
       );
     }
-    
+
+    // Fetch tenant-specific Dr Green Config
+    const { getTenantDrGreenConfig } = await import('@/lib/tenant-config');
+    const doctorGreenConfig = await getTenantDrGreenConfig(tenantId);
+
     // Fetch products from Doctor Green
-    const dgProducts = await fetchProducts();
-    
+    const dgProducts = await fetchProducts('SA', doctorGreenConfig); // Default to SA if country not in sync payload
+
     // Sync products to database
     const syncedProducts = [];
-    
+
     for (const dgProduct of dgProducts) {
       // Map Doctor Green product to our schema
       const productData = {
@@ -44,7 +48,7 @@ export async function POST(request: NextRequest) {
         stockQuantity: dgProduct.stock_quantity || 0,
         lastSyncedAt: new Date(),
       };
-      
+
       // Check if product exists
       const existingProduct = await prisma.product.findFirst({
         where: {
@@ -52,29 +56,29 @@ export async function POST(request: NextRequest) {
           doctorGreenId: dgProduct.id,
         },
       });
-      
+
       // Upsert product
       const product = existingProduct
         ? await prisma.product.update({
-            where: { id: existingProduct.id },
-            data: {
-              ...productData,
-              updatedAt: new Date(),
-            },
-          })
+          where: { id: existingProduct.id },
+          data: {
+            ...productData,
+            updatedAt: new Date(),
+          },
+        })
         : await prisma.product.create({
-            data: productData,
-          });
-      
+          data: productData,
+        });
+
       syncedProducts.push(product);
     }
-    
+
     // Update tenant's last sync time
     await prisma.tenant.update({
       where: { id: tenantId },
       data: { lastProductSync: new Date() },
     });
-    
+
     return NextResponse.json({
       success: true,
       message: `Successfully synced ${syncedProducts.length} products`,
@@ -82,7 +86,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error syncing Doctor Green products:', error);
-    
+
     return NextResponse.json(
       {
         success: false,

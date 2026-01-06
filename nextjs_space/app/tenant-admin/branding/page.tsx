@@ -5,18 +5,17 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import BrandingForm from './branding-form';
-import { TemplateSelector } from './template-selector';
 
 export default async function BrandingPage() {
   const session = await getServerSession();
-  
+
   if (!session?.user?.email) {
     redirect('/auth/login');
   }
 
   const user = await prisma.user.findUnique({
     where: { email: session.user.email },
-    include: { 
+    include: {
       tenant: {
         include: {
           template: true,
@@ -34,6 +33,13 @@ export default async function BrandingPage() {
     where: { isActive: true },
     orderBy: { name: 'asc' },
   });
+
+  // Fetch active tenant template
+  const activeTemplate = user.tenant.activeTenantTemplateId
+    ? await prisma.tenantTemplate.findUnique({
+      where: { id: user.tenant.activeTenantTemplateId }
+    })
+    : null;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -53,13 +59,8 @@ export default async function BrandingPage() {
         <p className="text-gray-600 mt-2">Customize the look and feel of your storefront</p>
       </div>
 
-      {/* Template Selector */}
-      <div className="mb-8">
-        <TemplateSelector tenant={user.tenant} templates={templates} />
-      </div>
-
       {/* Branding Form */}
-      <BrandingForm tenant={user.tenant} />
+      <BrandingForm tenant={user.tenant} activeTemplate={activeTemplate} />
     </div>
   );
 }

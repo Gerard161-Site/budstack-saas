@@ -13,7 +13,7 @@ import OnboardingActions from './onboarding-actions';
 
 export default async function OnboardingPage() {
   const session = await getServerSession(authOptions);
-  
+
   if (!session || session.user.role !== 'SUPER_ADMIN') {
     redirect('/auth/login');
   }
@@ -25,7 +25,7 @@ export default async function OnboardingPage() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 theme-force-light">
       <div className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <Link href="/super-admin">

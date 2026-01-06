@@ -26,16 +26,18 @@ Template Structure:
 └── styles.css
 ```
 
-**v2.0 (New System)**
+**v2.0 (New TenantTemplate System)**
 ```
-Template Structure:
+Base Template Structure (in /templates/):
 ├── template.config.json  # Template metadata
 ├── index.tsx             # Main entry (FLEXIBLE)
-├── components/           # Your custom components
-│   ├── WhateverYouWant.tsx
-│   └── AnyStructureWorks.tsx
-└── styles.css            # Optional
+├── defaults.json         # Design System & Default Settings
+├── components/           # Reusable components
+├── assets/               # Default assets (will be copied to S3)
+└── styles.css            # Optional global styles
 ```
+
+> **Note**: This structure defines a **Base Template**. When a tenant uses it, the system creates a **TenantTemplate** clone, copying assets to S3 and isolating the instance for customization.
 
 ### Migration Steps
 

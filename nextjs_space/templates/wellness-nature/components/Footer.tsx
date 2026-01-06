@@ -20,7 +20,7 @@ export default function Footer({ businessName, consultationUrl, productsUrl, con
           {/* Brand Column */}
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <div 
+              <div
                 className="w-10 h-10 rounded-full flex items-center justify-center"
                 style={{ backgroundColor: '#6B8E23' }}
               >
@@ -34,22 +34,22 @@ export default function Footer({ businessName, consultationUrl, productsUrl, con
               Your trusted partner for natural wellness solutions. Quality, transparency, and care in every product.
             </p>
             <div className="flex gap-4">
-              <a 
-                href="#" 
+              <a
+                href="#"
                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110"
                 style={{ backgroundColor: 'rgba(107, 142, 35, 0.2)', border: '1px solid rgba(107, 142, 35, 0.3)' }}
               >
                 <Facebook size={18} style={{ color: '#6B8E23' }} />
               </a>
-              <a 
-                href="#" 
+              <a
+                href="#"
                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110"
                 style={{ backgroundColor: 'rgba(107, 142, 35, 0.2)', border: '1px solid rgba(107, 142, 35, 0.3)' }}
               >
                 <Instagram size={18} style={{ color: '#6B8E23' }} />
               </a>
-              <a 
-                href="#" 
+              <a
+                href="#"
                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110"
                 style={{ backgroundColor: 'rgba(107, 142, 35, 0.2)', border: '1px solid rgba(107, 142, 35, 0.3)' }}
               >
@@ -66,10 +66,10 @@ export default function Footer({ businessName, consultationUrl, productsUrl, con
                 { label: 'Our Products', url: productsUrl },
                 { label: 'Consultation', url: consultationUrl },
                 { label: 'About Us', url: '/about' },
-                { label: 'How It Works', url: '/how-it-works' }
+                { label: 'Contact', url: contactUrl }
               ].map((link, index) => (
                 <li key={index}>
-                  <Link 
+                  <Link
                     href={link.url}
                     className="transition-colors duration-300 hover:text-white"
                     style={{ color: '#C4B5A0' }}
@@ -87,12 +87,12 @@ export default function Footer({ businessName, consultationUrl, productsUrl, con
             <ul className="space-y-3">
               {[
                 { label: 'FAQ', url: '/faq' },
-                { label: 'Blog', url: '/blog' },
-                { label: 'Testimonials', url: '#testimonials' },
-                { label: 'Contact', url: contactUrl }
+                { label: 'The Wire', url: '/the-wire' },
+                { label: 'Privacy Policy', url: '/privacy' },
+                { label: 'Terms & Conditions', url: '/terms' }
               ].map((link, index) => (
                 <li key={index}>
-                  <Link 
+                  <Link
                     href={link.url}
                     className="transition-colors duration-300 hover:text-white"
                     style={{ color: '#C4B5A0' }}

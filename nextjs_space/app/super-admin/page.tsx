@@ -10,7 +10,7 @@ import { prisma } from '@/lib/db';
 
 export default async function SuperAdminDashboard() {
   const session = await getServerSession(authOptions);
-  
+
   if (!session || session.user.role !== 'SUPER_ADMIN') {
     redirect('/auth/login');
   }
@@ -22,7 +22,7 @@ export default async function SuperAdminDashboard() {
   const totalUsers = await prisma.user.count();
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 theme-force-light">
       <div className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex justify-between items-center">
@@ -146,6 +146,18 @@ export default async function SuperAdminDashboard() {
             <CardContent>
               <Link href="/super-admin/templates">
                 <Button className="w-full">Manage Templates</Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Platform Settings</CardTitle>
+              <CardDescription>Manage environment variables and system configuration</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Link href="/super-admin/settings">
+                <Button className="w-full">Manage Settings</Button>
               </Link>
             </CardContent>
           </Card>

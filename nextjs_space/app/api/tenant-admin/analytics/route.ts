@@ -83,7 +83,7 @@ export async function GET(req: NextRequest) {
     // Get revenue by day
     const dateRange = eachDayOfInterval({ start: startDate, end: new Date() });
     const revenueByDayData = await Promise.all(
-      dateRange.map(async (date) => {
+      dateRange.map(async (date: Date) => {
         const dayStart = startOfDay(date);
         const dayEnd = startOfDay(subDays(date, -1));
 
@@ -107,7 +107,7 @@ export async function GET(req: NextRequest) {
 
     // Get orders by day
     const ordersByDayData = await Promise.all(
-      dateRange.map(async (date) => {
+      dateRange.map(async (date: Date) => {
         const dayStart = startOfDay(date);
         const dayEnd = startOfDay(subDays(date, -1));
 
@@ -154,7 +154,7 @@ export async function GET(req: NextRequest) {
 
     // Get product details for top products
     const topProductsWithDetails = await Promise.all(
-      topProducts.map(async (item) => {
+      topProducts.map(async (item: any) => {
         const product = await prisma.product.findUnique({
           where: { id: item.productId },
         });
@@ -170,7 +170,7 @@ export async function GET(req: NextRequest) {
 
     // Get customer growth by day
     const customerGrowthData = await Promise.all(
-      dateRange.map(async (date) => {
+      dateRange.map(async (date: Date) => {
         const dayStart = startOfDay(date);
         const dayEnd = startOfDay(subDays(date, -1));
 
@@ -204,7 +204,7 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    const ordersByStatus = orderStatusData.map((item) => ({
+    const ordersByStatus = orderStatusData.map((item: any) => ({
       name: item.status,
       value: item._count.id,
     }));

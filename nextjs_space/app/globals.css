@@ -1,7 +1,9 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* MapLibre GL CSS for interactive maps */
+@import 'maplibre-gl/dist/maplibre-gl.css';
 
 /* ============================================
    TENANT THEMING SYSTEM
@@ -41,14 +43,14 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-    
+
     /* Tenant Default values (overridden by tenant settings) */
     --tenant-primary: #059669;
     --tenant-secondary: #34d399;
     --tenant-accent: #10b981;
-    --tenant-bg: #ffffff;
-    --tenant-text: #1f2937;
-    --tenant-heading: #111827;
+    --tenant-bg: var(--background);
+    --tenant-text: var(--foreground);
+    --tenant-heading: var(--foreground);
     --tenant-font-body: 'Inter', sans-serif;
     --tenant-font-heading: 'Inter', sans-serif;
     --tenant-font-size-base: 1rem;
@@ -61,7 +63,6 @@
   }
 
   .dark {
-    /* shadcn UI Color System - Dark Mode */
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
     --card: 222.2 84% 4.9%;
@@ -88,6 +89,36 @@
     --chart-5: 340 75% 55%;
   }
 
+  /* Refined Force-Light Utility (Platform Only) */
+  .theme-force-light {
+    --background: 0 0% 100% !important;
+    --foreground: 222.2 84% 4.9% !important;
+    --card: 0 0% 100% !important;
+    --card-foreground: 222.2 84% 4.9% !important;
+    --popover: 0 0% 100% !important;
+    --popover-foreground: 222.2 84% 4.9% !important;
+    --primary: 222.2 47.4% 11.2% !important;
+    --primary-foreground: 210 40% 98% !important;
+    --secondary: 210 40% 96.1% !important;
+    --secondary-foreground: 222.2 47.4% 11.2% !important;
+    --muted: 210 40% 96.1% !important;
+    --muted-foreground: 215.4 16.3% 46.9% !important;
+    --accent: 210 40% 96.1% !important;
+    --accent-foreground: 222.2 47.4% 11.2% !important;
+    --destructive: 0 84.2% 60.2% !important;
+    --destructive-foreground: 210 40% 98% !important;
+    --border: 214.3 31.8% 91.4% !important;
+    --input: 214.3 31.8% 91.4% !important;
+    --ring: 222.2 84% 4.9% !important;
+
+    background-color: white !important;
+    color: #0f172a !important;
+  }
+
+  .theme-force-light .text-muted-foreground {
+    color: #64748b !important;
+  }
+
   * {
     @apply border-border;
   }
@@ -101,7 +132,12 @@
   }
 
   /* Heading styles */
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: var(--tenant-font-heading);
     color: var(--tenant-heading);
   }
@@ -111,7 +147,7 @@
   /* ============================================
      TENANT-AWARE BUTTON STYLES
      ============================================ */
-  
+
   .btn-tenant-primary {
     background-color: var(--tenant-primary);
     color: white;
@@ -198,7 +234,7 @@
   /* ============================================
      TENANT-AWARE LINK STYLES
      ============================================ */
-  
+
   .link-tenant {
     color: var(--tenant-primary);
     transition: color 0.2s ease-in-out;
@@ -214,7 +250,7 @@
   /* ============================================
      TENANT-AWARE CARD STYLES
      ============================================ */
-  
+
   .card-tenant {
     background-color: white;
     border-radius: var(--tenant-border-radius);
@@ -231,25 +267,23 @@
   /* ============================================
      TENANT-AWARE SECTION STYLES
      ============================================ */
-  
+
   .section-tenant {
     padding-top: calc(4rem * var(--tenant-spacing-scale));
     padding-bottom: calc(4rem * var(--tenant-spacing-scale));
   }
 
   .section-tenant-accent {
-    background: linear-gradient(
-      135deg,
-      var(--tenant-primary) 0%,
-      var(--tenant-secondary) 100%
-    );
+    background: linear-gradient(135deg,
+        var(--tenant-primary) 0%,
+        var(--tenant-secondary) 100%);
     color: white;
   }
 
   /* ============================================
      TENANT-AWARE INPUT STYLES
      ============================================ */
-  
+
   .input-tenant {
     border-radius: var(--tenant-border-radius);
     border: 2px solid #e5e7eb;
@@ -266,7 +300,7 @@
   /* ============================================
      TEMPLATE-SPECIFIC STYLES
      ============================================ */
-  
+
   .template-modern {
     /* Modern template: Clean, sharp, tech-forward */
   }
@@ -302,6 +336,7 @@
 }
 
 @layer utilities {
+
   /* Tenant color utilities */
   .text-tenant-primary {
     color: var(--tenant-primary);
@@ -329,5 +364,36 @@
 
   .border-tenant-primary {
     border-color: var(--tenant-primary);
+  }
+
+  /* Force Light Theme Utility */
+  .theme-force-light {
+    --background: 0 0% 100% !important;
+    --foreground: 222.2 84% 4.9% !important;
+    --card: 0 0% 100% !important;
+    --card-foreground: 222.2 84% 4.9% !important;
+    --popover: 0 0% 100% !important;
+    --popover-foreground: 222.2 84% 4.9% !important;
+    --primary: 222.2 47.4% 11.2% !important;
+    --primary-foreground: 210 40% 98% !important;
+    --secondary: 210 40% 96.1% !important;
+    --secondary-foreground: 222.2 47.4% 11.2% !important;
+    --muted: 210 40% 96.1% !important;
+    --muted-foreground: 215.4 16.3% 46.9% !important;
+    --accent: 210 40% 96.1% !important;
+    --accent-foreground: 222.2 47.4% 11.2% !important;
+    --destructive: 0 84.2% 60.2% !important;
+    --destructive-foreground: 210 40% 98% !important;
+    --border: 214.3 31.8% 91.4% !important;
+    --input: 214.3 31.8% 91.4% !important;
+    --ring: 222.2 84% 4.9% !important;
+
+    /* Tenant overrides for force-light */
+    --tenant-bg: #ffffff !important;
+    --tenant-text: #1f2937 !important;
+    --tenant-heading: #111827 !important;
+
+    background-color: white !important;
+    color: #1f2937 !important;
   }
 }

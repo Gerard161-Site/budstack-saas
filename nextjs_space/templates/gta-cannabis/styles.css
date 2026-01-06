@@ -12,6 +12,22 @@
 .gta-template {
   font-family: 'Inter', 'Montserrat', sans-serif;
   scroll-behavior: smooth;
+
+  /* Standard variables for shared pages */
+  --tenant-color-primary: var(--gta-teal);
+  --tenant-color-secondary: var(--gta-dark);
+  --tenant-color-accent: var(--gta-coral);
+  --tenant-color-background: var(--gta-light);
+  --tenant-color-surface: #ffffff;
+  --tenant-color-text: var(--gta-dark);
+  --tenant-color-heading: var(--gta-dark);
+  --tenant-color-border: rgba(26, 26, 46, 0.15);
+  --tenant-color-primary-rgb: 78, 205, 196;
+  --tenant-color-secondary-rgb: 26, 26, 46;
+
+  /* Fonts */
+  --tenant-font-heading: 'Inter', 'Montserrat', sans-serif;
+  --tenant-font-base: 'Inter', 'Montserrat', sans-serif;
 }
 
 /* Retro gradient backgrounds */
@@ -25,14 +41,14 @@
 
 .neon-glow {
   box-shadow: 0 0 20px rgba(78, 205, 196, 0.5),
-              0 0 40px rgba(78, 205, 196, 0.3),
-              0 0 60px rgba(78, 205, 196, 0.1);
+    0 0 40px rgba(78, 205, 196, 0.3),
+    0 0 60px rgba(78, 205, 196, 0.1);
 }
 
 /* Comic-style text shadow */
 .comic-text {
   text-shadow: 3px 3px 0px #1A1A2E,
-               6px 6px 0px rgba(26, 26, 46, 0.2);
+    6px 6px 0px rgba(26, 26, 46, 0.2);
 }
 
 /* Retro button styles */
@@ -65,7 +81,7 @@
 .gta-card:hover {
   transform: translateY(-8px) rotate(1deg);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2),
-              0 0 20px rgba(78, 205, 196, 0.3);
+    0 0 20px rgba(78, 205, 196, 0.3);
 }
 
 /* Animated underline */
@@ -101,12 +117,10 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(
-    135deg,
-    rgba(255, 107, 107, 0.9) 0%,
-    rgba(78, 205, 196, 0.7) 50%,
-    rgba(255, 230, 109, 0.9) 100%
-  );
+  background: linear-gradient(135deg,
+      rgba(255, 107, 107, 0.9) 0%,
+      rgba(78, 205, 196, 0.7) 50%,
+      rgba(255, 230, 109, 0.9) 100%);
   mix-blend-mode: multiply;
   pointer-events: none;
 }
@@ -116,7 +130,7 @@
   .gta-hero-title {
     font-size: clamp(2rem, 8vw, 3.5rem);
   }
-  
+
   .gta-section-title {
     font-size: clamp(1.75rem, 6vw, 2.5rem);
   }
@@ -124,18 +138,24 @@
 
 /* Animation keyframes */
 @keyframes float {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0px);
   }
+
   50% {
     transform: translateY(-20px);
   }
 }
 
 @keyframes pulse-glow {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 20px rgba(78, 205, 196, 0.5);
   }
+
   50% {
     box-shadow: 0 0 40px rgba(78, 205, 196, 0.8);
   }

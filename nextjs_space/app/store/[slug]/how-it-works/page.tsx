@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { notFound } from 'next/navigation';
 import { CheckCircle2 } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n';
-import { Tenant } from '@prisma/client';
+import { Tenant } from '@/types/client';
 
 export default function HowItWorksPage() {
   const { t } = useLanguage();
@@ -70,7 +70,7 @@ export default function HowItWorksPage() {
 
   return (
     <div 
-      className="min-h-screen pt-20" 
+      className="pt-20 pb-16" 
       style={{ 
         backgroundColor: 'var(--tenant-color-background, #ffffff)',
         fontFamily: 'var(--tenant-font-base, inherit)'

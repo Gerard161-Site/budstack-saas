@@ -38,7 +38,7 @@ export async function triggerWebhook(params: {
   data: Record<string, any>;
 }): Promise<void> {
   const { event, tenantId, data } = params;
-  
+
   try {
     // Find all active webhooks subscribed to this event
     const webhooks = await prisma.webhook.findMany({
@@ -65,7 +65,7 @@ export async function triggerWebhook(params: {
 
     // Trigger all webhooks in parallel
     await Promise.allSettled(
-      webhooks.map((webhook) => deliverWebhook(webhook.id, payload))
+      webhooks.map((webhook: any) => deliverWebhook(webhook.id, payload))
     );
   } catch (error) {
     console.error('[Webhook] Failed to trigger webhooks:', error);
@@ -127,7 +127,7 @@ async function deliverWebhook(
     }
   } catch (error) {
     console.error(`[Webhook] Delivery failed for webhook ${webhookId}:`, error);
-    
+
     // Log failed delivery
     await prisma.webhookDelivery.create({
       data: {
@@ -193,25 +193,31 @@ export const WEBHOOK_EVENTS = {
   TENANT_UPDATED: 'tenant.updated',
   TENANT_ACTIVATED: 'tenant.activated',
   TENANT_DEACTIVATED: 'tenant.deactivated',
-  
+
   // Product Events
   PRODUCT_CREATED: 'product.created',
   PRODUCT_UPDATED: 'product.updated',
   PRODUCT_DELETED: 'product.deleted',
   PRODUCT_LOW_STOCK: 'product.low_stock',
   PRODUCT_OUT_OF_STOCK: 'product.out_of_stock',
-  
+
   // Order Events
   ORDER_CREATED: 'order.created',
   ORDER_CONFIRMED: 'order.confirmed',
   ORDER_SHIPPED: 'order.shipped',
   ORDER_DELIVERED: 'order.delivered',
   ORDER_CANCELLED: 'order.cancelled',
-  
+
   // Consultation Events
   CONSULTATION_SUBMITTED: 'consultation.submitted',
   CONSULTATION_APPROVED: 'consultation.approved',
   CONSULTATION_REJECTED: 'consultation.rejected',
+
+  // Dr. Green Payment Events
+  DRGREEN_PAYMENT_RECEIVED: 'drgreen.payment_received',
+  DRGREEN_PAYMENT_FAILED: 'drgreen.payment_failed',
+  DRGREEN_ORDER_CREATED: 'drgreen.order_created',
+  DRGREEN_ORDER_APPROVED: 'drgreen.order_approved',
 } as const;
 
 /**

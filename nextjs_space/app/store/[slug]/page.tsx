@@ -1,16 +1,13 @@
-
 import { notFound } from 'next/navigation';
 import { getCurrentTenant } from '@/lib/tenant';
 import { prisma } from '@/lib/db';
 import { getFileUrl } from '@/lib/s3';
 
-// Import templates
-import { MedicalProfessionalTemplate } from '@/templates/medical-professional/layout';
-import HealingBudsVideoTemplate from '@/templates/healing-buds-video/index';
-import GTACannabisTemplate from '@/templates/gta-cannabis/index';
-import WellnessNatureTemplate from '@/templates/wellness-nature/index';
-import LovableTemplate from '@/templates/lovable-template-1764245125103/index';
-import HealingBudsUKTemplate from '@/templates/healingbuds-uk/index';
+// Import template registry
+import { TEMPLATE_COMPONENTS } from '@/lib/template-registry';
+
+// Import theme provider
+import { TenantThemeProvider } from '@/components/tenant-theme-provider';
 
 // Import existing homepage components (fallback)
 import { HeroSection } from '@/components/home/hero-section';
@@ -28,25 +25,89 @@ export default async function TenantStorePage() {
     notFound();
   }
 
-  // Fetch tenant with template
+  // Fetch tenant with active template
   const tenantWithTemplate = await prisma.tenant.findUnique({
     where: { id: tenant.id },
-    include: { template: true },
+    include: {
+      template: true, // Base template (legacy)
+      activeTenantTemplate: {
+        include: {
+          baseTemplate: true,
+        },
+      },
+    },
   });
 
   if (!tenantWithTemplate) {
     notFound();
   }
 
-  // Get hero image and logo URLs if uploaded
+  // URLs for template props
+  const consultationUrl = `/store/${tenantWithTemplate.subdomain}/consultation`;
+  const productsUrl = `/store/${tenantWithTemplate.subdomain}/products`;
+  const contactUrl = `/store/${tenantWithTemplate.subdomain}/contact`;
+  const aboutUrl = `/store/${tenantWithTemplate.subdomain}/about`;
+
+  // NEW: Check if tenant has an active TenantTemplate
+  if (tenantWithTemplate.activeTenantTemplate) {
+    const tenantTemplate = tenantWithTemplate.activeTenantTemplate;
+    const baseTemplate = tenantTemplate.baseTemplate;
+
+    // Fetch latest posts for the template
+    const latestPosts = await prisma.post.findMany({
+      where: {
+        tenantId: tenant.id,
+        published: true
+      },
+      take: 3,
+      orderBy: { createdAt: 'desc' },
+      include: { author: true }
+    });
+
+    // Get the template component
+    const TemplateComponent = TEMPLATE_COMPONENTS[baseTemplate.slug!];
+
+    if (TemplateComponent) {
+      // Build template props with tenant customizations
+      const templateProps = {
+        tenant: tenantWithTemplate,
+        consultationUrl,
+        productsUrl,
+        contactUrl,
+        aboutUrl,
+        // Pass tenant template customizations
+        heroImageUrl: tenantTemplate.heroImageUrl || null,
+        logoUrl: tenantTemplate.logoUrl || null,
+        // Pass design system and content customizations
+        designSystem: tenantTemplate.designSystem,
+        pageContent: tenantTemplate.pageContent,
+        navigation: tenantTemplate.navigation,
+        footer: tenantTemplate.footer,
+        // Pass dynamic content
+        posts: latestPosts,
+      };
+
+      // Wrap in theme provider to inject CSS variables
+      return (
+        <TenantThemeProvider tenantTemplate={tenantTemplate}>
+          <TemplateComponent {...templateProps} />
+        </TenantThemeProvider>
+      );
+    }
+  }
+
+  // LEGACY: Fallback to old system if no TenantTemplate
+  // (For existing tenants not yet migrated)
   const settings = (tenantWithTemplate.settings as any) || {};
   let heroImageUrl = null;
   let logoUrl = null;
-  
+
   if (settings.heroImagePath) {
     try {
-      // If it's a public template path, use it directly; otherwise get S3 signed URL
-      if (settings.heroImagePath.startsWith('/templates/') || settings.heroImagePath.startsWith('/lovable-assets/') || settings.heroImagePath.startsWith('/public/')) {
+      if (
+        settings.heroImagePath.startsWith('/templates/') ||
+        settings.heroImagePath.startsWith('/public/')
+      ) {
         heroImageUrl = settings.heroImagePath;
       } else {
         heroImageUrl = await getFileUrl(settings.heroImagePath);
@@ -58,8 +119,10 @@ export default async function TenantStorePage() {
 
   if (settings.logoPath) {
     try {
-      // If it's a public template path, use it directly; otherwise get S3 signed URL
-      if (settings.logoPath.startsWith('/templates/') || settings.logoPath.startsWith('/lovable-assets/') || settings.logoPath.startsWith('/public/')) {
+      if (
+        settings.logoPath.startsWith('/templates/') ||
+        settings.logoPath.startsWith('/public/')
+      ) {
         logoUrl = settings.logoPath;
       } else {
         logoUrl = await getFileUrl(settings.logoPath);
@@ -69,76 +132,22 @@ export default async function TenantStorePage() {
     }
   }
 
-  const consultationUrl = `/store/${tenantWithTemplate.subdomain}/consultation`;
-
-  // Render selected template
+  // Check if there's a template assigned (legacy)
   if (tenantWithTemplate.template?.slug) {
     const templateSlug = tenantWithTemplate.template.slug;
+    const TemplateComponent = TEMPLATE_COMPONENTS[templateSlug];
 
-    switch (templateSlug) {
-      case 'medical-professional':
-        return (
-          <MedicalProfessionalTemplate
-            tenant={tenantWithTemplate}
-            heroImageUrl={heroImageUrl}
-            consultationUrl={consultationUrl}
-          />
-        );
-      case 'wellness-nature':
-        return (
-          <WellnessNatureTemplate
-            tenant={tenantWithTemplate}
-            consultationUrl={consultationUrl}
-            productsUrl={`/store/${tenantWithTemplate.subdomain}/products`}
-            contactUrl={`/store/${tenantWithTemplate.subdomain}/contact`}
-            heroImageUrl={heroImageUrl}
-            logoUrl={logoUrl}
-          />
-        );
-      case 'healing-buds-video':
-        return (
-          <HealingBudsVideoTemplate
-            tenant={tenantWithTemplate}
-            consultationUrl={consultationUrl}
-            productsUrl={`/store/${tenantWithTemplate.subdomain}/products`}
-            contactUrl={`/store/${tenantWithTemplate.subdomain}/contact`}
-            heroImageUrl={heroImageUrl}
-            logoUrl={logoUrl}
-          />
-        );
-      case 'gta-cannabis':
-        return (
-          <GTACannabisTemplate
-            tenant={tenantWithTemplate}
-            consultationUrl={consultationUrl}
-            productsUrl={`/store/${tenantWithTemplate.subdomain}/products`}
-            contactUrl={`/store/${tenantWithTemplate.subdomain}/contact`}
-            heroImageUrl={heroImageUrl}
-            logoUrl={logoUrl}
-          />
-        );
-      case 'lovable-template-1764245125103':
-        return (
-          <LovableTemplate
-            tenant={tenantWithTemplate}
-            consultationUrl={consultationUrl}
-            productsUrl={`/store/${tenantWithTemplate.subdomain}/products`}
-            contactUrl={`/store/${tenantWithTemplate.subdomain}/contact`}
-            heroImageUrl={heroImageUrl}
-            logoUrl={logoUrl}
-          />
-        );
-      case 'healingbuds-uk':
-        return (
-          <HealingBudsUKTemplate
-            tenant={tenantWithTemplate}
-            consultationUrl={consultationUrl}
-            productsUrl={`/store/${tenantWithTemplate.subdomain}/products`}
-            contactUrl={`/store/${tenantWithTemplate.subdomain}/contact`}
-            heroImageUrl={heroImageUrl}
-            logoUrl={logoUrl}
-          />
-        );
+    if (TemplateComponent) {
+      const templateProps = {
+        tenant: tenantWithTemplate,
+        consultationUrl,
+        productsUrl,
+        contactUrl,
+        heroImageUrl,
+        logoUrl,
+      };
+
+      return <TemplateComponent {...templateProps} />;
     }
   }
 
@@ -146,7 +155,11 @@ export default async function TenantStorePage() {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <HeroSection tenant={tenantWithTemplate} heroImageUrl={heroImageUrl} consultationUrl={consultationUrl} />
+      <HeroSection
+        tenant={tenantWithTemplate}
+        heroImageUrl={heroImageUrl}
+        consultationUrl={consultationUrl}
+      />
 
       {/* Trust Badges */}
       <TrustBadges />

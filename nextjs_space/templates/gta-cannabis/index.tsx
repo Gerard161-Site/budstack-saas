@@ -1,7 +1,9 @@
 'use client';
 
+import './styles.css';
+
 import React from 'react';
-import { Tenant } from '@prisma/client';
+import { Tenant } from '@/types/client';
 import Hero from './components/Hero';
 import ProductShowcase from './components/ProductShowcase';
 import LifestyleSection from './components/LifestyleSection';
@@ -30,16 +32,16 @@ export default function GTACannabisTemplate({ tenant, consultationUrl, productsU
         logoPath={settings.logoPath}
         consultationUrl={consultationUrl}
       />
-      
+
       <ProductShowcase
         businessName={tenant.businessName}
         productsUrl={productsUrl}
       />
-      
+
       <LifestyleSection
         businessName={tenant.businessName}
       />
-      
+
       <ConsultationCTA
         businessName={tenant.businessName}
         consultationUrl={consultationUrl}

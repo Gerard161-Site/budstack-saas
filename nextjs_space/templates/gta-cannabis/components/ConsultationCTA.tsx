@@ -12,12 +12,7 @@ export default function ConsultationCTA({ businessName, consultationUrl }: Consu
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.2 });
 
   return (
-    <section 
-      className="py-20 relative overflow-hidden"
-      style={{
-        background: 'linear-gradient(135deg, #FF6B6B 0%, #A463F2 100%)'
-      }}
-    >
+    <section className="py-24 relative overflow-hidden retro-gradient">
       {/* Animated Background Shapes */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute top-10 left-10 w-64 h-64 rounded-full"
@@ -89,12 +84,22 @@ export default function ConsultationCTA({ businessName, consultationUrl }: Consu
           >
             <a
               href={consultationUrl}
-              className="retro-button inline-block px-8 py-3 text-base font-semibold bg-white text-purple-600 rounded-full hover:scale-105 transition-all pulse-glow-animation"
+              className="retro-button inline-block px-12 py-5 text-xl font-black bg-white text-purple-600 rounded-full hover:scale-105 transition-all pulse-glow-animation"
               style={{ boxShadow: '0 10px 40px rgba(0, 0, 0, 0.3)' }}
             >
               Book Free Consultation
             </a>
           </motion.div>
+
+          {/* Trust Badge */}
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={inView ? { opacity: 1 } : {}}
+            transition={{ duration: 0.8, delay: 0.8 }}
+            className="mt-8 text-white/80 text-sm"
+          >
+            ✅ No credit card required • ✅ 100% confidential • ✅ Licensed professionals
+          </motion.p>
         </motion.div>
       </div>
     </section>

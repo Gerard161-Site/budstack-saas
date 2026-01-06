@@ -67,21 +67,21 @@ export async function GET(req: NextRequest) {
 
     // Calculate total revenue per tenant and sort
     const topTenantsWithRevenue = topTenants
-      .map(tenant => ({
+      .map((tenant: any) => ({
         ...tenant,
         _sum: {
-          total: tenant.orders.reduce((sum, order) => sum + order.total, 0),
+          total: tenant.orders.reduce((sum: number, order: any) => sum + order.total, 0),
         },
       }))
-      .sort((a, b) => (b._sum?.total || 0) - (a._sum?.total || 0));
+      .sort((a: any, b: any) => (b._sum?.total || 0) - (a._sum?.total || 0));
 
     // Get revenue by day
     const dateRange = eachDayOfInterval({ start: startDate, end: new Date() });
     const revenueByDayData = await Promise.all(
-      dateRange.map(async (date) => {
+      dateRange.map(async (date: Date) => {
         const dayStart = startOfDay(date);
         const dayEnd = startOfDay(subDays(date, -1));
-        
+
         const result = await prisma.order.aggregate({
           where: {
             createdAt: {
@@ -101,10 +101,10 @@ export async function GET(req: NextRequest) {
 
     // Get orders by day
     const ordersByDayData = await Promise.all(
-      dateRange.map(async (date) => {
+      dateRange.map(async (date: Date) => {
         const dayStart = startOfDay(date);
         const dayEnd = startOfDay(subDays(date, -1));
-        
+
         const count = await prisma.order.count({
           where: {
             createdAt: {
@@ -133,20 +133,20 @@ export async function GET(req: NextRequest) {
     });
 
     const revenueByTenant = tenantsWithRevenue
-      .map(tenant => ({
+      .map((tenant: any) => ({
         name: tenant.businessName,
-        value: tenant.orders.reduce((sum, order) => sum + order.total, 0),
+        value: tenant.orders.reduce((sum: number, order: any) => sum + order.total, 0),
       }))
-      .filter(item => item.value > 0)
-      .sort((a, b) => b.value - a.value)
+      .filter((item: any) => item.value > 0)
+      .sort((a: any, b: any) => b.value - a.value)
       .slice(0, 6); // Top 6 for better visualization
 
     // Get customer growth by day
     const customerGrowthData = await Promise.all(
-      dateRange.map(async (date) => {
+      dateRange.map(async (date: Date) => {
         const dayStart = startOfDay(date);
         const dayEnd = startOfDay(subDays(date, -1));
-        
+
         const count = await prisma.user.count({
           where: {
             createdAt: {

@@ -1,0 +1,185 @@
+version: '3.8'
+
+services:
+  # ============================================
+  # PostgreSQL Database
+  # ============================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: budstack_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-budstack}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-budstack_db}
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=en_US.UTF-8"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-budstack}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - budstack_network
+
+  # ============================================
+  # PgBouncer (Connection Pooling)
+  # ============================================
+  pgbouncer:
+    image: edoburu/pgbouncer:latest
+    container_name: budstack_pgbouncer
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-budstack}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-budstack_db}
+      POOL_MODE: transaction
+      AUTH_TYPE: scram-sha-256
+      MAX_CLIENT_CONN: 1000
+      DEFAULT_POOL_SIZE: 25
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "6432:5432"
+    networks:
+      - budstack_network
+
+  # ============================================
+  # Redis (Caching & Session Store)
+  # ============================================
+  redis:
+    image: redis:7-alpine
+    container_name: budstack_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - budstack_network
+
+  # ============================================
+  # Next.js Application (Scalable)
+  # ============================================
+  app:
+    build:
+      context: ./nextjs_space
+      dockerfile: Dockerfile
+      args:
+        NODE_ENV: production
+    container_name: budstack_app
+    restart: unless-stopped
+    environment:
+      # Database
+      DATABASE_URL: postgresql://${POSTGRES_USER:-budstack}:${POSTGRES_PASSWORD}@pgbouncer:5432/${POSTGRES_DB:-budstack_db}?pgbouncer=true
+      
+      # NextAuth
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      
+      # Dr. Green API
+      DRGREEN_API_URL: ${DRGREEN_API_URL}
+      DRGREEN_API_KEY: ${DRGREEN_API_KEY}
+      DRGREEN_SECRET_KEY: ${DRGREEN_SECRET_KEY}
+      
+      # AWS S3
+      AWS_BUCKET_NAME: ${AWS_BUCKET_NAME}
+      AWS_FOLDER_PREFIX: ${AWS_FOLDER_PREFIX}
+      AWS_REGION: ${AWS_REGION:-eu-west-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      
+      # Email
+      EMAIL_SERVER: ${EMAIL_SERVER}
+      EMAIL_FROM: ${EMAIL_FROM}
+      
+      # Redis
+      REDIS_URL: redis://redis:6379
+      
+      # Node
+      NODE_ENV: production
+      PORT: 3000
+    volumes:
+      - ./nextjs_space/uploads:/app/uploads
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      pgbouncer:
+        condition: service_started
+    networks:
+      - budstack_network
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+
+  # ============================================
+  # NGINX Load Balancer (Optional - for production)
+  # ============================================
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: budstack_nginx
+  #   restart: unless-stopped
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - ./nginx/ssl:/etc/nginx/ssl:ro
+  #     - nginx_cache:/var/cache/nginx
+  #   depends_on:
+  #     - app
+  #   networks:
+  #     - budstack_network
+
+  # ============================================
+  # Database Backup (Optional)
+  # ============================================
+  backup:
+    image: prodrigestivill/postgres-backup-local:15
+    container_name: budstack_backup
+    restart: unless-stopped
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: ${POSTGRES_DB:-budstack_db}
+      POSTGRES_USER: ${POSTGRES_USER:-budstack}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      SCHEDULE: "@daily"
+      BACKUP_KEEP_DAYS: 7
+      BACKUP_KEEP_WEEKS: 4
+      BACKUP_KEEP_MONTHS: 6
+    volumes:
+      - ./backups:/backups
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - budstack_network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  # nginx_cache:
+  #   driver: local
+
+networks:
+  budstack_network:
+    driver: bridge

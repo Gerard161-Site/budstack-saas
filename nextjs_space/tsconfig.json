@@ -40,9 +40,6 @@
   "exclude": [
     "node_modules",
     "**/*.disabled/**",
-    "scripts/**/*.disabled.ts",
-    "templates/lovable-template-*/src/**",
-    "templates/lovable-template-*/supabase/**",
-    "templates/lovable-template-*/public/**"
+    "scripts/**/*.disabled.ts"
   ]
 }

@@ -22,23 +22,35 @@ export default function Hero({
 }: HeroProps) {
   const displayTitle = title || `Welcome to ${businessName}`;
   const displaySubtitle = subtitle || 'Premium Medical Cannabis';
-  const heroImage = heroImagePath || '/templates/gta-cannabis/hawaii-illustration-retro-comic-style.jpg';
+
+  // Ensure we have a valid path, handling empty strings or whitespace
+  const cleanPath = heroImagePath && heroImagePath.trim().length > 0 ? heroImagePath : null;
+  const heroImage = cleanPath || '/templates/gta-cannabis/gta-hero.jpg';
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Background Image with Retro Overlay */}
-      <div className="absolute inset-0 retro-overlay">
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gray-900">
+      {/* 1. Background Image */}
+      <div className="absolute inset-0 z-0">
         <Image
           src={heroImage}
           alt="Hero Background"
           fill
-          className="object-cover"
+          className="object-cover opacity-90"
           priority
         />
       </div>
 
-      {/* Gradient Overlay for Text Readability */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-black/70" />
+      {/* 2. Retro Color Overlay (Mulitply Effect) */}
+      <div
+        className="absolute inset-0 z-0 opacity-60"
+        style={{
+          background: 'linear-gradient(135deg, rgba(255, 107, 107, 0.9) 0%, rgba(78, 205, 196, 0.7) 50%, rgba(255, 230, 109, 0.9) 100%)',
+          mixBlendMode: 'multiply'
+        }}
+      />
+
+      {/* 3. Dark Gradient Overlay for Text Readability */}
+      <div className="absolute inset-0 z-0 bg-gradient-to-b from-black/40 via-black/20 to-black/70" />
 
       {/* Content */}
       <div className="relative z-10 container mx-auto px-6 text-center">

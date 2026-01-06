@@ -10,7 +10,7 @@ import SettingsForm from './settings-form';
 
 export default async function SettingsPage() {
   const session = await getServerSession(authOptions);
-  
+
   if (!session || (session.user.role !== 'TENANT_ADMIN' && session.user.role !== 'SUPER_ADMIN')) {
     redirect('/auth/login');
   }
@@ -19,6 +19,12 @@ export default async function SettingsPage() {
     where: { id: session.user.id },
     include: { tenant: true },
   });
+
+  // Mask the secret key before passing to client
+  if (user?.tenant?.drGreenSecretKey) {
+    // Only indicate it exists, don't send value
+    user.tenant.drGreenSecretKey = '********';
+  }
 
   if (!user?.tenant) {
     redirect('/tenant-admin');

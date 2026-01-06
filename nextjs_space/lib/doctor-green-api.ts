@@ -5,82 +5,90 @@
  */
 
 const API_URL = process.env.DOCTOR_GREEN_API_URL || 'https://stage-api.drgreennft.com/api/v1';
-const API_KEY = process.env.DOCTOR_GREEN_API_KEY || '';
-const SECRET_KEY = process.env.DOCTOR_GREEN_SECRET_KEY || '';
 
 // Currency mapping by country code
 const CURRENCY_MAP: Record<string, string> = {
-  'PT': 'EUR',  // Portugal - Euro
-  'ES': 'EUR',  // Spain - Euro
-  'FR': 'EUR',  // France - Euro
-  'DE': 'EUR',  // Germany - Euro
-  'IT': 'EUR',  // Italy - Euro
-  'NL': 'EUR',  // Netherlands - Euro
-  'BE': 'EUR',  // Belgium - Euro
-  'AT': 'EUR',  // Austria - Euro
-  'IE': 'EUR',  // Ireland - Euro
-  'GR': 'EUR',  // Greece - Euro
-  'SA': 'ZAR',  // South Africa - South African Rand
-  'UK': 'GBP',  // United Kingdom - British Pound
-  'GB': 'GBP',  // Great Britain - British Pound
-  'US': 'USD',  // United States - US Dollar
-  'CA': 'CAD',  // Canada - Canadian Dollar
-  'AU': 'AUD',  // Australia - Australian Dollar
-  'NZ': 'NZD',  // New Zealand - New Zealand Dollar
-  'CH': 'CHF',  // Switzerland - Swiss Franc
-  'SE': 'SEK',  // Sweden - Swedish Krona
-  'NO': 'NOK',  // Norway - Norwegian Krone
-  'DK': 'DKK',  // Denmark - Danish Krone
-  'PL': 'PLN',  // Poland - Polish Zloty
-  'CZ': 'CZK',  // Czech Republic - Czech Koruna
-  'IL': 'ILS',  // Israel - Israeli Shekel
-  'BR': 'BRL',  // Brazil - Brazilian Real
-  'MX': 'MXN',  // Mexico - Mexican Peso
-  'AR': 'ARS',  // Argentina - Argentine Peso
-  'CL': 'CLP',  // Chile - Chilean Peso
-  'CO': 'COP',  // Colombia - Colombian Peso
-  'TH': 'THB',  // Thailand - Thai Baht
-  'MY': 'MYR',  // Malaysia - Malaysian Ringgit
-  'SG': 'SGD',  // Singapore - Singapore Dollar
-  'IN': 'INR',  // India - Indian Rupee
-  'PK': 'PKR',  // Pakistan - Pakistani Rupee
-  'PH': 'PHP',  // Philippines - Philippine Peso
-  'ID': 'IDR',  // Indonesia - Indonesian Rupiah
-  'JP': 'JPY',  // Japan - Japanese Yen
-  'KR': 'KRW',  // South Korea - South Korean Won
-  'CN': 'CNY',  // China - Chinese Yuan
-  'HK': 'HKD',  // Hong Kong - Hong Kong Dollar
-  'TW': 'TWD',  // Taiwan - New Taiwan Dollar
+  'PT': 'EUR',
+  'ES': 'EUR',
+  'FR': 'EUR',
+  'DE': 'EUR',
+  'IT': 'EUR',
+  'NL': 'EUR',
+  'BE': 'EUR',
+  'AT': 'EUR',
+  'IE': 'EUR',
+  'GR': 'EUR',
+  'SA': 'ZAR',
+  'UK': 'GBP',
+  'GB': 'GBP',
+  'US': 'USD',
+  'CA': 'CAD',
+  'AU': 'AUD',
+  'NZ': 'NZD',
+  'CH': 'CHF',
+  'SE': 'SEK',
+  'NO': 'NOK',
+  'DK': 'DKK',
+  'PL': 'PLN',
+  'CZ': 'CZK',
+  'IL': 'ILS',
+  'BR': 'BRL',
+  'MX': 'MXN',
+  'AR': 'ARS',
+  'CL': 'CLP',
+  'CO': 'COP',
+  'TH': 'THB',
+  'MY': 'MYR',
+  'SG': 'SGD',
+  'IN': 'INR',
+  'PK': 'PKR',
+  'PH': 'PHP',
+  'ID': 'IDR',
+  'JP': 'JPY',
+  'KR': 'KRW',
+  'CN': 'CNY',
+  'HK': 'HKD',
+  'TW': 'TWD',
 };
 
-/**
- * Get currency code by country code
- */
 export function getCurrencyByCountry(countryCode: string): string {
-  return CURRENCY_MAP[countryCode.toUpperCase()] || 'EUR';
+  return CURRENCY_MAP[countryCode.toUpperCase()] || 'ZAR';
+}
+
+export interface DoctorGreenConfig {
+  apiKey: string;
+  secretKey: string;
 }
 
 interface DoctorGreenAPIOptions {
   method?: string;
   body?: any;
   headers?: Record<string, string>;
+  config?: DoctorGreenConfig;
 }
 
 /**
  * Generate ECDSA signature for API request (using Node.js crypto)
  */
-function generateSignature(payload: string): string {
+function generateSignature(payload: string, secretKey: string): string {
   try {
     const crypto = require('crypto');
-    
-    // Decode the base64 private key
-    const privateKeyPEM = Buffer.from(SECRET_KEY, 'base64').toString('utf-8');
-    
+
+    // Decode the base64 private key - Handle potential raw private keys too
+    let privateKeyPEM = secretKey;
+    if (!secretKey.includes('BEGIN PRIVATE KEY')) {
+      try {
+        privateKeyPEM = Buffer.from(secretKey, 'base64').toString('utf-8');
+      } catch (e) {
+        // Keep original if not base64
+      }
+    }
+
     // Sign the payload with SHA256
     const sign = crypto.createSign('SHA256');
     sign.update(payload);
     sign.end();
-    
+
     // Generate signature and return as base64
     const signature = sign.sign(privateKeyPEM);
     return signature.toString('base64');
@@ -97,26 +105,36 @@ export async function doctorGreenRequest<T>(
   endpoint: string,
   options: DoctorGreenAPIOptions = {}
 ): Promise<T> {
-  const { method = 'GET', body, headers = {} } = options;
-  
+  const { method = 'GET', body, headers = {}, config } = options;
+
+  // Use config (mandatory)
+  const apiKey = config?.apiKey;
+  const secretKey = config?.secretKey;
+
+  if (!apiKey || !secretKey) {
+    throw new Error('MISSING_CREDENTIALS');
+  }
+
+  if (!apiKey) console.warn('Warning: No Dr Green API Key provided');
+
   // Prepare payload
   const payload = body ? JSON.stringify(body) : '';
-  
+
   // Prepare request headers
   const requestHeaders: Record<string, string> = {
     'Content-Type': 'application/json',
-    'x-auth-apikey': API_KEY,
+    'x-auth-apikey': apiKey,
     ...headers,
   };
-  
+
   // Generate signature for POST/PATCH/DELETE requests (GET requests don't need signature)
-  if (method !== 'GET' && payload) {
-    const signature = generateSignature(payload);
+  if (method !== 'GET' && payload && secretKey) {
+    const signature = generateSignature(payload, secretKey);
     requestHeaders['x-auth-signature'] = signature;
   }
-  
+
   const url = `${API_URL}${endpoint}`;
-  
+
   try {
     const response = await fetch(url, {
       method,
@@ -124,14 +142,14 @@ export async function doctorGreenRequest<T>(
       body: payload || undefined,
       cache: 'no-store',
     });
-    
+
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(
         `Doctor Green API Error: ${response.status} ${response.statusText} - ${JSON.stringify(errorData)}`
       );
     }
-    
+
     return await response.json();
   } catch (error) {
     console.error('Doctor Green API Request Error:', error);
@@ -156,10 +174,15 @@ export interface DoctorGreenProduct {
   feelings?: string;
   helpsWith?: string;
   retailPrice: number;
-  stockQuantity: number;
+  stockQuantity?: number; // Optional - may be in strainLocations instead
   popularity?: number;
-  isAvailable: boolean;
-  
+  isAvailable?: boolean; // Optional - may be in strainLocations instead
+  strainLocations?: Array<{
+    isActive?: boolean;
+    isAvailable?: boolean;
+    stockQuantity?: number;
+  }>;
+
   // Normalized fields for backwards compatibility
   strain_type?: 'INDICA' | 'SATIVA' | 'HYBRID';
   thc_content?: number;
@@ -223,21 +246,23 @@ const PRODUCT_IMAGE_FALLBACKS: Record<string, string> = {
 /**
  * Fetch all products from Doctor Green
  * @param country - Two-letter country code (e.g., 'PT' for Portugal, 'SA' for South Africa)
+ * @default 'SA' - South Africa (only live site currently)
  */
-export async function fetchProducts(country: string = 'PT'): Promise<DoctorGreenProduct[]> {
+export async function fetchProducts(country: string = 'SA', config: DoctorGreenConfig): Promise<DoctorGreenProduct[]> {
   const response = await doctorGreenRequest<{ data: { strains: DoctorGreenProduct[] } }>(
-    `/strains?country=${country}`
+    `/strains?country=${country}`,
+    { config }
   );
-  
+
   // Extract strains from the response and normalize the data
   const products = response.data?.strains || [];
-  
-  // Base URL for Doctor Green images
+
+  // Base URL for Doctor Green images (staging)
   const IMAGE_BASE_URL = 'https://stage-api.drgreennft.com';
-  
+
   // Get currency for this country
   const currency = getCurrencyByCountry(country);
-  
+
   // Normalize fields for backwards compatibility with our UI
   return products.map(product => {
     // Construct full image URL if imageUrl is relative
@@ -245,13 +270,18 @@ export async function fetchProducts(country: string = 'PT'): Promise<DoctorGreen
     if (fullImageUrl && !fullImageUrl.startsWith('http')) {
       fullImageUrl = `${IMAGE_BASE_URL}/${fullImageUrl}`;
     }
-    
+
     // Use fallback image - Doctor Green staging doesn't host actual images yet
     const fallbackImage = PRODUCT_IMAGE_FALLBACKS[product.name];
     if (fallbackImage) {
       fullImageUrl = fallbackImage;
     }
-    
+
+    // Calculate stock from strainLocations array
+    const locations = product.strainLocations || [];
+    const totalStock = locations.reduce((sum: number, loc: any) => sum + (loc.stockQuantity || 0), 0);
+    const isAvailableAtAnyLocation = locations.some((loc: any) => loc.isAvailable === true);
+
     return {
       ...product,
       strain_type: (product.type?.toUpperCase() as 'INDICA' | 'SATIVA' | 'HYBRID') || 'HYBRID',
@@ -259,8 +289,8 @@ export async function fetchProducts(country: string = 'PT'): Promise<DoctorGreen
       cbd_content: product.cbd || 0,
       price: product.retailPrice || 0,
       currency: currency, // Dynamic currency based on country
-      in_stock: product.isAvailable !== false, // Default to true if undefined
-      stock_quantity: product.stockQuantity || 0,
+      in_stock: isAvailableAtAnyLocation && totalStock > 0, // Available if any location has stock
+      stock_quantity: totalStock, // Sum of all location stock
       image_url: fullImageUrl,
       imageUrl: fullImageUrl,
     };
@@ -269,26 +299,33 @@ export async function fetchProducts(country: string = 'PT'): Promise<DoctorGreen
 
 /**
  * Fetch a single product by ID
+ * @default country='SA' - South Africa (only live site currently)
  */
-export async function fetchProduct(productId: string, country: string = 'PT'): Promise<DoctorGreenProduct> {
+export async function fetchProduct(productId: string, country: string = 'SA', config: DoctorGreenConfig): Promise<DoctorGreenProduct> {
   const response = await doctorGreenRequest<{ data: DoctorGreenProduct }>(
-    `/strains/${productId}`
+    `/strains/${productId}`,
+    { config }
   );
-  
+
   const product = response.data;
-  
-  // Base URL for Doctor Green images
+
+  // Base URL for Doctor Green images (staging)
   const IMAGE_BASE_URL = 'https://stage-api.drgreennft.com';
-  
+
   // Get currency for this country
   const currency = getCurrencyByCountry(country);
-  
+
   // Construct full image URL if imageUrl is relative
   let fullImageUrl = product.imageUrl;
   if (fullImageUrl && !fullImageUrl.startsWith('http')) {
     fullImageUrl = `${IMAGE_BASE_URL}/${fullImageUrl}`;
   }
-  
+
+  // Calculate stock from strainLocations array
+  const locations = product.strainLocations || [];
+  const totalStock = locations.reduce((sum: number, loc: any) => sum + (loc.stockQuantity || 0), 0);
+  const isAvailableAtAnyLocation = locations.some((loc: any) => loc.isAvailable === true);
+
   // Normalize fields for backwards compatibility
   return {
     ...product,
@@ -297,8 +334,8 @@ export async function fetchProduct(productId: string, country: string = 'PT'): P
     cbd_content: product.cbd || 0,
     price: product.retailPrice || 0,
     currency: currency, // Dynamic currency based on country
-    in_stock: product.isAvailable !== false, // Default to true if undefined
-    stock_quantity: product.stockQuantity || 0,
+    in_stock: isAvailableAtAnyLocation && totalStock > 0, // Available if any location has stock
+    stock_quantity: totalStock, // Sum of all location stock
     image_url: fullImageUrl,
     imageUrl: fullImageUrl,
   };
@@ -307,40 +344,92 @@ export async function fetchProduct(productId: string, country: string = 'PT'): P
 /**
  * Verify NFT ownership
  */
-export async function verifyNFT(tokenId: string): Promise<any> {
-  return doctorGreenRequest(`/nfts/${tokenId}/verify`);
+export async function verifyNFT(tokenId: string, config: DoctorGreenConfig): Promise<any> {
+  return doctorGreenRequest(`/nfts/${tokenId}/verify`, { config });
 }
 
 /**
  * Get client information by NFT token
  */
-export async function getClientByNFT(tokenId: string): Promise<DoctorGreenClient> {
-  return doctorGreenRequest<DoctorGreenClient>(`/clients/nft/${tokenId}`);
+export async function getClientByNFT(tokenId: string, config: DoctorGreenConfig): Promise<DoctorGreenClient> {
+  return doctorGreenRequest<DoctorGreenClient>(`/clients/nft/${tokenId}`, { config });
 }
 
 /**
  * Create a new order
  */
-export async function createOrder(orderData: any): Promise<DoctorGreenOrder> {
+export async function createOrder(orderData: any, config: DoctorGreenConfig): Promise<DoctorGreenOrder> {
   return doctorGreenRequest<DoctorGreenOrder>('/orders', {
     method: 'POST',
     body: orderData,
+    config,
   });
 }
 
 /**
  * Fetch client orders
  */
-export async function fetchClientOrders(clientId: string): Promise<DoctorGreenOrder[]> {
-  return doctorGreenRequest<DoctorGreenOrder[]>(`/clients/${clientId}/orders`);
+export async function fetchClientOrders(clientId: string, config: DoctorGreenConfig): Promise<DoctorGreenOrder[]> {
+  return doctorGreenRequest<DoctorGreenOrder[]>(`/clients/${clientId}/orders`, { config });
 }
 
 /**
  * Add product to cart
  */
-export async function addToCart(clientId: string, productId: string, quantity: number): Promise<any> {
+export async function addToCart(clientId: string, productId: string, quantity: number, config: DoctorGreenConfig): Promise<any> {
   return doctorGreenRequest(`/clients/${clientId}/cart`, {
     method: 'POST',
     body: { product_id: productId, quantity },
+    config,
   });
+}
+/**
+ * Create a new patient/client record in Dr. Green system
+ */
+export async function createClient(clientData: {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  dateOfBirth: string;
+  address: {
+    street: string;
+    city: string;
+    postalCode: string;
+    country: string;
+  };
+  medicalRecord?: {
+    conditions: string;
+    currentMedications?: string;
+    allergies?: string;
+    previousCannabisUse?: boolean;
+    doctorApproval?: boolean;
+  };
+}, config: DoctorGreenConfig): Promise<{ clientId: string; kycLink?: string }> {
+  const response = await doctorGreenRequest<{ clientId: string; kycLink?: string }>('/clients', {
+    method: 'POST',
+    body: JSON.stringify({
+      first_name: clientData.firstName,
+      last_name: clientData.lastName,
+      email: clientData.email,
+      phone: clientData.phone,
+      date_of_birth: clientData.dateOfBirth,
+      address: {
+        street: clientData.address.street,
+        city: clientData.address.city,
+        postal_code: clientData.address.postalCode,
+        country: clientData.address.country,
+      },
+      medical_record: clientData.medicalRecord ? {
+        conditions: clientData.medicalRecord.conditions,
+        current_medications: clientData.medicalRecord.currentMedications,
+        allergies: clientData.medicalRecord.allergies,
+        previous_cannabis_use: clientData.medicalRecord.previousCannabisUse,
+        doctor_approval: clientData.medicalRecord.doctorApproval,
+      } : undefined,
+    }),
+    config,
+  });
+
+  return response;
 }

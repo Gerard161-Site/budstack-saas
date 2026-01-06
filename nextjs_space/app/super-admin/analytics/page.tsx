@@ -84,7 +84,7 @@ export default function AnalyticsPage() {
 
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center theme-force-light">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-green-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600">Loading analytics...</p>
@@ -97,12 +97,12 @@ export default function AnalyticsPage() {
     return null;
   }
 
-  const revenueGrowth = analytics.recentRevenue > 0 
+  const revenueGrowth = analytics.recentRevenue > 0
     ? ((analytics.recentRevenue / (analytics.totalRevenue - analytics.recentRevenue || 1)) * 100).toFixed(1)
     : '0.0';
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 theme-force-light">
       <div className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <Link href="/super-admin">

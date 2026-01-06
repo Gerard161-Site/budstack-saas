@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { Upload, Check, Palette, Type, Layout, FileText, Settings, Image as ImageIcon } from 'lucide-react';
 import { TenantSettings } from '@/lib/types';
+import { TenantTemplate } from '@prisma/client';
 
 interface BrandingFormProps {
   tenant: {
@@ -22,6 +23,7 @@ interface BrandingFormProps {
     customDomain: string | null;
     settings: any;
   };
+  activeTemplate?: TenantTemplate | null;
 }
 
 const TEMPLATES = [
@@ -39,61 +41,75 @@ const FONTS = [
   { id: 'playfair', name: 'Playfair Display', description: 'Elegant serif' },
 ];
 
-export default function BrandingForm({ tenant }: BrandingFormProps) {
+export default function BrandingForm({ tenant, activeTemplate }: BrandingFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [logo, setLogo] = useState<File | null>(null);
   const [heroImage, setHeroImage] = useState<File | null>(null);
   const [favicon, setFavicon] = useState<File | null>(null);
-  
+
   const settings = (tenant.settings as TenantSettings) || {};
+
+  // Helper to get value from template designSystem OR legacy settings
+  const getVal = (path: string[], fallback: any) => {
+    if (activeTemplate?.designSystem) {
+      let current = activeTemplate.designSystem;
+      for (const key of path) {
+        if (current?.[key] === undefined) return fallback;
+        current = current[key];
+      }
+      return current;
+    }
+    return fallback;
+  };
+
   const [formData, setFormData] = useState({
     // Business
     businessName: tenant.businessName,
     tagline: settings.tagline || '',
-    
+
     // Colors
-    primaryColor: settings.primaryColor || '#059669',
-    secondaryColor: settings.secondaryColor || '#34d399',
-    accentColor: settings.accentColor || '#10b981',
-    backgroundColor: settings.backgroundColor || '#ffffff',
-    textColor: settings.textColor || '#1f2937',
-    headingColor: settings.headingColor || '#111827',
-    
+    primaryColor: getVal(['colors', 'primary'], settings.primaryColor || '#059669'),
+    secondaryColor: getVal(['colors', 'secondary'], settings.secondaryColor || '#34d399'),
+    accentColor: getVal(['colors', 'accent'], settings.accentColor || '#10b981'),
+    backgroundColor: getVal(['colors', 'background'], settings.backgroundColor || '#ffffff'),
+    textColor: getVal(['colors', 'text'], settings.textColor || '#1f2937'),
+    headingColor: getVal(['colors', 'heading'], settings.headingColor || '#111827'),
+
     // Typography
-    fontFamily: settings.fontFamily || 'inter',
-    headingFontFamily: settings.headingFontFamily || settings.fontFamily || 'inter',
-    fontSize: settings.fontSize || 'medium',
-    
+    fontFamily: getVal(['typography', 'fontFamily', 'body'], settings.fontFamily || 'inter'),
+    headingFontFamily: getVal(['typography', 'fontFamily', 'heading'], settings.headingFontFamily || settings.fontFamily || 'inter'),
+    fontSize: getVal(['typography', 'fontSize', 'base'], settings.fontSize || 'medium'),
+
     // Layout
-    template: settings.template || 'modern',
-    buttonStyle: settings.buttonStyle || 'rounded',
-    buttonSize: settings.buttonSize || 'medium',
-    borderRadius: settings.borderRadius || 'medium',
-    spacing: settings.spacing || 'normal',
-    shadowStyle: settings.shadowStyle || 'soft',
-    
+    template: settings.template || 'modern', // Template styling preference
+    buttonStyle: getVal(['borderRadius', 'button'], settings.buttonStyle || 'rounded'),
+    buttonSize: settings.buttonSize || 'medium', // Not strictly part of new DS yet
+    borderRadius: getVal(['borderRadius', 'container'], settings.borderRadius || 'medium'),
+    spacing: getVal(['spacing', 'scale'], settings.spacing || 'normal'),
+    shadowStyle: getVal(['shadows', 'card'], settings.shadowStyle || 'soft'),
+
     // Hero
     heroType: settings.heroType || 'gradient',
-    
+
     // Page Content - Home
-    homeHeroTitle: settings.pageContent?.home?.heroTitle || 'Welcome to Your Medical Cannabis Journey',
-    homeHeroSubtitle: settings.pageContent?.home?.heroSubtitle || 'Premium medical cannabis products delivered with care',
-    homeHeroCtaText: settings.pageContent?.home?.heroCtaText || 'Get Started',
-    
+    homeHeroTitle: activeTemplate?.pageContent?.home?.heroTitle || settings.pageContent?.home?.heroTitle || 'Welcome to Your Medical Cannabis Journey',
+    homeHeroSubtitle: activeTemplate?.pageContent?.home?.heroSubtitle || settings.pageContent?.home?.heroSubtitle || 'Premium medical cannabis products delivered with care',
+    homeHeroCtaText: activeTemplate?.pageContent?.home?.heroCtaText || settings.pageContent?.home?.heroCtaText || 'Get Started',
+
     // Page Content - About
-    aboutTitle: settings.pageContent?.about?.title || 'About Us',
-    aboutContent: settings.pageContent?.about?.content || 'We are dedicated to providing high-quality medical cannabis products...',
-    
+    aboutTitle: activeTemplate?.pageContent?.about?.title || settings.pageContent?.about?.title || 'About Us',
+    aboutContent: activeTemplate?.pageContent?.about?.content || settings.pageContent?.about?.content || 'We are dedicated to providing high-quality medical cannabis products...',
+
     // Page Content - Contact
-    contactTitle: (settings.pageContent as any)?.contact?.title || 'Get in Touch',
-    contactDescription: (settings.pageContent as any)?.contact?.description || 'Have questions? We are here to help.',
-    contactEmail: (settings.pageContent as any)?.contact?.email || '',
-    contactPhone: (settings.pageContent as any)?.contact?.phone || '',
-    contactAddress: (settings.pageContent as any)?.contact?.address || '',
-    
+    contactTitle: activeTemplate?.pageContent?.contact?.title || (settings.pageContent as any)?.contact?.title || 'Get in Touch',
+    contactDescription: activeTemplate?.pageContent?.contact?.description || (settings.pageContent as any)?.contact?.description || 'Have questions? We are here to help.',
+    contactEmail: activeTemplate?.pageContent?.contact?.email || (settings.pageContent as any)?.contact?.email || '',
+    contactPhone: activeTemplate?.pageContent?.contact?.phone || (settings.pageContent as any)?.contact?.phone || '',
+    contactAddress: activeTemplate?.pageContent?.contact?.address || (settings.pageContent as any)?.contact?.address || '',
+
     // Advanced
-    customCSS: settings.customCSS || '',
+    customCSS: activeTemplate?.customCSS || settings.customCSS || '',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -102,13 +118,13 @@ export default function BrandingForm({ tenant }: BrandingFormProps) {
 
     try {
       const formDataToSend = new FormData();
-      
+
       // Extract business name
       const { businessName, ...settings } = formData;
-      
+
       // Append business name
       formDataToSend.append('businessName', businessName);
-      
+
       // Append settings as JSON string
       formDataToSend.append('settings', JSON.stringify({
         ...settings,
@@ -142,7 +158,7 @@ export default function BrandingForm({ tenant }: BrandingFormProps) {
         contactPhone: undefined,
         contactAddress: undefined,
       }));
-      
+
       // Append files
       if (logo) formDataToSend.append('logo', logo);
       if (heroImage) formDataToSend.append('heroImage', heroImage);
@@ -228,11 +244,10 @@ export default function BrandingForm({ tenant }: BrandingFormProps) {
                   <div
                     key={template.id}
                     onClick={() => setFormData({ ...formData, template: template.id as any })}
-                    className={`relative p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                      formData.template === template.id
+                    className={`relative p-4 border-2 rounded-lg cursor-pointer transition-all ${formData.template === template.id
                         ? 'border-green-500 bg-green-50'
                         : 'border-gray-200 hover:border-gray-300'
-                    }`}
+                      }`}
                   >
                     {formData.template === template.id && (
                       <Check className="absolute top-2 right-2 w-5 h-5 text-green-500" />
@@ -258,7 +273,7 @@ export default function BrandingForm({ tenant }: BrandingFormProps) {
                 onChange={(file) => handleFileChange(file, 'logo')}
                 file={logo}
               />
-              
+
               <div>
                 <Label>Hero Section Type</Label>
                 <Select
@@ -643,7 +658,7 @@ export default function BrandingForm({ tenant }: BrandingFormProps) {
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <h4 className="font-semibold text-blue-900 mb-2">ℹ️ Content Management Note</h4>
             <p className="text-sm text-blue-800">
-              <strong>Personal Pages (You Control):</strong> Home, About, Contact - Edit text here.<br/>
+              <strong>Personal Pages (You Control):</strong> Home, About, Contact - Edit text here.<br />
               <strong>Country-Based Pages (API Control):</strong> Products, Medical Conditions, How It Works, Consultation, Education - Content comes from your country's regulations and our CRM. You can only customize the theme/colors for these pages.
             </p>
           </div>

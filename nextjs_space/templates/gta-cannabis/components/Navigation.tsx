@@ -32,13 +32,12 @@ export function Navigation({ businessName, subdomain, logoUrl }: NavigationProps
   }, []);
 
   const navLinks = [
-    { href: `/store/${subdomain}`, label: 'Home' },
-    { href: `/store/${subdomain}/how-it-works`, label: 'How It Works' },
     { href: `/store/${subdomain}/conditions`, label: 'Conditions' },
     { href: `/store/${subdomain}/products`, label: 'Products' },
-    { href: `/store/${subdomain}/consultation`, label: 'Consultation' },
+    { href: `/store/${subdomain}/the-wire`, label: 'The Wire' },
     { href: `/store/${subdomain}/about`, label: 'About' },
-    { href: `/store/${subdomain}/contact`, label: 'Contact' },
+    { href: `/store/${subdomain}/blockchain`, label: 'Blockchain' },
+    { href: `/store/${subdomain}/consultation`, label: 'Check Eligibility' },
   ];
 
   return (

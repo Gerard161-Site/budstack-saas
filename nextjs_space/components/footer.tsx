@@ -17,7 +17,7 @@ import {
   Clock,
   ExternalLink
 } from 'lucide-react';
-import { Tenant } from '@prisma/client';
+import { Tenant } from '@/types/client';
 import { TenantSettings } from '@/lib/types';
 import { useLanguage } from '@/lib/i18n';
 

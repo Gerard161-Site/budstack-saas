@@ -1,4 +1,4 @@
-import { PrismaClient, StrainType } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -11,7 +11,7 @@ async function main() {
 
   // Create HealingBuds Tenant (first tenant)
   console.log('Creating HealingBuds tenant...');
-  
+
   const healingBudsTenant = await prisma.tenant.upsert({
     where: { subdomain: 'healingbuds' },
     update: {},
@@ -26,6 +26,7 @@ async function main() {
         primaryColor: '#10b981', // green-500
         secondaryColor: '#059669', // green-600
       },
+      drGreenApiUrl: 'https://stage-api.drgreennft.com/api/v1',
     },
   });
 
@@ -33,9 +34,9 @@ async function main() {
 
   // Create Super Admin
   console.log('Creating super admin...');
-  
+
   const superAdminPassword = await bcrypt.hash('admin123', 10);
-  
+
   const superAdmin = await prisma.user.upsert({
     where: { email: 'admin@budstack.to' },
     update: {},
@@ -51,9 +52,9 @@ async function main() {
 
   // Create HealingBuds Tenant Admin
   console.log('Creating HealingBuds tenant admin...');
-  
+
   const tenantAdminPassword = await bcrypt.hash('admin123', 10);
-  
+
   const tenantAdmin = await prisma.user.upsert({
     where: { email: 'admin@healingbuds.pt' },
     update: {},
@@ -70,9 +71,9 @@ async function main() {
 
   // Create Test User for HealingBuds
   console.log('Creating test user...');
-  
+
   const testUserPassword = await bcrypt.hash('test123', 10);
-  
+
   const testUser = await prisma.user.upsert({
     where: { email: 'test@healingbuds.pt' },
     update: {},
@@ -89,7 +90,7 @@ async function main() {
 
   // Create Products for HealingBuds
   console.log('Creating products for HealingBuds...');
-  
+
   const products = [
     {
       name: 'CBD Oil 10%',
@@ -130,7 +131,7 @@ async function main() {
       description: 'Premium indica strain. Relaxing effects perfect for evening use, sleep aid, and pain relief.',
       price: 250.00, // per gram
       category: 'Flower',
-      strainType: StrainType.INDICA,
+      strainType: "INDICA" as any,
       thcContent: 18.0,
       cbdContent: 1.0,
       images: ['/products/indica-flower.jpg'],
@@ -142,7 +143,7 @@ async function main() {
       description: 'Energizing sativa strain. Great for daytime use, focus, and mood enhancement.',
       price: 250.00,
       category: 'Flower',
-      strainType: StrainType.SATIVA,
+      strainType: "SATIVA" as any,
       thcContent: 20.0,
       cbdContent: 0.5,
       images: ['/products/sativa-flower.jpg'],
@@ -154,7 +155,7 @@ async function main() {
       description: 'Balanced hybrid strain offering the best of both indica and sativa effects.',
       price: 250.00,
       category: 'Flower',
-      strainType: StrainType.HYBRID,
+      strainType: "HYBRID" as any,
       thcContent: 16.0,
       cbdContent: 2.0,
       images: ['/products/hybrid-flower.jpg'],

@@ -7,11 +7,11 @@ import { signIn, getSession } from 'next-auth/react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { 
-  LogIn, 
-  Mail, 
-  Lock, 
-  Eye, 
+import {
+  LogIn,
+  Mail,
+  Lock,
+  Eye,
   EyeOff,
   Shield,
   CheckCircle,
@@ -26,34 +26,59 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 
-interface PlatformSettings {
+interface TenantSettings {
   businessName: string;
   primaryColor: string;
   logoUrl?: string;
+  subdomain?: string;
 }
 
 function LoginForm() {
-  const [platformSettings, setPlatformSettings] = useState<PlatformSettings>({
+  const [tenantSettings, setTenantSettings] = useState<TenantSettings>({
     businessName: 'BudStack',
     primaryColor: '#16a34a'
   });
 
   useEffect(() => {
-    // Fetch platform settings
-    fetch('/api/super-admin/platform-settings')
-      .then(res => res.json())
-      .then(data => {
-        if (data) {
-          setPlatformSettings({
-            businessName: data.businessName || 'BudStack',
-            primaryColor: data.primaryColor || '#16a34a',
-            logoUrl: data.logoUrl
-          });
-        }
-      })
-      .catch(err => {
-        console.error('Failed to fetch platform settings:', err);
-      });
+    // Get tenant from hostname/subdomain
+    const hostname = window.location.hostname;
+    const parts = hostname.split('.');
+    const subdomain = parts.length >= 2 ? parts[0] : null;
+
+    // Fetch tenant settings based on subdomain
+    if (subdomain && subdomain !== 'localhost' && subdomain !== 'www') {
+      fetch(`/api/tenant/${subdomain}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.tenant) {
+            setTenantSettings({
+              businessName: data.tenant.businessName || 'BudStack',
+              primaryColor: data.tenant.branding?.primaryColor || '#16a34a',
+              logoUrl: data.tenant.branding?.logoUrl,
+              subdomain: data.tenant.subdomain
+            });
+          }
+        })
+        .catch(err => {
+          console.error('Failed to fetch tenant settings:', err);
+        });
+    } else {
+      // Fallback to platform settings for non-tenant domains
+      fetch('/api/super-admin/platform-settings')
+        .then(res => res.json())
+        .then(data => {
+          if (data) {
+            setTenantSettings({
+              businessName: data.businessName || 'BudStack',
+              primaryColor: data.primaryColor || '#16a34a',
+              logoUrl: data.logoUrl
+            });
+          }
+        })
+        .catch(err => {
+          console.error('Failed to fetch platform settings:', err);
+        });
+    }
   }, []);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -73,7 +98,7 @@ function LoginForm() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    
+
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
@@ -93,7 +118,7 @@ function LoginForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       toast.error('Please fix the errors in the form');
       return;
@@ -114,12 +139,12 @@ function LoginForm() {
 
       if (result?.ok) {
         toast.success('Signed in successfully!');
-        
+
         // Get fresh session and redirect based on role
         const session = await getSession();
         if (session?.user) {
           const userRole = (session.user as any).role;
-          
+
           // Redirect based on user role
           if (userRole === 'SUPER_ADMIN') {
             router.replace('/super-admin');
@@ -159,28 +184,28 @@ function LoginForm() {
           <div className="text-center mb-8">
             <Link href="/" className="inline-block">
               <div className="flex items-center justify-center space-x-2 mb-4">
-                {platformSettings.logoUrl ? (
+                {tenantSettings.logoUrl ? (
                   <div className="relative w-10 h-10">
                     <Image
-                      src={platformSettings.logoUrl}
-                      alt={`${platformSettings.businessName} Logo`}
+                      src={tenantSettings.logoUrl}
+                      alt={`${tenantSettings.businessName} Logo`}
                       fill
                       className="object-contain rounded-lg"
                     />
                   </div>
                 ) : (
-                  <div 
+                  <div
                     className="w-10 h-10 rounded-lg flex items-center justify-center"
-                    style={{ backgroundColor: platformSettings.primaryColor }}
+                    style={{ backgroundColor: tenantSettings.primaryColor }}
                   >
                     <Store className="w-6 h-6 text-white" />
                   </div>
                 )}
-                <span 
+                <span
                   className="text-2xl font-bold font-serif"
-                  style={{ color: platformSettings.primaryColor }}
+                  style={{ color: tenantSettings.primaryColor }}
                 >
-                  {platformSettings.businessName}
+                  {tenantSettings.businessName}
                 </span>
               </div>
             </Link>
@@ -213,8 +238,8 @@ function LoginForm() {
               <div className="flex items-center space-x-2">
                 <AlertCircle className="w-4 h-4 text-red-600" />
                 <p className="text-sm text-red-800">
-                  {error === 'CredentialsSignin' 
-                    ? 'Invalid email or password' 
+                  {error === 'CredentialsSignin'
+                    ? 'Invalid email or password'
                     : 'An error occurred during sign in'}
                 </p>
               </div>
@@ -225,7 +250,7 @@ function LoginForm() {
           <Button
             type="button"
             variant="outline"
-            className="w-full mb-6 border-gray-300 hover:bg-gray-50"
+            className="w-full mb-6 bg-white border-gray-300 hover:bg-gray-50 text-gray-700"
             onClick={handleGoogleSignIn}
           >
             <Chrome className="w-4 h-4 mr-2" />
@@ -310,10 +335,10 @@ function LoginForm() {
                   Remember me
                 </Label>
               </div>
-              <Link 
-                href="/auth/forgot-password" 
+              <Link
+                href="/auth/forgot-password"
                 className="text-sm hover:opacity-80 transition-opacity"
-                style={{ color: platformSettings.primaryColor }}
+                style={{ color: tenantSettings.primaryColor }}
               >
                 Forgot password?
               </Link>
@@ -323,7 +348,7 @@ function LoginForm() {
             <Button
               type="submit"
               className="w-full text-white shadow-lg hover:shadow-xl transition-all duration-300"
-              style={{ backgroundColor: platformSettings.primaryColor }}
+              style={{ backgroundColor: tenantSettings.primaryColor }}
               disabled={isLoading}
             >
               {isLoading ? (
@@ -340,36 +365,14 @@ function LoginForm() {
             </Button>
           </form>
 
-          {/* Demo account info */}
-          <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex items-start space-x-3">
-              <Shield className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-              <div className="text-sm text-blue-800">
-                <p className="font-medium mb-1">Demo Account Available</p>
-                <p>Use the demo account to explore our platform features before creating your own account.</p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="mt-2 border-blue-300 text-blue-700 hover:bg-blue-100"
-                  onClick={() => {
-                    setFormData({ email: 'john@doe.com', password: 'johndoe123' });
-                  }}
-                >
-                  Fill Demo Credentials
-                </Button>
-              </div>
-            </div>
-          </div>
-
           {/* Sign up link */}
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               Don't have an account?{' '}
-              <Link 
-                href="/auth/signup" 
+              <Link
+                href="/auth/signup"
                 className="font-medium hover:opacity-80 transition-opacity"
-                style={{ color: platformSettings.primaryColor }}
+                style={{ color: tenantSettings.primaryColor }}
               >
                 Create one now
               </Link>

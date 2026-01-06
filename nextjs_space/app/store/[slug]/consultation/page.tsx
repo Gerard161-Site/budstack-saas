@@ -4,7 +4,7 @@ import { ConsultationForm } from '@/components/consultation/consultation-form';
 export default function ConsultationPage() {
   return (
     <div 
-      className="min-h-screen pt-20" 
+      className="pt-20 pb-16" 
       style={{ 
         backgroundColor: 'var(--tenant-color-surface, #f9fafb)',
         fontFamily: 'var(--tenant-font-base, inherit)'

@@ -6,15 +6,8 @@ import { getCurrentTenant } from '@/lib/tenant';
 import { getFileUrl } from '@/lib/s3';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/db';
-import { Footer as HealingBudsFooter } from '@/templates/healing-buds-video/components/Footer';
-import GTACannabisFooter from '@/templates/gta-cannabis/components/Footer';
-import WellnessFooter from '@/templates/wellness-nature/components/Footer';
-import HealingBudsUKFooter from '@/templates/healingbuds-uk/components/Footer';
-import LovableFooter from '@/templates/lovable-template-1764245125103/components/Footer';
-import { Navigation as HealingBudsNavigation } from '@/templates/healing-buds-video/components/Navigation';
-import { Navigation as GTACannabisNavigation } from '@/templates/gta-cannabis/components/Navigation';
-import { default as WellnessNavigation } from '@/templates/wellness-nature/components/Navigation';
-import LovableNavigation from '@/templates/lovable-template-1764245125103/components/Navigation';
+// Import template registry
+import { TEMPLATE_NAVIGATION, TEMPLATE_FOOTER } from '@/lib/template-registry';
 
 export default async function TenantStoreLayout({
   children,
@@ -42,7 +35,7 @@ export default async function TenantStoreLayout({
   // Get logo URL if uploaded
   const settings = (tenantWithTemplate.settings as any) || {};
   let logoUrl: string | null = null;
-  
+
   if (settings.logoPath) {
     // If logoPath starts with '/', it's a public folder path - use directly
     if (settings.logoPath.startsWith('/')) {
@@ -75,106 +68,61 @@ export default async function TenantStoreLayout({
 
   // Render template-specific navigation function
   const renderNavigation = () => {
-    if (templateSlug === 'healing-buds-video') {
+    const SpecificNavigation = templateSlug ? TEMPLATE_NAVIGATION[templateSlug] : null;
+
+    if (SpecificNavigation) {
       return (
-        <HealingBudsNavigation
-          businessName={tenantWithTemplate.businessName}
-          subdomain={subdomain}
-          logoUrl={logoUrl}
-        />
-      );
-    } else if (templateSlug === 'gta-cannabis') {
-      return (
-        <GTACannabisNavigation
-          businessName={tenantWithTemplate.businessName}
-          subdomain={subdomain}
-          logoUrl={logoUrl}
-        />
-      );
-    } else if (templateSlug === 'wellness-nature') {
-      return (
-        <WellnessNavigation
+        <SpecificNavigation
           businessName={tenantWithTemplate.businessName}
           logoUrl={logoUrl}
           tenant={tenantWithTemplate}
-        />
-      );
-    } else if (templateSlug === 'lovable-template-1764245125103') {
-      return (
-        <LovableNavigation
-          businessName={tenantWithTemplate.businessName}
           subdomain={subdomain}
-          logoUrl={logoUrl}
         />
       );
-    } else {
-      // Default platform navigation for other templates
-      return <Navigation tenant={tenantWithTemplate} logoUrl={logoUrl} />;
     }
+
+    // Default platform navigation for other templates or if no specific navigation exists
+    return <Navigation tenant={tenantWithTemplate} logoUrl={logoUrl} />;
   };
 
   // Render template-specific footer function
   const renderFooter = () => {
-    if (templateSlug === 'healing-buds-video') {
+    const SpecificFooter = templateSlug ? TEMPLATE_FOOTER[templateSlug] : null;
+
+    if (SpecificFooter) {
       return (
-        <HealingBudsFooter
+        <SpecificFooter
           businessName={tenantWithTemplate.businessName}
           logoUrl={logoUrl}
-          contactEmail={contactEmail}
-          contactPhone={contactPhone}
-          address={address}
-          aboutUrl={aboutUrl}
-          productsUrl={productsUrl}
-          contactUrl={contactUrl}
-          socialLinks={socialLinks}
-        />
-      );
-    } else if (templateSlug === 'gta-cannabis') {
-      return (
-        <GTACannabisFooter
-          businessName={tenantWithTemplate.businessName}
+          tenant={tenantWithTemplate}
           consultationUrl={consultationUrl}
           productsUrl={productsUrl}
           contactUrl={contactUrl}
         />
       );
-    } else if (templateSlug === 'wellness-nature') {
-      return (
-        <WellnessFooter
-          businessName={tenantWithTemplate.businessName}
-          consultationUrl={consultationUrl}
-          productsUrl={productsUrl}
-          contactUrl={contactUrl}
-        />
-      );
-    } else if (templateSlug === 'healingbuds-uk') {
-      return (
-        <HealingBudsUKFooter
-          businessName={tenantWithTemplate.businessName}
-          consultationUrl={consultationUrl}
-          productsUrl={productsUrl}
-          contactUrl={contactUrl}
-        />
-      );
-    } else if (templateSlug === 'lovable-template-1764245125103') {
-      return (
-        <LovableFooter
-          businessName={tenantWithTemplate.businessName}
-          consultationUrl={consultationUrl}
-          productsUrl={productsUrl}
-          contactUrl={contactUrl}
-          logoUrl={logoUrl}
-        />
-      );
-    } else {
-      // Default platform footer for other templates
-      return <Footer tenant={tenantWithTemplate} logoUrl={logoUrl} />;
+    }
+
+    // Default platform footer for other templates or if no specific footer exists
+    return <Footer tenant={tenantWithTemplate} logoUrl={logoUrl} />;
+  };
+
+  // Determine template class for CSS variable inheritance
+  const getTemplateClass = () => {
+    switch (templateSlug) {
+      case 'wellness-nature':
+        return 'wellness-template';
+      case 'gta-cannabis':
+        return 'gta-template';
+      case 'healingbuds':
+        return 'template-healingbuds';
+      default:
+        return '';
     }
   };
 
   return (
     <TenantThemeProvider tenant={tenantWithTemplate}>
-      <div className="min-h-screen">
+      <div className={`min-h-screen ${getTemplateClass()}`}>
         {renderNavigation()}
         <main>{children}</main>
         {renderFooter()}

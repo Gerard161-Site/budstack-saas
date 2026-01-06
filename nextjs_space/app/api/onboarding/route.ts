@@ -71,10 +71,38 @@ export async function POST(req: NextRequest) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Get template branding
+    // Get actual template from database or fallback to healingbuds
+    let dbTemplate = await prisma.template.findFirst({
+      where: { slug: templateId || 'healingbuds' },
+    });
+
+    // If requested template not found, use healingbuds as default
+    if (!dbTemplate) {
+      dbTemplate = await prisma.template.findFirst({
+        where: { slug: 'healingbuds' },
+      });
+    }
+
+    // If still no template, create a basic one (safety fallback)
+    if (!dbTemplate) {
+      console.error('[CRITICAL] No templates found in database! Creating default template.');
+      dbTemplate = await prisma.template.create({
+        data: {
+          name: 'HealingBuds Default',
+          slug: 'healingbuds',
+          description: 'Default medical cannabis template',
+          category: 'medical',
+          version: '1.0.0',
+          author: 'BudStack',
+          isActive: true,
+        },
+      });
+    }
+
+    // Get template branding colors
     const template = TEMPLATE_PRESETS[templateId as keyof typeof TEMPLATE_PRESETS] || TEMPLATE_PRESETS.modern;
 
-    // Create tenant (inactive by default, pending approval)
+    // Create tenant with actual template relation
     const tenant = await prisma.tenant.create({
       data: {
         businessName,
@@ -82,9 +110,10 @@ export async function POST(req: NextRequest) {
         nftTokenId,
         countryCode: countryCode || 'PT',
         isActive: false, // Requires super admin approval
+        templateId: dbTemplate.id, // Assign actual database template
         settings: {
           contactInfo,
-          templateId: templateId || 'modern',
+          templatePreset: templateId || 'modern', // Store preset for colors
         },
       },
     });

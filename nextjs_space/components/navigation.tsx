@@ -29,7 +29,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tenant } from '@prisma/client';
+import { Tenant } from '@/types/client';
 
 interface NavigationProps {
   tenant?: Tenant | null;

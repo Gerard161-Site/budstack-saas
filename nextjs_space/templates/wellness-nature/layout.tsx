@@ -1,4 +1,4 @@
-import { Tenant } from '@prisma/client';
+import { Tenant } from '@/types/client';
 import { HeroSection } from '@/components/home/hero-section';
 import { TrustBadges } from '@/components/home/trust-badges';
 import { FeaturedConditions } from '@/components/home/featured-conditions';

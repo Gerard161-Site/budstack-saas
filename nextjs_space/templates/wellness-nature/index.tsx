@@ -1,7 +1,9 @@
 'use client';
 
+import './styles.css';
+
 import React from 'react';
-import { Tenant } from '@prisma/client';
+import { Tenant } from '@/types/client';
 import Navigation from './components/Navigation';
 import Hero from './components/Hero';
 import Benefits from './components/Benefits';
@@ -37,7 +39,7 @@ export default function WellnessNatureTemplate({
         logoUrl={logoUrl}
         tenant={tenant}
       />
-      
+
       <Hero
         businessName={tenant.businessName}
         title={pageContent.homeHeroTitle}
@@ -46,29 +48,29 @@ export default function WellnessNatureTemplate({
         logoPath={logoUrl}
         consultationUrl={consultationUrl}
       />
-      
+
       {/* Extra spacing after hero */}
       <div className="h-16"></div>
-      
+
       <Benefits
         businessName={tenant.businessName}
       />
-      
+
       {/* Extra spacing between sections */}
       <div className="h-20"></div>
-      
+
       <ProductCategories
         productsUrl={productsUrl}
       />
-      
+
       {/* Extra spacing between sections */}
       <div className="h-20"></div>
-      
+
       <Testimonials />
-      
+
       {/* Extra spacing before CTA */}
       <div className="h-16"></div>
-      
+
       <ConsultationCTA
         businessName={tenant.businessName}
         consultationUrl={consultationUrl}

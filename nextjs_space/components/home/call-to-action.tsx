@@ -15,7 +15,7 @@ import {
   MessageSquare
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Tenant } from '@prisma/client';
+import { Tenant } from '@/types/client';
 
 interface CallToActionProps {
   tenant?: Tenant | null;

@@ -164,7 +164,16 @@ export function ConsultationForm() {
       }
 
       toast.success('Consultation submitted successfully!');
-      router.push('/consultation/success');
+      
+      // Redirect to success page with consultation data
+      const params = new URLSearchParams({
+        id: result.questionnaireId || '',
+        clientId: result.drGreenClientId || '',
+        ...(result.kycLink && { kycLink: result.kycLink }),
+        approval: result.adminApproval || 'PENDING',
+      });
+      
+      router.push(`/consultation/success?${params.toString()}`);
     } catch (error: any) {
       toast.error(error.message || 'Failed to submit consultation');
     } finally {

@@ -2,11 +2,15 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { Tenant } from '@prisma/client';
+import { Tenant } from '@/types/client';
 import { TenantSettings } from '@/lib/types';
 
 interface TenantThemeProviderProps {
-  tenant: Tenant;
+  tenant?: Tenant;
+  tenantTemplate?: {
+    designSystem?: any;
+    customCss?: string | null;
+  };
   children: React.ReactNode;
 }
 
@@ -14,31 +18,37 @@ interface TenantThemeProviderProps {
  * Scoped Theme Provider for Multi-Tenant Theming
  * 
  * This component injects CSS variables into a SCOPED container
- * (not document root) based on tenant branding settings. 
+ * (not document root) based on tenant branding settings or TenantTemplate.
  * This ensures BudStack.io core pages are NOT affected by tenant themes.
+ * 
+ * Supports BOTH:
+ * - NEW: tenantTemplate with designSystem (TenantTemplate)
+ * - LEGACY: tenant.settings (Tenant)
  */
-export function TenantThemeProvider({ tenant, children }: TenantThemeProviderProps) {
-  const settings = (tenant.settings as TenantSettings) || {};
+export function TenantThemeProvider({ tenant, tenantTemplate, children }: TenantThemeProviderProps) {
+  const settings = tenant ? (tenant.settings as TenantSettings) || {} : {};
+  const designSystem = tenantTemplate?.designSystem || (settings as any).designSystem;
+  const customCss = tenantTemplate?.customCss || settings.customCSS;
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Apply theme to SCOPED container only (not document root)
     if (containerRef.current) {
-      applyThemeToContainer(containerRef.current, settings);
+      applyThemeToContainer(containerRef.current, designSystem, settings);
     }
-  }, [settings]);
+  }, [settings, designSystem]);
 
   return (
     <>
       {/* Inject custom CSS if provided */}
-      {settings.customCSS && (
-        <style dangerouslySetInnerHTML={{ __html: settings.customCSS }} />
+      {customCss && (
+        <style dangerouslySetInnerHTML={{ __html: customCss }} />
       )}
-      
+
       {/* Apply theme class to scoped container */}
-      <div 
+      <div
         ref={containerRef}
-        className={`tenant-theme-container ${getTenantThemeClasses(settings)}`}
+        className={`tenant-theme-container theme-force-light ${getTenantThemeClasses(settings)}`}
         style={{ minHeight: '100vh' }}
       >
         {children}
@@ -51,16 +61,20 @@ export function TenantThemeProvider({ tenant, children }: TenantThemeProviderPro
  * Apply theme CSS variables to SCOPED container (not document root)
  * This prevents tenant themes from affecting BudStack.io core pages
  */
-function applyThemeToContainer(container: HTMLElement, settings: TenantSettings) {
+function applyThemeToContainer(container: HTMLElement, designSystem: any, settings: TenantSettings) {
   const root = container;
-  const designSystem = (settings as any).designSystem;
 
   // === COMPREHENSIVE DESIGN SYSTEM ===
   if (designSystem) {
     // Apply all color variables
     if (designSystem.colors) {
       Object.entries(designSystem.colors).forEach(([key, value]) => {
-        root.style.setProperty(`--tenant-color-${camelToKebab(key)}`, value as string);
+        if (value) {
+          const colorValue = formatColorValue(value as string);
+          if (colorValue) {
+            root.style.setProperty(`--tenant-color-${camelToKebab(key)}`, colorValue);
+          }
+        }
       });
     }
 
@@ -115,20 +129,20 @@ function applyThemeToContainer(container: HTMLElement, settings: TenantSettings)
   }
 
   // === BACKWARD COMPATIBILITY: Basic theme variables ===
-  root.style.setProperty('--tenant-primary', settings.primaryColor || '#059669');
-  root.style.setProperty('--tenant-secondary', settings.secondaryColor || '#34d399');
-  root.style.setProperty('--tenant-accent', settings.accentColor || '#10b981');
-  root.style.setProperty('--tenant-bg', settings.backgroundColor || '#ffffff');
-  root.style.setProperty('--tenant-text', settings.textColor || '#1f2937');
-  root.style.setProperty('--tenant-heading', settings.headingColor || '#111827');
+  root.style.setProperty('--tenant-primary', formatColorValue(settings.primaryColor || '#059669'));
+  root.style.setProperty('--tenant-secondary', formatColorValue(settings.secondaryColor || '#34d399'));
+  root.style.setProperty('--tenant-accent', formatColorValue(settings.accentColor || '#10b981'));
+  root.style.setProperty('--tenant-bg', formatColorValue(settings.backgroundColor || '#ffffff'));
+  root.style.setProperty('--tenant-text', formatColorValue(settings.textColor || '#1f2937'));
+  root.style.setProperty('--tenant-heading', formatColorValue(settings.headingColor || '#111827'));
 
   // === TAILWIND COLOR INTEGRATION ===
   // Map tenant colors to Tailwind's CSS variables so UI components work
-  const primaryColor = settings.primaryColor || designSystem?.colors?.primary || '#059669';
-  const secondaryColor = settings.secondaryColor || designSystem?.colors?.secondary || '#34d399';
-  const accentColor = settings.accentColor || designSystem?.colors?.accent || '#10b981';
-  
-  // Convert hex to HSL for Tailwind (approximate conversion for now)
+  const primaryColor = formatColorValue(settings.primaryColor || designSystem?.colors?.primary || '#059669');
+  const secondaryColor = formatColorValue(settings.secondaryColor || designSystem?.colors?.secondary || '#34d399');
+  const accentColor = formatColorValue(settings.accentColor || designSystem?.colors?.accent || '#10b981');
+
+  // Set color variables for Tailwind components
   root.style.setProperty('--primary', primaryColor);
   root.style.setProperty('--primary-foreground', '#ffffff');
   root.style.setProperty('--secondary', secondaryColor);
@@ -145,7 +159,7 @@ function applyThemeToContainer(container: HTMLElement, settings: TenantSettings)
     lato: "'Lato', sans-serif",
     poppins: "'Poppins', sans-serif",
   };
-  
+
   root.style.setProperty(
     '--tenant-font-body',
     fontMap[settings.fontFamily || 'inter'] || settings.fontFamily || "'Inter', sans-serif"
@@ -228,6 +242,41 @@ function applyThemeToContainer(container: HTMLElement, settings: TenantSettings)
  */
 function camelToKebab(str: string): string {
   return str.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
+}
+
+/**
+ * Format color value to raw HSL values (H S% L%)
+ * This is required for shadcn/Tailwind core variables like --background, --foreground
+ */
+function formatRawHSL(value: string | null | undefined): string {
+  if (!value || typeof value !== 'string') return '';
+  // If it's already an HSL-like string with spaces and %, return it as is
+  if (value.includes('%') && !value.includes('(') && !value.includes('#')) {
+    return value;
+  }
+  // For basic hex to HSL conversion if needed, but here we expect the design system to provide raw HSL
+  return value;
+}
+
+/**
+ * Format color value to proper CSS format
+ * Converts HSL values like "178 48% 21%" to "hsl(178 48% 21%)"
+ * Passes through hex colors and other formats unchanged
+ */
+function formatColorValue(value: string | null | undefined): string {
+  // Handle null/undefined values
+  if (!value || typeof value !== 'string') {
+    return '';
+  }
+
+  // Check if it's an HSL value without the hsl() wrapper
+  // HSL values typically contain % and spaces but no parentheses
+  if (value.includes('%') && !value.includes('(') && !value.includes('#')) {
+    // Assume it's in "H S% L%" format used by Tailwind
+    return `hsl(${value})`;
+  }
+  // Return as-is for hex colors, rgb(), hsl(), etc.
+  return value;
 }
 
 /**

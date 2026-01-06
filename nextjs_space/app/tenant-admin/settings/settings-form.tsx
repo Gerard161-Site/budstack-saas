@@ -15,6 +15,9 @@ interface SettingsFormProps {
     subdomain: string;
     customDomain: string | null;
     nftTokenId: string | null;
+    drGreenApiUrl?: string | null;
+    drGreenApiKey?: string | null;
+    drGreenSecretKey?: string | null;
   };
 }
 
@@ -23,6 +26,9 @@ export default function SettingsForm({ tenant }: SettingsFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     customDomain: tenant.customDomain || '',
+    drGreenApiUrl: tenant.drGreenApiUrl || '',
+    drGreenApiKey: tenant.drGreenApiKey || '',
+    drGreenSecretKey: '', // Always start empty for security
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -92,6 +98,38 @@ export default function SettingsForm({ tenant }: SettingsFormProps) {
             <Input value={tenant.nftTokenId || 'Not set'} disabled className="mt-2" />
             <p className="text-xs text-gray-500 mt-1">
               This NFT verifies your license to operate on BudStack.io
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Dr. Green Integration */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Dr. Green Integration</CardTitle>
+          <CardDescription>Configure your connection to the Dr. Green API</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label htmlFor="drGreenApiKey">API Key</Label>
+            <Input
+              id="drGreenApiKey"
+              value={formData.drGreenApiKey}
+              onChange={(e) => setFormData({ ...formData, drGreenApiKey: e.target.value })}
+              placeholder="Paste your Public Key here"
+            />
+          </div>
+          <div>
+            <Label htmlFor="drGreenSecretKey">Secret Key</Label>
+            <Input
+              id="drGreenSecretKey"
+              type="password"
+              value={formData.drGreenSecretKey}
+              onChange={(e) => setFormData({ ...formData, drGreenSecretKey: e.target.value })}
+              placeholder={tenant.drGreenSecretKey ? "******** (Verified)" : "Paste your Private Key here"}
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              {tenant.drGreenSecretKey ? "Leave empty to keep existing secret." : "Required for submitting consultations."}
             </p>
           </div>
         </CardContent>

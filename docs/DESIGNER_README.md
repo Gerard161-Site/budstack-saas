@@ -107,7 +107,7 @@ yarn dev
 
 3. **Test on multiple tenants**
    - http://localhost:3000/store/cooleysbuds (Wellness theme)
-   - http://localhost:3000/store/healingbuds (Video theme)
+   - http://localhost:3000/store/healingbuds (Medical UK theme - Restored)
    - http://localhost:3000/store/portugalbuds (GTA theme)
 
 ---

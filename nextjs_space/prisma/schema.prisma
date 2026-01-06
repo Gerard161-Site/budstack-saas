@@ -1,7 +1,6 @@
 generator client {
     provider = "prisma-client-js"
     binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
-    output = "/home/ubuntu/healingbuds_website/nextjs_space/node_modules/.prisma/client"
 }
 
 datasource db {
@@ -10,23 +9,32 @@ datasource db {
 }
 
 model Tenant {
-  id            String          @id @default(cuid())
-  businessName  String
-  subdomain     String          @unique
-  customDomain  String?         @unique
-  nftTokenId    String?
-  isActive      Boolean         @default(false)
-  settings      Json?
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-  countryCode   String          @default("PT")
-  templateId    String?
-  consultations Consultation[]
-  orders        Order[]
-  products      Product[]
-  branding      TenantBranding?
-  template      Template?       @relation(fields: [templateId], references: [id])
-  users         User[]
+  id                      String              @id @default(cuid())
+  businessName            String
+  subdomain               String              @unique
+  customDomain            String?             @unique
+  nftTokenId              String?
+  isActive                Boolean             @default(false)
+  settings                Json?
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
+  countryCode             String              @default("PT")
+  templateId              String?
+  activeTenantTemplateId  String?             @unique
+  drGreenApiUrl           String?
+  drGreenApiKey           String?
+  drGreenSecretKey        String?
+  consultations           Consultation[]
+  orders                  Order[]
+  products                Product[]
+  branding                TenantBranding?
+  template                Template?           @relation(fields: [templateId], references: [id])
+  tenantTemplates         TenantTemplate[]
+  activeTenantTemplate    TenantTemplate?     @relation("ActiveTemplate", fields: [activeTenantTemplateId], references: [id])
+  users                   User[]
+  posts                   Post[]
+  drGreenCarts            DrGreenCart[]
+  drGreenWebhookLogs      DrGreenWebhookLog[]
 
   @@map("tenants")
 }
@@ -54,12 +62,15 @@ model User {
   name             String?
   role             Role           @default(PATIENT)
   tenantId         String?
+  drGreenClientId  String?        // Client ID from Dr. Green API for cart/orders
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
   resetToken       String?        @unique
   resetTokenExpiry DateTime?
   consultations    Consultation[]
   orders           Order[]
+  posts            Post[]
+  drGreenCart      DrGreenCart?
   tenant           Tenant?        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@map("users")
@@ -87,24 +98,54 @@ model Product {
 }
 
 model Order {
-  id           String      @id @default(cuid())
-  userId       String
-  tenantId     String
-  total        Float
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-  notes        String?
-  orderNumber  String      @unique @default(cuid())
-  shippingCost Float       @default(5.00)
-  shippingInfo Json?
-  subtotal     Float
-  status       OrderStatus @default(PENDING)
-  items        OrderItem[]
-  tenant       Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                String        @id @default(cuid())
+  userId            String
+  tenantId          String
+  total             Float
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  notes             String?
+  orderNumber       String        @unique @default(cuid())
+  shippingCost      Float         @default(5.00)
+  shippingInfo      Json?
+  subtotal          Float
+  status            OrderStatus   @default(PENDING)
+  
+  // Dr. Green Integration Fields
+  drGreenOrderId    String?       // Order ID from Dr. Green API
+  drGreenInvoiceNum String?       // Invoice number from Dr. Green
+  paymentStatus     PaymentStatus @default(PENDING)
+  paymentInvoices   Json?         // {tcn, usdt, eth, btc, fiat} payment URLs
+  nonce             String?       // Unique nonce for fiat payment webhook lookup
+  
+  items             OrderItem[]
+  tenant            Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([drGreenOrderId])
+  @@index([nonce])
   @@map("orders")
 }
+
+model Post {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String
+  content     String   @db.Text
+  excerpt     String?
+  coverImage  String?
+  published   Boolean  @default(false)
+  tenantId    String
+  authorId    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  author      User     @relation(fields: [authorId], references: [id])
+  
+  @@unique([slug, tenantId])
+  @@map("posts")
+}
+
 
 model OrderItem {
   id          String   @id @default(cuid())
@@ -192,6 +233,11 @@ model ConsultationQuestionnaire {
   submittedToDrGreen   Boolean  @default(false)
   submissionError      String?
   
+  // KYC and Verification tracking
+  kycLink              String?
+  isKycVerified        Boolean  @default(false)
+  adminApproval        String   @default("PENDING") // PENDING, VERIFIED, REJECTED
+  
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
@@ -218,11 +264,40 @@ model PlatformSettings {
   @@map("platform_settings")
 }
 
+model PlatformConfig {
+  id                 String   @id @default("config")
+  
+  // Dr. Green API Integration
+  drGreenApiUrl      String?
+  
+  // AWS S3 Configuration (sensitive fields encrypted)
+  awsBucketName      String?
+  awsFolderPrefix    String?
+  awsRegion          String?
+  awsAccessKeyId     String?  // ENCRYPTED
+  awsSecretAccessKey String?  // ENCRYPTED
+  
+  // Email Configuration (sensitive fields encrypted)
+  emailServer        String?  // ENCRYPTED (full SMTP URL)
+  emailFrom          String?
+  
+  // Redis Configuration (encrypted)
+  redisUrl           String?  // ENCRYPTED
+  
+  updatedAt          DateTime @updatedAt
+  createdAt          DateTime @default(now())
+
+  @@map("platform_config")
+}
+
 model Template {
   id             String   @id @default(cuid())
   name           String
   description    String?
   isActive       Boolean  @default(true)
+  isPublic       Boolean  @default(true)
+  ownerId        String?
+  sourceType     String   @default("SYSTEM")
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   assetsPath     String?
@@ -244,8 +319,38 @@ model Template {
   usageCount     Int      @default(0)
   version        String   @default("1.0.0")
   tenants        Tenant[]
+  tenantTemplates TenantTemplate[]
 
   @@map("templates")
+}
+
+model TenantTemplate {
+  id                String    @id @default(cuid())
+  tenantId          String
+  baseTemplateId    String
+  templateName      String
+  s3Path            String?
+  designSystem      Json?
+  pageContent       Json?
+  navigation        Json?
+  footer            Json?
+  logoUrl           String?
+  heroImageUrl      String?
+  faviconUrl        String?
+  customCss         String?   @db.Text
+  customJs          String?   @db.Text
+  isActive          Boolean   @default(true)
+  isDraft           Boolean   @default(false)
+  expiresAt         DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  tenant            Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  baseTemplate      Template  @relation(fields: [baseTemplateId], references: [id])
+  activeForTenant   Tenant?   @relation("ActiveTemplate")
+
+  @@unique([tenantId, templateName])
+  @@index([tenantId, isActive])
+  @@map("tenant_templates")
 }
 
 model AuditLog {
@@ -328,4 +433,52 @@ enum OrderStatus {
   SHIPPED
   DELIVERED
   CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  EXPIRED
+  CANCELLED
+  OVERPAID
+  UNDERPAID
+}
+
+// Dr. Green Cart Model - Syncs with Dr. Green API cart
+model DrGreenCart {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  tenantId      String
+  drGreenCartId String?  // Cart ID from Dr. Green API
+  items         Json     // [{strainId, quantity, size, strain: {name, price}}]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, tenantId])
+  @@index([tenantId])
+  @@map("drgreen_carts")
+}
+
+// Dr. Green Webhook Log - Audit trail for payment webhooks
+model DrGreenWebhookLog {
+  id            String   @id @default(cuid())
+  tenantId      String
+  webhookType   String   // 'crypto' | 'fiat'
+  orderId       String?  // Local order ID
+  drGreenOrderId String? // Dr. Green order ID from webhook payload
+  payload       Json     // Full webhook payload
+  processed     Boolean  @default(false)
+  processedAt   DateTime?
+  error         String?  // Error message if processing failed
+  createdAt     DateTime @default(now())
+  
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  @@index([tenantId, processed])
+  @@index([drGreenOrderId])
+  @@map("drgreen_webhook_logs")
 }
