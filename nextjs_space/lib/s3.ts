@@ -26,6 +26,7 @@ export async function uploadFile(buffer: Buffer, fileName: string): Promise<stri
 export async function getFileUrl(key: string): Promise<string> {
   const s3Client = await createS3Client();
   const { bucketName } = await getBucketConfig();
+  console.log('[DEBUG] getFileUrl for key:', key, 'Bucket:', bucketName);
 
   const command = new GetObjectCommand({
     Bucket: bucketName,

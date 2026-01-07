@@ -12,13 +12,33 @@ async function main() {
   // Create HealingBuds Tenant (first tenant)
   console.log('Creating HealingBuds tenant...');
 
+  // Ensure template exists
+  const healingBudsTemplate = await prisma.template.upsert({
+    where: { slug: 'healingbuds' },
+    update: {},
+    create: {
+      name: 'Healing Buds',
+      slug: 'healingbuds',
+      description: 'Modern medical cannabis template with sage-teal design system.',
+      category: 'medical',
+      version: '2.0.0',
+      author: 'BudStack Team',
+      layoutFilePath: 'templates/healingbuds/index.tsx',
+      isActive: true,
+      metadata: {},
+    },
+  });
+
   const healingBudsTenant = await prisma.tenant.upsert({
     where: { subdomain: 'healingbuds' },
-    update: {},
+    update: {
+      templateId: healingBudsTemplate.id,
+    },
     create: {
       businessName: 'HealingBuds Portugal',
       subdomain: 'healingbuds',
       isActive: true,
+      templateId: healingBudsTemplate.id,
       settings: {
         logoUrl: '/healingbuds-logo-white.jpeg',
         contactEmail: 'info@healingbuds.pt',

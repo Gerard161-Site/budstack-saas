@@ -20,8 +20,10 @@ import { CallToAction } from '@/components/home/call-to-action';
 
 export default async function TenantStorePage() {
   const tenant = await getCurrentTenant();
+  console.log('[DEBUG] TenantStorePage: Resolved tenant:', tenant ? tenant.subdomain : 'null');
 
   if (!tenant) {
+    console.error('[DEBUG] TenantStorePage: Tenant not found, returning 404');
     notFound();
   }
 
@@ -39,7 +41,10 @@ export default async function TenantStorePage() {
   });
 
   if (!tenantWithTemplate) {
+    console.error('[DEBUG] TenantStorePage: tenantWithTemplate not found for id:', tenant.id);
     notFound();
+  } else {
+    console.log('[DEBUG] TenantStorePage: Found tenantWithTemplate. activeTenantTemplate:', !!tenantWithTemplate.activeTenantTemplate, 'Legacy template:', !!tenantWithTemplate.template);
   }
 
   // URLs for template props
