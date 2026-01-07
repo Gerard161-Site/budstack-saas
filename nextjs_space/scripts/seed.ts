@@ -46,45 +46,41 @@ export async function seedCore() {
 
   console.log('HealingBuds tenant created:', healingBudsTenant.subdomain);
 
-  // --- Create Wellness & Nature Tenant ---
+  // --- Create CooleysBuds Tenant (Wellness Template) ---
   const wellnessTemplate = await prisma.template.findUnique({ where: { slug: 'wellness-nature' } });
   if (wellnessTemplate) {
-    console.log('Creating Wellness & Nature tenant...');
+    console.log('Creating CooleysBuds tenant...');
     await prisma.tenant.upsert({
-      where: { subdomain: 'wellness' },
+      where: { subdomain: 'cooleysbuds' },
       update: { templateId: wellnessTemplate.id },
       create: {
-        businessName: 'Wellness & Nature Co',
-        subdomain: 'wellness',
+        businessName: 'CooleysBuds',
+        subdomain: 'cooleysbuds',
         isActive: true,
         templateId: wellnessTemplate.id,
         settings: {
-          logoUrl: '/wellness-logo.png',
-          contactEmail: 'hello@wellnessnature.com',
-          primaryColor: '#5F8D4E',
-          secondaryColor: '#285430',
+          primaryColor: '#10b981',
+          secondaryColor: '#059669'
         },
       },
     });
   }
 
-  // --- Create GTA Cannabis Tenant ---
+  // --- Create PortugalBuds Tenant (GTA Template) ---
   const gtaTemplate = await prisma.template.findUnique({ where: { slug: 'gta-cannabis' } });
   if (gtaTemplate) {
-    console.log('Creating GTA Cannabis tenant...');
+    console.log('Creating PortugalBuds tenant...');
     await prisma.tenant.upsert({
-      where: { subdomain: 'gta' },
+      where: { subdomain: 'portugalbuds' },
       update: { templateId: gtaTemplate.id },
       create: {
-        businessName: 'GTA Cannabis Dispensary',
-        subdomain: 'gta',
+        businessName: 'PortugalBuds',
+        subdomain: 'portugalbuds',
         isActive: true,
         templateId: gtaTemplate.id,
         settings: {
-          logoUrl: '/gta-logo.png',
-          contactEmail: 'sales@gtacannabis.ca',
-          primaryColor: '#000000',
-          secondaryColor: '#FFD700',
+          primaryColor: '#10b981',
+          secondaryColor: '#059669'
         },
       },
     });

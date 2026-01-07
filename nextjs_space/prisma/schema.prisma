@@ -35,6 +35,7 @@ model Tenant {
   posts                   Post[]
   drGreenCarts            DrGreenCart[]
   drGreenWebhookLogs      DrGreenWebhookLog[]
+  conditions              Condition[]
 
   @@map("tenants")
 }
@@ -481,4 +482,35 @@ model DrGreenWebhookLog {
   @@index([tenantId, processed])
   @@index([drGreenOrderId])
   @@map("drgreen_webhook_logs")
+}
+
+model Condition {
+  id              String   @id @default(cuid())
+  slug            String
+  name            String
+  description     String?  // Subtitle/Excerpt
+  image           String?
+  category        String   // Display name e.g "Mental Health"
+  categoryKey     String   // Filter key e.g "mentalHealth"
+  
+  // Rich Content (JSON)
+  causes          Json?    // Array of {title, desc}
+  symptoms        Json?    // Object {physical: [], psychological: []}
+  types           Json?    // Array of {type, desc}
+  treatments      Json?    // Array of {title, desc}
+  medicalCannabis Json?    // Object {content1, content2}
+  faqs            Json?    // Array of {question, answer}
+  
+  published       Boolean  @default(true)
+  
+  // Relations
+  tenantId        String
+  tenant          Tenant   @relation(fields: [tenantId], references: [id])
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@map("conditions")
 }

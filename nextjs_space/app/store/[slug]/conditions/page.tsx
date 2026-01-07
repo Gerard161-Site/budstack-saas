@@ -10,130 +10,49 @@ import { Tenant } from '@/types/client';
 
 interface Condition {
   id: string;
+  slug: string;
   name: string;
   image: string;
   category: string;
   categoryKey: string;
+  description: string;
 }
 
-const conditionsData: Condition[] = [
-  {
-    id: "anxiety",
-    name: "Anxiety Disorders",
-    image: "/condition-anxiety.jpg",
-    category: "Mental Health",
-    categoryKey: "mentalHealth"
-  },
-  {
-    id: "chronic-pain",
-    name: "Chronic Pain",
-    image: "/condition-chronic-pain.jpg",
-    category: "Pain Management",
-    categoryKey: "painManagement"
-  },
-  {
-    id: "arthritis",
-    name: "Arthritis",
-    image: "/condition-arthritis.jpg",
-    category: "Pain Management",
-    categoryKey: "painManagement"
-  },
-  {
-    id: "back-pain",
-    name: "Back Pain",
-    image: "/condition-back-pain.jpg",
-    category: "Pain Management",
-    categoryKey: "painManagement"
-  },
-  {
-    id: "complex-regional-pain-syndrome",
-    name: "Complex Regional Pain Syndrome (CRPS)",
-    image: "/condition-crps.jpg",
-    category: "Pain Management",
-    categoryKey: "painManagement"
-  },
-  {
-    id: "epilepsy",
-    name: "Epilepsy",
-    image: "/condition-epilepsy.jpg",
-    category: "Neurological Disorders",
-    categoryKey: "neurological"
-  },
-  {
-    id: "insomnia",
-    name: "Insomnia",
-    image: "/condition-insomnia.jpg",
-    category: "Sleep Disorders",
-    categoryKey: "sleepDisorders"
-  },
-  {
-    id: "migraines",
-    name: "Migraines & Headaches",
-    image: "/condition-migraines.jpg",
-    category: "Pain Management",
-    categoryKey: "painManagement"
-  },
-  {
-    id: "multiple-sclerosis",
-    name: "Multiple Sclerosis (MS)",
-    image: "/condition-ms.jpg",
-    category: "Neurological Disorders",
-    categoryKey: "neurological"
-  },
-  {
-    id: "neuropathic-pain",
-    name: "Neuropathic Pain",
-    image: "/condition-neuropathic-pain.jpg",
-    category: "Pain Management",
-    categoryKey: "painManagement"
-  },
-  {
-    id: "parkinsons-disease",
-    name: "Parkinson's Disease",
-    image: "/condition-parkinsons.jpg",
-    category: "Neurological Disorders",
-    categoryKey: "neurological"
-  },
-  {
-    id: "ptsd",
-    name: "PTSD",
-    image: "/condition-ptsd.jpg",
-    category: "Mental Health",
-    categoryKey: "mentalHealth"
-  },
-];
-
-const categories = [
-  { key: "all", label: "All Conditions" },
-  { key: "painManagement", label: "Pain Management" },
-  { key: "mentalHealth", label: "Mental Health" },
-  { key: "neurological", label: "Neurological Disorders" },
-  { key: "sleepDisorders", label: "Sleep Disorders" },
-];
-
-export default function ConditionsPage() {
+export default function ConditionsPage({ params }: { params: { slug: string } }) {
   const [tenant, setTenant] = useState<Tenant | null>(null);
+  const [conditions, setConditions] = useState<Condition[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    fetch('/api/tenant/current')
+    // 1. Fetch Tenant
+    fetch('/api/tenant/current?slug=' + params.slug)
       .then(res => res.json())
       .then(data => {
         setTenant(data);
+      })
+      .catch(console.error);
+
+    // 2. Fetch Conditions
+    fetch(`/api/tenant/conditions?slug=${params.slug}`)
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setConditions(data);
+        }
         setLoading(false);
       })
       .catch(err => {
         console.error(err);
         setLoading(false);
       });
-  }, []);
+  }, [params.slug]);
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--tenant-color-background)' }}>
-        <p className="text-lg" style={{ color: 'var(--tenant-color-text)' }}>Loading...</p>
+        <p className="text-lg" style={{ color: 'var(--tenant-color-text)' }}>Loading conditions...</p>
       </div>
     );
   }
@@ -142,7 +61,19 @@ export default function ConditionsPage() {
     notFound();
   }
 
-  const filteredConditions = conditionsData.filter(condition => {
+  // Extract unique categories dynamically from the fetched conditions
+  const uniqueCategories = Array.from(new Set(conditions.map(c => c.categoryKey)))
+    .map(key => {
+      const condition = conditions.find(c => c.categoryKey === key);
+      return { key, label: condition?.category || key };
+    });
+
+  const categories = [
+    { key: "all", label: "All Conditions" },
+    ...uniqueCategories.sort((a, b) => a.label.localeCompare(b.label))
+  ];
+
+  const filteredConditions = conditions.filter(condition => {
     const matchesCategory = selectedCategory === "all" || condition.categoryKey === selectedCategory;
     const matchesSearch = condition.name.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
@@ -221,8 +152,8 @@ export default function ConditionsPage() {
                       key={category.key}
                       onClick={() => setSelectedCategory(category.key)}
                       className={`px-5 py-2.5 rounded-full font-medium transition-all duration-200 ${selectedCategory === category.key
-                          ? "shadow-lg"
-                          : "border"
+                        ? "shadow-lg"
+                        : "border"
                         }`}
                       style={{
                         backgroundColor: selectedCategory === category.key ? 'var(--tenant-color-primary)' : 'var(--tenant-color-background)',
@@ -260,7 +191,7 @@ export default function ConditionsPage() {
                       layout: { duration: 0.3 }
                     }}
                   >
-                    <Link href={`conditions/${condition.id}`}>
+                    <Link href={`conditions/${condition.slug}`}>
                       <div
                         className="group block rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border"
                         style={{
@@ -270,7 +201,7 @@ export default function ConditionsPage() {
                       >
                         <div className="h-48 overflow-hidden relative">
                           <Image
-                            src={condition.image}
+                            src={condition.image || '/placeholder-condition.jpg'}
                             alt={condition.name}
                             fill
                             className="object-contain p-6 group-hover:scale-105 transition-transform duration-500"

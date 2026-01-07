@@ -3,603 +3,329 @@
 import { useEffect, useState } from 'react';
 import { notFound, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { Tenant } from '@/types/client';
 
-// Condition data structure
-interface ConditionData {
-  title: string;
-  subtitle: string;
-  causes: { title: string; desc: string }[];
+// Condition interface matching the seeded data structure
+interface ConditionDetail {
+  id: string;
+  name: string; // The title
+  description: string; // The subtitle/intro
+  image: string;
+  causes: { title: string; desc: string }[] | any;
   symptoms: {
     physical: string[];
     psychological?: string[];
-  };
-  types?: { type: string; desc: string }[];
-  treatments: { title: string; desc: string }[];
+  } | any;
+  types?: { type: string; desc: string }[] | any;
+  treatments: { title: string; desc: string }[] | any;
   medicalCannabis: {
     content1: string;
     content2: string;
-  };
-  faqs: { question: string; answer: string }[];
+  } | any;
+  faqs: { question: string; answer: string }[] | any;
 }
 
-// Condition data for all conditions
-const conditionDataMap: Record<string, ConditionData> = {
-  'anxiety': {
-    title: "Anxiety Disorders",
-    subtitle: "Understanding anxiety disorders, their causes, symptoms, and how medical cannabis can help manage anxiety naturally.",
-    causes: [
-      { title: "Genetic Factors", desc: "Family history and genetic predisposition can play a significant role in developing anxiety disorders." },
-      { title: "Environmental Stress", desc: "Traumatic events, chronic stress, or major life changes can trigger or worsen anxiety symptoms." },
-      { title: "Brain Chemistry", desc: "Imbalances in neurotransmitters like serotonin and dopamine can contribute to anxiety disorders." },
-      { title: "Medical Conditions", desc: "Certain health conditions, medications, or substance use can cause or exacerbate anxiety symptoms." }
-    ],
-    symptoms: {
-      physical: [
-        "Rapid heartbeat and palpitations",
-        "Shortness of breath or hyperventilation",
-        "Sweating and trembling",
-        "Muscle tension and aches",
-        "Fatigue and weakness",
-        "Difficulty sleeping",
-        "Digestive issues"
-      ],
-      psychological: [
-        "Excessive worry and fear",
-        "Feeling of impending doom",
-        "Difficulty concentrating",
-        "Irritability and restlessness",
-        "Panic attacks",
-        "Avoidance behaviors",
-        "Racing thoughts"
-      ]
-    },
-    types: [
-      { type: "Generalized Anxiety Disorder (GAD)", desc: "Persistent and excessive worry about various aspects of daily life, lasting at least six months." },
-      { type: "Panic Disorder", desc: "Recurring panic attacks and fear of future panic attacks, often with physical symptoms like chest pain and dizziness." },
-      { type: "Social Anxiety Disorder", desc: "Intense fear of social situations and being judged or embarrassed in public settings." },
-      { type: "Specific Phobias", desc: "Extreme fear of specific objects or situations, such as heights, flying, or animals." }
-    ],
-    treatments: [
-      { title: "Cognitive Behavioral Therapy (CBT)", desc: "Evidence-based therapy that helps identify and change negative thought patterns and behaviors." },
-      { title: "Medication", desc: "SSRIs, SNRIs, and benzodiazepines may be prescribed to manage anxiety symptoms." },
-      { title: "Mindfulness & Relaxation", desc: "Meditation, yoga, and breathing exercises can help reduce anxiety and promote relaxation." },
-      { title: "Lifestyle Modifications", desc: "Regular exercise, healthy diet, adequate sleep, and stress management techniques." }
-    ],
-    medicalCannabis: {
-      content1: "Medical cannabis, particularly CBD-rich strains, has shown promise in managing anxiety symptoms for some patients. CBD interacts with the endocannabinoid system to help regulate mood and stress responses without the psychoactive effects associated with THC.",
-      content2: "Research suggests that medical cannabis may help reduce anxiety symptoms by modulating serotonin levels and promoting relaxation. However, it's important to work with healthcare professionals to find the right strain, dosage, and delivery method for your individual needs."
-    },
-    faqs: [
-      { question: "Can medical cannabis help with anxiety?", answer: "Yes, many patients report relief from anxiety symptoms using medical cannabis, particularly CBD-rich products. However, individual responses vary, and it's important to consult with a healthcare professional." },
-      { question: "What's the difference between CBD and THC for anxiety?", answer: "CBD is non-psychoactive and may help reduce anxiety without causing a 'high'. THC can have varying effects - low doses may reduce anxiety, while high doses might increase it in some individuals." },
-      { question: "Are there any side effects?", answer: "Common side effects may include drowsiness, dry mouth, and changes in appetite. It's important to start with low doses and adjust gradually under medical supervision." },
-      { question: "How long does it take to see results?", answer: "Effects can vary based on the delivery method. Inhalation provides faster relief (minutes), while edibles and oils may take 1-2 hours but offer longer-lasting effects." }
-    ]
-  },
-  'chronic-pain': {
-    title: "Chronic Pain",
-    subtitle: "Managing chronic pain with medical cannabis. Learn about causes, symptoms, and evidence-based treatment approaches.",
-    causes: [
-      { title: "Injury or Trauma", desc: "Previous injuries, accidents, or surgeries can lead to persistent pain even after healing." },
-      { title: "Inflammatory Conditions", desc: "Conditions like arthritis, fibromyalgia, and autoimmune disorders cause ongoing inflammation and pain." },
-      { title: "Nerve Damage", desc: "Neuropathic pain from nerve injury, diabetes, or other conditions affecting the nervous system." },
-      { title: "Degenerative Diseases", desc: "Progressive conditions like osteoarthritis and degenerative disc disease cause chronic pain over time." }
-    ],
-    symptoms: {
-      physical: [
-        "Persistent aching or burning pain",
-        "Stiffness and reduced mobility",
-        "Fatigue and low energy",
-        "Sleep disturbances",
-        "Muscle tension",
-        "Limited range of motion",
-        "Inflammation and swelling"
-      ],
-      psychological: [
-        "Depression and mood changes",
-        "Anxiety and stress",
-        "Difficulty concentrating",
-        "Irritability",
-        "Social withdrawal",
-        "Reduced quality of life"
-      ]
-    },
-    treatments: [
-      { title: "Pain Medications", desc: "NSAIDs, opioids, and other pain relievers may be prescribed, though long-term use has risks." },
-      { title: "Physical Therapy", desc: "Exercises, stretching, and manual therapy to improve strength, flexibility, and function." },
-      { title: "Interventional Procedures", desc: "Nerve blocks, injections, or other minimally invasive procedures to target pain sources." },
-      { title: "Complementary Therapies", desc: "Acupuncture, massage, chiropractic care, and other alternative treatments." }
-    ],
-    medicalCannabis: {
-      content1: "Medical cannabis has emerged as a potential alternative for chronic pain management, with research showing it may help reduce pain, inflammation, and improve quality of life. Both CBD and THC can play roles in pain relief through different mechanisms.",
-      content2: "Many chronic pain patients report reduced need for opioid medications when using medical cannabis. The anti-inflammatory and analgesic properties of cannabinoids can provide relief while potentially reducing the risk of dependence associated with traditional pain medications."
-    },
-    faqs: [
-      { question: "Is medical cannabis effective for chronic pain?", answer: "Studies and patient reports suggest medical cannabis can be effective for various types of chronic pain, including neuropathic pain, inflammatory pain, and pain from conditions like arthritis and fibromyalgia." },
-      { question: "Can I replace my pain medications with cannabis?", answer: "Never stop or change medications without consulting your healthcare provider. Some patients may reduce reliance on other pain medications under medical supervision." },
-      { question: "What's the best way to use cannabis for pain?", answer: "The optimal method varies by individual. Options include oils, capsules, inhalation, and topicals. Your healthcare provider can help determine the best approach." },
-      { question: "Will medical cannabis make me high?", answer: "This depends on the product. CBD-dominant products provide pain relief without significant psychoactive effects. Balanced or THC-dominant products may have psychoactive effects but can be managed with proper dosing." }
-    ]
-  },
-  // Add more condition data as needed
-  'arthritis': {
-    title: "Arthritis",
-    subtitle: "Understanding arthritis and how medical cannabis can help manage joint pain and inflammation.",
-    causes: [
-      { title: "Age-Related Wear", desc: "Cartilage naturally breaks down over time, leading to osteoarthritis." },
-      { title: "Autoimmune Response", desc: "Rheumatoid arthritis occurs when the immune system attacks joint tissues." },
-      { title: "Genetics", desc: "Family history increases risk of developing various forms of arthritis." },
-      { title: "Previous Injuries", desc: "Joint injuries can increase risk of developing arthritis in affected areas." }
-    ],
-    symptoms: {
-      physical: [
-        "Joint pain and stiffness",
-        "Swelling and inflammation",
-        "Reduced range of motion",
-        "Joint tenderness",
-        "Morning stiffness",
-        "Fatigue",
-        "Joint deformity (in severe cases)"
-      ]
-    },
-    treatments: [
-      { title: "Anti-Inflammatory Medications", desc: "NSAIDs and DMARDs to reduce inflammation and slow disease progression." },
-      { title: "Physical Therapy", desc: "Exercises to maintain joint flexibility and strengthen supporting muscles." },
-      { title: "Joint Protection", desc: "Assistive devices and techniques to reduce stress on affected joints." },
-      { title: "Surgery", desc: "Joint replacement or repair procedures for severe cases." }
-    ],
-    medicalCannabis: {
-      content1: "Medical cannabis shows promise for arthritis management due to its anti-inflammatory and analgesic properties. CBD, in particular, may help reduce joint inflammation and pain without psychoactive effects.",
-      content2: "Both topical and systemic cannabis products can be beneficial for arthritis patients. Topicals provide localized relief, while oral products offer systemic anti-inflammatory effects."
-    },
-    faqs: [
-      { question: "Can cannabis help with arthritis pain?", answer: "Many arthritis patients report significant pain relief with medical cannabis. Studies suggest cannabinoids may reduce inflammation and protect joints." },
-      { question: "Should I use topicals or oral cannabis?", answer: "Both can be effective. Topicals provide targeted relief for specific joints, while oral products offer systemic benefits. Many patients use both." },
-      { question: "Will it help with rheumatoid arthritis?", answer: "Some studies suggest cannabis may help manage RA symptoms by reducing inflammation and autoimmune responses, though more research is needed." }
-    ]
-  }
-};
-
-export default function ConditionDetailPage() {
+export default function ConditionPage() {
   const params = useParams();
-  const conditionId = params.id as string;
-  
   const [tenant, setTenant] = useState<Tenant | null>(null);
+  const [condition, setCondition] = useState<ConditionDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [expandedFaq, setExpandedFaq] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("overview"); // For mobile tabs if needed, or just sections
+
+  // Reuse existing state for accordions
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   useEffect(() => {
-    fetch('/api/tenant/current')
+    // 1. Fetch Tenant
+    fetch('/api/tenant/current?slug=' + params.slug)
       .then(res => res.json())
       .then(data => {
         setTenant(data);
-        setLoading(false);
       })
-      .catch(err => {
-        console.error(err);
-        setLoading(false);
-      });
-  }, []);
+      .catch(console.error);
+
+    // 2. Fetch Condition Detail
+    // params.id is the condition slug (e.g. 'anxiety')
+    // params.slug is the store/tenant slug (e.g. 'healingbuds')
+    if (params.id) {
+      fetch(`/api/tenant/conditions/${params.id}?tenantSlug=${params.slug}`)
+        .then(async (res) => {
+          if (res.status === 404) return null;
+          if (!res.ok) throw new Error('Failed to fetch condition');
+          return res.json();
+        })
+        .then(data => {
+          setCondition(data);
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error(err);
+          setLoading(false);
+        });
+    } else {
+      setLoading(false);
+    }
+  }, [params.slug, params.id]);
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--tenant-color-background)' }}>
-        <p className="text-lg" style={{ color: 'var(--tenant-color-text)' }}>Loading...</p>
+        <p className="text-lg" style={{ color: 'var(--tenant-color-text)' }}>Loading condition details...</p>
       </div>
     );
   }
 
-  if (!tenant) {
-    notFound();
+  if (!tenant || !condition) {
+    // If not found, show 404
+    if (!loading) notFound();
+    return null;
   }
 
-  const conditionData = conditionDataMap[conditionId];
-
-  if (!conditionData) {
-    notFound();
-  }
-
-  const tableOfContents = [
-    { id: "causes", title: "What Causes It" },
-    { id: "symptoms", title: "Symptoms" },
-    ...(conditionData.types ? [{ id: "types", title: "Types" }] : []),
-    { id: "treatment", title: "Treatment Options" },
-    { id: "medical-cannabis", title: "Medical Cannabis" },
-    { id: "faq", title: "FAQ" },
-  ];
-
-  const scrollToSection = (id: string) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  };
+  // Helper to ensure JSON fields are arrays/objects even if DB has them as generic Json
+  const causes = Array.isArray(condition.causes) ? condition.causes : [];
+  const symptoms = (typeof condition.symptoms === 'object' && condition.symptoms) ? condition.symptoms : { physical: [] };
+  const types = Array.isArray(condition.types) ? condition.types : [];
+  const treatments = Array.isArray(condition.treatments) ? condition.treatments : [];
+  const faqs = Array.isArray(condition.faqs) ? condition.faqs : [];
+  const medicalCannabis = (typeof condition.medicalCannabis === 'object' && condition.medicalCannabis) ? condition.medicalCannabis : { content1: '', content2: '' };
 
   return (
-    <div className="min-h-screen pb-24 lg:pb-0" style={{ backgroundColor: 'var(--tenant-color-background)' }}>
-      <main className="pt-24">
-        {/* Hero Section */}
-        <section 
-          className="relative py-32 overflow-hidden"
-          style={{ backgroundColor: 'var(--tenant-color-primary)' }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+    <div className="min-h-screen" style={{ backgroundColor: 'var(--tenant-color-background)' }}>
+      {/* Hero Section */}
+      <section className="pt-32 pb-16 md:pt-40 md:pb-24 relative overflow-hidden" style={{ backgroundColor: 'var(--tenant-color-surface)' }}>
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="max-w-4xl"
+          >
+            <Link
+              href={`/store/${params.slug}/conditions`}
+              className="inline-flex items-center text-sm font-medium mb-8 hover:opacity-80 transition-opacity"
+              style={{ color: 'var(--tenant-color-primary)' }}
             >
-              <div className="max-w-4xl">
-                <h1 
-                  className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 tracking-tight leading-[1.1] text-white"
-                  style={{ fontFamily: 'var(--tenant-font-heading)' }}
-                >
-                  {conditionData.title}
-                </h1>
-                <p 
-                  className="text-lg md:text-xl max-w-3xl font-light text-white opacity-90"
-                  style={{ fontFamily: 'var(--tenant-font-base)' }}
-                >
-                  {conditionData.subtitle}
-                </p>
-              </div>
-            </motion.div>
-          </div>
-        </section>
+              <ChevronRight className="w-4 h-4 rotate-180 mr-1" />
+              Back to Conditions
+            </Link>
+            <h1
+              className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 tracking-tight"
+              style={{ color: 'var(--tenant-color-heading)', fontFamily: 'var(--tenant-font-heading)' }}
+            >
+              {condition.name}
+            </h1>
+            <p
+              className="text-lg md:text-xl leading-relaxed max-w-2xl opacity-90"
+              style={{ color: 'var(--tenant-color-text)', fontFamily: 'var(--tenant-font-base)' }}
+            >
+              {condition.description}
+            </p>
+          </motion.div>
+        </div>
 
-        {/* Breadcrumbs */}
-        <section 
-          className="py-6"
-          style={{ backgroundColor: 'rgba(var(--tenant-color-primary-rgb, 28, 79, 77), 0.05)' }}
-        >
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--tenant-color-text)', fontFamily: 'var(--tenant-font-base)' }}>
-              <Link href="/" className="hover:opacity-70 transition-opacity">Home</Link>
-              <ChevronRight className="w-4 h-4" />
-              <Link href="/conditions" className="hover:opacity-70 transition-opacity">Conditions</Link>
-              <ChevronRight className="w-4 h-4" />
-              <span style={{ color: 'var(--tenant-color-heading)' }}>{conditionData.title}</span>
-            </div>
-          </div>
-        </section>
+        {/* Background Pattern */}
+        <div className="absolute top-0 right-0 w-1/3 h-full opacity-5 pointer-events-none">
+          <div className="w-full h-full bg-gradient-to-l from-current to-transparent" style={{ color: 'var(--tenant-color-primary)' }} />
+        </div>
+      </section>
 
-        {/* Main Content with Sidebar */}
-        <section className="py-20" style={{ backgroundColor: 'var(--tenant-color-background)' }}>
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid lg:grid-cols-4 gap-12 max-w-7xl mx-auto">
-              {/* Sidebar */}
-              <aside className="lg:col-span-1">
-                <div className="sticky top-32">
-                  <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                  >
-                    <div 
-                      className="rounded-xl p-6 border"
-                      style={{ 
-                        backgroundColor: 'rgba(var(--tenant-color-primary-rgb, 28, 79, 77), 0.05)',
-                        borderColor: 'var(--tenant-color-border, rgba(0,0,0,0.2))'
-                      }}
-                    >
-                      <h3 
-                        className="text-lg font-semibold mb-4"
-                        style={{ color: 'var(--tenant-color-heading)', fontFamily: 'var(--tenant-font-heading)' }}
-                      >
-                        Table of Contents
-                      </h3>
-                      <nav className="space-y-2">
-                        {tableOfContents.map((item) => (
-                          <button
-                            key={item.id}
-                            onClick={() => scrollToSection(item.id)}
-                            className="block w-full text-left text-sm py-2 px-3 rounded-lg hover:opacity-70 transition-opacity"
-                            style={{ 
-                              color: 'var(--tenant-color-text)',
-                              fontFamily: 'var(--tenant-font-base)'
-                            }}
-                          >
-                            {item.title}
-                          </button>
-                        ))}
-                      </nav>
+      {/* Content Navigation (Sticky on Desktop) */}
+      <div className="sticky top-20 z-40 border-b hidden lg:block" style={{ backgroundColor: 'var(--tenant-color-background)', borderColor: 'var(--tenant-color-border)' }}>
+        <div className="container mx-auto px-4">
+          <div className="flex space-x-8 overflow-x-auto">
+            {["Causes", "Symptoms", "Types", "Treatments", "Medical Cannabis", "FAQ"].map((section) => {
+              // Only show 'Types' tab if types exist
+              if (section === "Types" && types.length === 0) return null;
+              const id = section.toLowerCase().replace(" ", "-");
+              return (
+                <a
+                  key={section}
+                  href={`#${id}`}
+                  className="py-4 text-sm font-medium border-b-2 border-transparent hover:border-current transition-colors whitespace-nowrap"
+                  style={{ color: 'var(--tenant-color-text)' }}
+                >
+                  {section}
+                </a>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20">
+        <div className="grid lg:grid-cols-12 gap-12">
+          {/* Main Content */}
+          <div className="lg:col-span-8 space-y-16">
+
+            {/* Causes Section */}
+            {causes.length > 0 && (
+              <section id="causes" className="scroll-mt-32">
+                <h2 className="text-2xl md:text-3xl font-bold mb-8" style={{ color: 'var(--tenant-color-heading)' }}>Causes & Risk Factors</h2>
+                <div className="grid sm:grid-cols-2 gap-6">
+                  {causes.map((cause: any, idx: number) => (
+                    <div key={idx} className="p-6 rounded-xl border group hover:shadow-md transition-all" style={{ borderColor: 'var(--tenant-color-border)' }}>
+                      <h3 className="text-lg font-semibold mb-3 group-hover:text-primary transition-colors" style={{ color: 'var(--tenant-color-heading)' }}>{cause.title}</h3>
+                      <p className="text-sm opacity-80" style={{ color: 'var(--tenant-color-text)' }}>{cause.desc}</p>
                     </div>
-                  </motion.div>
+                  ))}
                 </div>
-              </aside>
+              </section>
+            )}
 
-              {/* Main Content */}
-              <div className="lg:col-span-3 space-y-16">
-                {/* What Causes */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  id="causes"
-                >
-                  <h2 
-                    className="text-3xl md:text-4xl font-semibold mb-6 tracking-tight"
-                    style={{ color: 'var(--tenant-color-heading)', fontFamily: 'var(--tenant-font-heading)' }}
-                  >
-                    What Causes {conditionData.title}?
-                  </h2>
-                  <div className="grid md:grid-cols-2 gap-6">
-                    {conditionData.causes.map((cause, index) => (
-                      <div 
-                        key={index} 
-                        className="rounded-xl p-6 border"
-                        style={{ 
-                          backgroundColor: 'rgba(var(--tenant-color-primary-rgb, 28, 79, 77), 0.05)',
-                          borderColor: 'var(--tenant-color-border, rgba(0,0,0,0.2))'
-                        }}
-                      >
-                        <h3 
-                          className="text-xl font-semibold mb-2"
-                          style={{ color: 'var(--tenant-color-heading)', fontFamily: 'var(--tenant-font-heading)' }}
-                        >
-                          {cause.title}
-                        </h3>
-                        <p style={{ color: 'var(--tenant-color-text)', fontFamily: 'var(--tenant-font-base)' }}>
-                          {cause.desc}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </motion.div>
-
-                {/* Symptoms */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  id="symptoms"
-                >
-                  <h2 
-                    className="text-3xl md:text-4xl font-semibold mb-6 tracking-tight"
-                    style={{ color: 'var(--tenant-color-heading)', fontFamily: 'var(--tenant-font-heading)' }}
-                  >
-                    Symptoms
-                  </h2>
-                  <div className="grid sm:grid-cols-2 gap-6">
-                    <div>
-                      <h3 
-                        className="text-xl font-semibold mb-4"
-                        style={{ color: 'var(--tenant-color-heading)', fontFamily: 'var(--tenant-font-heading)' }}
-                      >
-                        Physical Symptoms
-                      </h3>
-                      <ul className="space-y-3">
-                        {conditionData.symptoms.physical.map((symptom, index) => (
-                          <li key={index} className="flex items-start gap-3">
-                            <div 
-                              className="w-2 h-2 rounded-full mt-2 flex-shrink-0"
-                              style={{ backgroundColor: 'var(--tenant-color-primary)' }}
-                            />
-                            <span style={{ color: 'var(--tenant-color-text)', fontFamily: 'var(--tenant-font-base)' }}>
-                              {symptom}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                    {conditionData.symptoms.psychological && (
-                      <div>
-                        <h3 
-                          className="text-xl font-semibold mb-4"
-                          style={{ color: 'var(--tenant-color-heading)', fontFamily: 'var(--tenant-font-heading)' }}
-                        >
-                          Psychological Symptoms
-                        </h3>
-                        <ul className="space-y-3">
-                          {conditionData.symptoms.psychological.map((symptom, index) => (
-                            <li key={index} className="flex items-start gap-3">
-                              <div 
-                                className="w-2 h-2 rounded-full mt-2 flex-shrink-0"
-                                style={{ backgroundColor: 'var(--tenant-color-primary)' }}
-                              />
-                              <span style={{ color: 'var(--tenant-color-text)', fontFamily: 'var(--tenant-font-base)' }}>
-                                {symptom}
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-
-                {/* Types (if applicable) */}
-                {conditionData.types && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    id="types"
-                  >
-                    <h2 
-                      className="text-3xl md:text-4xl font-semibold mb-6 tracking-tight"
-                      style={{ color: 'var(--tenant-color-heading)', fontFamily: 'var(--tenant-font-heading)' }}
-                    >
-                      Types of {conditionData.title}
-                    </h2>
-                    <div className="space-y-4">
-                      {conditionData.types.map((type, index) => (
-                        <div 
-                          key={index} 
-                          className="rounded-xl p-6 border"
-                          style={{ 
-                            backgroundColor: 'var(--tenant-color-background)',
-                            borderColor: 'var(--tenant-color-border, rgba(0,0,0,0.2))'
-                          }}
-                        >
-                          <h3 
-                            className="text-xl font-semibold mb-2"
-                            style={{ color: 'var(--tenant-color-heading)', fontFamily: 'var(--tenant-font-heading)' }}
-                          >
-                            {type.type}
-                          </h3>
-                          <p style={{ color: 'var(--tenant-color-text)', fontFamily: 'var(--tenant-font-base)' }}>
-                            {type.desc}
-                          </p>
-                        </div>
+            {/* Symptoms Section */}
+            <section id="symptoms" className="scroll-mt-32">
+              <h2 className="text-2xl md:text-3xl font-bold mb-8" style={{ color: 'var(--tenant-color-heading)' }}>Common Symptoms</h2>
+              <div className="space-y-8">
+                {symptoms.physical && symptoms.physical.length > 0 && (
+                  <div className="bg-opacity-50 p-8 rounded-2xl" style={{ backgroundColor: 'var(--tenant-color-surface)' }}>
+                    <h3 className="text-xl font-semibold mb-6 flex items-center" style={{ color: 'var(--tenant-color-heading)' }}>
+                      <span className="w-2 h-2 rounded-full mr-3" style={{ backgroundColor: 'var(--tenant-color-primary)' }} />
+                      Physical Symptoms
+                    </h3>
+                    <ul className="grid sm:grid-cols-2 gap-4">
+                      {symptoms.physical.map((symptom: string, idx: number) => (
+                        <li key={idx} className="flex items-start opacity-90" style={{ color: 'var(--tenant-color-text)' }}>
+                          <span className="mr-2">•</span> {symptom}
+                        </li>
                       ))}
-                    </div>
-                  </motion.div>
+                    </ul>
+                  </div>
                 )}
 
-                {/* Treatment */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  id="treatment"
-                >
-                  <h2 
-                    className="text-3xl md:text-4xl font-semibold mb-6 tracking-tight"
-                    style={{ color: 'var(--tenant-color-heading)', fontFamily: 'var(--tenant-font-heading)' }}
-                  >
-                    Treatment Options
-                  </h2>
-                  <div className="grid sm:grid-cols-2 gap-6">
-                    {conditionData.treatments.map((treatment, index) => (
-                      <div 
-                        key={index} 
-                        className="rounded-xl p-6 border"
-                        style={{ 
-                          backgroundColor: 'rgba(var(--tenant-color-primary-rgb, 28, 79, 77), 0.05)',
-                          borderColor: 'var(--tenant-color-border, rgba(0,0,0,0.2))'
-                        }}
-                      >
-                        <h3 
-                          className="text-xl font-semibold mb-2"
-                          style={{ color: 'var(--tenant-color-heading)', fontFamily: 'var(--tenant-font-heading)' }}
-                        >
-                          {treatment.title}
-                        </h3>
-                        <p style={{ color: 'var(--tenant-color-text)', fontFamily: 'var(--tenant-font-base)' }}>
-                          {treatment.desc}
-                        </p>
-                      </div>
-                    ))}
+                {symptoms.psychological && symptoms.psychological.length > 0 && (
+                  <div className="bg-opacity-50 p-8 rounded-2xl" style={{ backgroundColor: 'var(--tenant-color-surface)' }}>
+                    <h3 className="text-xl font-semibold mb-6 flex items-center" style={{ color: 'var(--tenant-color-heading)' }}>
+                      <span className="w-2 h-2 rounded-full mr-3" style={{ backgroundColor: 'var(--tenant-color-secondary, var(--tenant-color-primary))' }} />
+                      Psychological Symptoms
+                    </h3>
+                    <ul className="grid sm:grid-cols-2 gap-4">
+                      {symptoms.psychological.map((symptom: string, idx: number) => (
+                        <li key={idx} className="flex items-start opacity-90" style={{ color: 'var(--tenant-color-text)' }}>
+                          <span className="mr-2">•</span> {symptom}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                </motion.div>
+                )}
+              </div>
+            </section>
 
-                {/* Medical Cannabis */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  id="medical-cannabis"
-                >
-                  <div 
-                    className="rounded-2xl p-8 border"
-                    style={{ 
-                      backgroundColor: 'rgba(var(--tenant-color-primary-rgb, 28, 79, 77), 0.1)',
-                      borderColor: 'var(--tenant-color-border, rgba(0,0,0,0.2))'
-                    }}
-                  >
-                    <h2 
-                      className="text-3xl md:text-4xl font-semibold mb-6 tracking-tight"
-                      style={{ color: 'var(--tenant-color-heading)', fontFamily: 'var(--tenant-font-heading)' }}
-                    >
-                      Medical Cannabis for {conditionData.title}
-                    </h2>
-                    <p 
-                      className="text-lg leading-relaxed mb-6"
-                      style={{ color: 'var(--tenant-color-text)', fontFamily: 'var(--tenant-font-base)' }}
-                    >
-                      {conditionData.medicalCannabis.content1}
-                    </p>
-                    <p 
-                      className="text-lg leading-relaxed mb-6"
-                      style={{ color: 'var(--tenant-color-text)', fontFamily: 'var(--tenant-font-base)' }}
-                    >
-                      {conditionData.medicalCannabis.content2}
-                    </p>
+            {/* Types Section - Conditional */}
+            {types.length > 0 && (
+              <section id="types" className="scroll-mt-32">
+                <h2 className="text-2xl md:text-3xl font-bold mb-8" style={{ color: 'var(--tenant-color-heading)' }}>Types & Variations</h2>
+                <div className="space-y-4">
+                  {types.map((type: any, idx: number) => (
+                    <div key={idx} className="p-6 rounded-xl border hover:border-current transition-colors" style={{ borderColor: 'var(--tenant-color-border)', color: 'var(--tenant-color-text)' }}>
+                      <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--tenant-color-heading)' }}>{type.type}</h3>
+                      <p className="opacity-80 text-sm">{type.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Treatments Section */}
+            {treatments.length > 0 && (
+              <section id="treatments" className="scroll-mt-32">
+                <h2 className="text-2xl md:text-3xl font-bold mb-8" style={{ color: 'var(--tenant-color-heading)' }}>Standard Treatments</h2>
+                <div className="grid sm:grid-cols-2 gap-6">
+                  {treatments.map((treatment: any, idx: number) => (
+                    <div key={idx} className="p-6 rounded-xl" style={{ backgroundColor: 'var(--tenant-color-surface)' }}>
+                      <h3 className="font-semibold mb-3" style={{ color: 'var(--tenant-color-heading)' }}>{treatment.title}</h3>
+                      <p className="text-sm opacity-80" style={{ color: 'var(--tenant-color-text)' }}>{treatment.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Medical Cannabis Section */}
+            <section id="medical-cannabis" className="scroll-mt-32">
+              <div className="rounded-3xl p-8 md:p-12 text-white overflow-hidden relative" style={{ backgroundColor: 'var(--tenant-color-primary)' }}>
+                <div className="relative z-10 space-y-6">
+                  <h2 className="text-2xl md:text-3xl font-bold">Medical Cannabis Approach</h2>
+                  <p className="text-lg opacity-95 leading-relaxed">
+                    {medicalCannabis.content1}
+                  </p>
+                  <p className="text-lg opacity-95 leading-relaxed">
+                    {medicalCannabis.content2}
+                  </p>
+                  <div className="pt-6">
                     <Link href="/contact">
-                      <button 
-                        className="px-8 py-3 rounded-lg font-semibold transition-all"
-                        style={{ 
-                          backgroundColor: 'var(--tenant-color-primary)',
-                          color: 'white',
-                          fontFamily: 'var(--tenant-font-base)'
-                        }}
-                      >
-                        Book a Consultation
+                      <button className="bg-white text-black px-8 py-3 rounded-lg font-semibold hover:bg-opacity-90 transition-all">
+                        Consult a Specialist
                       </button>
                     </Link>
                   </div>
-                </motion.div>
-
-                {/* FAQ */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  id="faq"
-                >
-                  <h2 
-                    className="text-3xl md:text-4xl font-semibold mb-8 tracking-tight"
-                    style={{ color: 'var(--tenant-color-heading)', fontFamily: 'var(--tenant-font-heading)' }}
-                  >
-                    Frequently Asked Questions
-                  </h2>
-                  <div className="space-y-4">
-                    {conditionData.faqs.map((faq, index) => (
-                      <div 
-                        key={index} 
-                        className="rounded-xl border overflow-hidden"
-                        style={{ 
-                          backgroundColor: 'var(--tenant-color-background)',
-                          borderColor: 'var(--tenant-color-border, rgba(0,0,0,0.2))'
-                        }}
-                      >
-                        <button
-                          onClick={() => setExpandedFaq(expandedFaq === `q${index}` ? null : `q${index}`)}
-                          className="w-full flex items-center justify-between p-6 text-left hover:opacity-80 transition-opacity"
-                        >
-                          <h3 
-                            className="text-lg font-semibold pr-4"
-                            style={{ color: 'var(--tenant-color-heading)', fontFamily: 'var(--tenant-font-heading)' }}
-                          >
-                            {faq.question}
-                          </h3>
-                          <motion.div
-                            animate={{ rotate: expandedFaq === `q${index}` ? 180 : 0 }}
-                            transition={{ duration: 0.3 }}
-                          >
-                            <ChevronDown 
-                              className="w-5 h-5 flex-shrink-0"
-                              style={{ color: 'var(--tenant-color-text)' }}
-                            />
-                          </motion.div>
-                        </button>
-                        <motion.div
-                          initial={false}
-                          animate={{ height: expandedFaq === `q${index}` ? 'auto' : 0 }}
-                          transition={{ duration: 0.3 }}
-                          className="overflow-hidden"
-                        >
-                          <div className="px-6 pb-6">
-                            <p 
-                              className="leading-relaxed"
-                              style={{ color: 'var(--tenant-color-text)', fontFamily: 'var(--tenant-font-base)' }}
-                            >
-                              {faq.answer}
-                            </p>
-                          </div>
-                        </motion.div>
-                      </div>
-                    ))}
-                  </div>
-                </motion.div>
+                </div>
+                {/* Decorative circles */}
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-10 rounded-full -translate-y-1/2 translate-x-1/2" />
+                <div className="absolute bottom-0 left-0 w-48 h-48 bg-white opacity-10 rounded-full translate-y-1/2 -translate-x-1/2" />
               </div>
+            </section>
+
+            {/* FAQ Section */}
+            {faqs.length > 0 && (
+              <section id="faq" className="scroll-mt-32">
+                <h2 className="text-2xl md:text-3xl font-bold mb-8" style={{ color: 'var(--tenant-color-heading)' }}>Frequently Asked Questions</h2>
+                <div className="space-y-4">
+                  {faqs.map((faq: any, idx: number) => (
+                    <div
+                      key={idx}
+                      className="border rounded-xl overflow-hidden transition-all duration-200"
+                      style={{ borderColor: 'var(--tenant-color-border)' }}
+                    >
+                      <button
+                        onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
+                        className="w-full flex items-center justify-between p-6 text-left hover:bg-opacity-50 transition-colors"
+                        style={{ backgroundColor: 'var(--tenant-color-surface)' }}
+                      >
+                        <span className="font-semibold pr-4" style={{ color: 'var(--tenant-color-heading)' }}>{faq.question}</span>
+                        <ChevronDown
+                          className={`w-5 h-5 transition-transform duration-200 ${openFaq === idx ? 'rotate-180' : ''}`}
+                          style={{ color: 'var(--tenant-color-text)' }}
+                        />
+                      </button>
+                      <AnimatePresence>
+                        {openFaq === idx && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            <div className="p-6 pt-0 border-t" style={{ borderColor: 'var(--tenant-color-border)', color: 'var(--tenant-color-text)' }}>
+                              <div className="pt-4 opacity-90 leading-relaxed">
+                                {faq.answer}
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+          </div>
+
+          {/* Sidebar / Table of Contents for Desktop */}
+          <div className="hidden lg:block lg:col-span-4">
+            <div className="sticky top-48 p-8 rounded-2xl border" style={{ borderColor: 'var(--tenant-color-border)', backgroundColor: 'var(--tenant-color-surface)' }}>
+              <h3 className="font-bold mb-6" style={{ color: 'var(--tenant-color-heading)' }}>Have questions?</h3>
+              <p className="text-sm mb-6 opacity-80" style={{ color: 'var(--tenant-color-text)' }}>
+                Our medical team is here to help you understand if medical cannabis is right for your condition.
+              </p>
+              <Link href="/contact" className="block w-full text-center py-3 rounded-lg font-semibold text-white transition-opacity hover:opacity-90" style={{ backgroundColor: 'var(--tenant-color-primary)' }}>
+                Book Consultation
+              </Link>
             </div>
           </div>
-        </section>
-      </main>
+        </div>
+      </div>
     </div>
   );
 }
