@@ -164,6 +164,7 @@ model orders {
   createdAt         DateTime      @default(now())
   updatedAt         DateTime
   notes             String?
+  adminNotes        String?
   orderNumber       String        @unique
   shippingCost      Float         @default(5.00)
   shippingInfo      Json?

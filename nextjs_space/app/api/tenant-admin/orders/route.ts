@@ -106,9 +106,24 @@ export async function GET(req: NextRequest) {
       prisma.orders.count({ where: whereClause }),
       prisma.orders.findMany({
         where: whereClause,
-        include: {
-          items: true,
-          user: {
+        select: {
+          id: true,
+          orderNumber: true,
+          status: true,
+          total: true,
+          subtotal: true,
+          shippingCost: true,
+          createdAt: true,
+          adminNotes: true,
+          order_items: {
+            select: {
+              id: true,
+              productName: true,
+              quantity: true,
+              price: true,
+            },
+          },
+          users: {
             select: {
               name: true,
               email: true,
@@ -198,8 +213,17 @@ export async function GET(req: NextRequest) {
       }),
     ]);
 
+    // Transform orders to match expected format (rename order_items to items, users to user)
+    const transformedOrders = orders.map((order: any) => ({
+      ...order,
+      items: order.order_items,
+      user: order.users,
+      order_items: undefined,
+      users: undefined,
+    }));
+
     return NextResponse.json({
-      orders,
+      orders: transformedOrders,
       totalCount: filteredCount,
       statusCounts: {
         PENDING: pendingCount,

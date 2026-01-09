@@ -2,13 +2,14 @@
 
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 import { format } from 'date-fns';
-import { Package, Truck, CheckCircle2, XCircle, Clock, Printer } from 'lucide-react';
+import { Package, Truck, CheckCircle2, XCircle, Clock, Printer, FileText, Check } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -42,6 +43,7 @@ interface Order {
   subtotal: number;
   shippingCost: number;
   createdAt: string;
+  adminNotes?: string | null;
   items: OrderItem[];
   user: {
     name: string | null;
@@ -83,6 +85,10 @@ export default function TenantOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [adminNotes, setAdminNotes] = useState('');
+  const [isSavingNotes, setIsSavingNotes] = useState(false);
+  const [showSavedIndicator, setShowSavedIndicator] = useState(false);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -208,6 +214,63 @@ export default function TenantOrdersPage() {
         return <Package className="w-4 h-4" />;
     }
   };
+
+  // Save admin notes with debouncing (1 second delay)
+  const saveAdminNotes = useCallback(async (orderId: string, notes: string) => {
+    setIsSavingNotes(true);
+    try {
+      const response = await fetch(`/api/tenant-admin/orders/${orderId}/admin-notes`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adminNotes: notes }),
+      });
+
+      if (response.ok) {
+        setShowSavedIndicator(true);
+        // Hide saved indicator after 2 seconds
+        setTimeout(() => setShowSavedIndicator(false), 2000);
+      } else {
+        toast.error('Failed to save admin notes');
+      }
+    } catch (error) {
+      console.error('Error saving admin notes:', error);
+      toast.error('Failed to save admin notes');
+    } finally {
+      setIsSavingNotes(false);
+    }
+  }, []);
+
+  // Handle admin notes change with debouncing
+  const handleAdminNotesChange = useCallback((value: string, orderId: string) => {
+    setAdminNotes(value);
+
+    // Clear existing timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    // Set new timeout to save after 1 second of no typing
+    saveTimeoutRef.current = setTimeout(() => {
+      saveAdminNotes(orderId, value);
+    }, 1000);
+  }, [saveAdminNotes]);
+
+  // Initialize admin notes when order is selected
+  useEffect(() => {
+    if (selectedOrder) {
+      setAdminNotes(selectedOrder.adminNotes || '');
+      setShowSavedIndicator(false);
+    }
+  }, [selectedOrder]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
 
   if (status === 'loading' || loading) {
     return (
@@ -401,6 +464,35 @@ export default function TenantOrdersPage() {
                     <span>€{selectedOrder.total.toFixed(2)}</span>
                   </div>
                 </div>
+              </div>
+
+              {/* Admin Notes Section */}
+              <div className="border rounded-lg p-4 bg-amber-50/30 border-amber-200">
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-amber-600" />
+                    <h3 className="font-semibold text-lg text-slate-900">Admin Notes</h3>
+                  </div>
+                  {showSavedIndicator && (
+                    <div className="flex items-center gap-1.5 text-sm text-emerald-600 font-medium animate-in fade-in duration-200">
+                      <Check className="w-4 h-4" />
+                      <span>Saved</span>
+                    </div>
+                  )}
+                </div>
+                <p className="text-sm text-slate-600 mb-3">
+                  Internal notes (not visible to customers)
+                </p>
+                <Textarea
+                  value={adminNotes}
+                  onChange={(e) => handleAdminNotesChange(e.target.value, selectedOrder.id)}
+                  placeholder="Add notes about special handling, gift messages, or other internal information..."
+                  className="min-h-[120px] resize-y bg-white border-amber-200 focus-visible:ring-amber-400 focus-visible:border-amber-400"
+                  disabled={isSavingNotes}
+                />
+                <p className="text-xs text-slate-500 mt-2">
+                  {isSavingNotes ? 'Saving...' : 'Changes are saved automatically after 1 second of no typing'}
+                </p>
               </div>
 
               {/* Quick Actions */}

@@ -88,6 +88,7 @@ interface Order {
   subtotal: number;
   shippingCost: number;
   createdAt: string;
+  adminNotes?: string | null;
   items: OrderItem[];
   user: {
     name: string | null;
