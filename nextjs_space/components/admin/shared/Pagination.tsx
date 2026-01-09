@@ -171,7 +171,7 @@ export function Pagination({
                 'transition-all duration-200'
               )}
             >
-              <ChevronsLeft className="h-4 w-4" />
+              <ChevronsLeft className="h-4 w-4" aria-hidden="true" />
             </Button>
           )}
 
@@ -188,7 +188,7 @@ export function Pagination({
               'transition-all duration-200'
             )}
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="h-4 w-4" aria-hidden="true" />
           </Button>
 
           {/* Page indicator */}
@@ -215,7 +215,7 @@ export function Pagination({
               'transition-all duration-200'
             )}
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-4 w-4" aria-hidden="true" />
           </Button>
 
           {showFirstLast && (
@@ -232,7 +232,7 @@ export function Pagination({
                 'transition-all duration-200'
               )}
             >
-              <ChevronsRight className="h-4 w-4" />
+              <ChevronsRight className="h-4 w-4" aria-hidden="true" />
             </Button>
           )}
         </div>

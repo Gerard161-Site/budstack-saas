@@ -527,13 +527,17 @@ export function TenantsTable({
                           </TableCell>
                           <TableCell>
                             {tenant.isActive ? (
-                              <Badge className="bg-emerald-500 hover:bg-emerald-600">
+                              <Badge
+                                className="bg-emerald-500 hover:bg-emerald-600"
+                                aria-label="Status: Active"
+                              >
                                 Active
                               </Badge>
                             ) : (
                               <Badge
                                 variant="secondary"
                                 className="bg-slate-200"
+                                aria-label="Status: Inactive"
                               >
                                 Inactive
                               </Badge>

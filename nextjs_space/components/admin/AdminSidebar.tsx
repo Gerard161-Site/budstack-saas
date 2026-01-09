@@ -222,7 +222,7 @@ export function AdminSidebar({
         )}
 
         {/* Navigation */}
-        <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
+        <nav className="flex-1 px-3 space-y-1 overflow-y-auto" aria-label="Main navigation">
           {menuItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);
@@ -239,12 +239,15 @@ export function AdminSidebar({
                     : cn('text-white/80', styles.hoverBg, 'hover:text-white')
                 )}
                 title={collapsed ? item.label : undefined}
+                aria-label={`Navigate to ${item.label}`}
+                aria-current={active ? 'page' : undefined}
               >
                 <Icon
                   className={cn(
                     'h-5 w-5 transition-colors',
                     active ? styles.activeIcon : 'text-white/70 group-hover:text-white'
                   )}
+                  aria-hidden="true"
                 />
                 {!collapsed && (
                   <span className={cn('font-medium', active ? 'text-white' : 'text-white/90')}>
@@ -286,8 +289,9 @@ export function AdminSidebar({
                   'w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm font-medium',
                   styles.buttonBg
                 )}
+                aria-label={`Logout ${userName}`}
               >
-                <LogOut className="h-4 w-4" />
+                <LogOut className="h-4 w-4" aria-hidden="true" />
                 Logout
               </button>
             </div>
@@ -296,8 +300,9 @@ export function AdminSidebar({
               onClick={handleLogout}
               className="w-full p-2 hover:bg-white/10 rounded-lg transition-colors group relative"
               title="Logout"
+              aria-label={`Logout ${userName}`}
             >
-              <LogOut className="h-5 w-5 mx-auto" />
+              <LogOut className="h-5 w-5 mx-auto" aria-hidden="true" />
               <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
                 Logout
               </div>
