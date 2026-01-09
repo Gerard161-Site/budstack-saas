@@ -1175,3 +1175,64 @@ Started: Fri  9 Jan 2026 16:34:28 WET
   - Badge count shows "9+" when more than 9 unread to avoid overflow
   - Radar ping effect combines animate-pulse with ring-4 for attention-grabbing animation
 ---
+
+## 2026-01-09 - US-028
+
+- **What was implemented**: Print Packing Slip (Orders)
+- **Files created**:
+  - `nextjs_space/components/admin/PackingSlip.tsx` - Professional logistics document component with print optimization
+  - `nextjs_space/app/tenant-admin/orders/[id]/packing-slip/page.tsx` - Packing slip page route with auto-print
+  - `nextjs_space/app/api/tenant-admin/orders/[id]/route.ts` - API endpoint for fetching single order by ID
+  - `nextjs_space/app/api/tenant-admin/tenant/route.ts` - API endpoint for fetching tenant data (business name)
+- **Files modified**:
+  - `nextjs_space/app/tenant-admin/orders/page.tsx` - Added Print Packing Slip button to order detail modal
+  - `nextjs_space/package.json` - Added qrcode.react dependency
+
+- **Features implemented**:
+  - **PackingSlip Component**:
+    - Professional "Logistics Document" aesthetic with clean typography and clear information hierarchy
+    - Dual-mode design: elegant on-screen preview with gradients and shadows, perfectly optimized for print (plain, high-contrast)
+    - Print-optimized CSS with @media print rules removing navigation, buttons, backgrounds, and animations
+    - QR code for order tracking using qrcode.react library
+    - Order information bar with order number (monospace font), date, and status badge
+    - Two-column layout: Shipping address (left) and Order summary stats (right)
+    - Items table with quantities highlighted in blue badges, packed checkboxes (visible only in print)
+    - Order totals section with subtotal, shipping, and grand total
+    - Packing instructions and print timestamp in footer
+    - Uses IBM Plex Mono for monospaced IDs and Inter for body text (Google Fonts)
+    - Auto-print on mount via window.print() with 500ms delay
+    - No-print controls: Print button and Close button (hidden in print mode)
+  - **Packing Slip Page Route**:
+    - Fetches order data and tenant data in parallel
+    - Loading state with spinner
+    - Error handling for missing orders
+    - Passes businessName to PackingSlip component
+    - Auto-prints via autoPrint prop
+  - **API Endpoints**:
+    - GET /api/tenant-admin/orders/[id] - Fetch single order with items, user, and shipping address
+    - GET /api/tenant-admin/tenant - Fetch tenant business name for packing slip header
+    - Both endpoints include tenant isolation (verify user has access to tenant)
+  - **Print Packing Slip Button**:
+    - Added to order detail modal above status action buttons
+    - Opens packing slip in new window/tab
+    - Printer icon from Lucide React
+    - Full-width outline button with slate styling
+  - Typecheck passed via `npm run build`
+
+- **Learnings for future iterations**:
+  - **Professional Logistics Document aesthetic**: Clean, structured, utilitarian design with refined typography creates trust for fulfillment documents
+  - Print-optimized components need dual styling: elegant on screen (gradients, shadows, colors) and high-contrast for print (black/white, sharp borders)
+  - @media print rules should remove: page margins (set in @page), animations (set duration to 0s), backgrounds (unless critical), decorative elements
+  - `-webkit-print-color-adjust: exact` and `print-color-adjust: exact` force browsers to print background colors
+  - window.print() should be triggered with a small delay (500ms) to ensure content is fully rendered
+  - QR codes use qrcode.react library (QRCodeSVG component) - easy to implement and print-friendly
+  - Google Fonts can be loaded via <link> tag in component for custom font support (IBM Plex Mono, Inter)
+  - Monospaced fonts (font-mono) are essential for order IDs, tracking numbers, and monetary values
+  - The "packed" checkbox column uses `print:table-cell` to show only in print mode, hidden on screen with `hidden print:table-cell`
+  - Prisma database client is exported as `prisma` from `@/lib/db` (NOT `db`)
+  - API routes need tenant isolation - always verify user.tenantId matches the resource being accessed
+  - Next.js dynamic routes: `[id]/packing-slip/page.tsx` creates `/orders/{id}/packing-slip` route
+  - window.open(url, '_blank') opens new window/tab for print preview without disrupting main UI
+  - Print documents should use A4 portrait format (`@page { size: A4 portrait; margin: 0.5cm; }`)
+  - Stacking order: header (dark gradient), info bar (light background), body (white), footer (light background)
+---
