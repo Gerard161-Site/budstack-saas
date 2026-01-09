@@ -1269,3 +1269,56 @@ Started: Fri  9 Jan 2026 16:34:28 WET
   - When creating API endpoints that modify data, always validate tenant ownership to prevent unauthorized access
   - The "Saved" indicator uses `animate-in fade-in` for smooth appearance
 ---
+
+## 2026-01-09 - US-030
+
+- **What was implemented**: Drag-and-Drop Product Ordering
+- **Files created**:
+  - `nextjs_space/app/api/tenant-admin/products/reorder/route.ts` - API endpoint for updating product displayOrder
+  - `nextjs_space/prisma/migrations/20260109_add_display_order/migration.sql` - Database migration
+- **Files modified**:
+  - `nextjs_space/prisma/schema.prisma` - Added displayOrder integer field to products model
+  - `nextjs_space/app/tenant-admin/products/page.tsx` - Changed default ordering from createdAt desc to displayOrder asc
+  - `nextjs_space/app/tenant-admin/products/products-table.tsx` - Added drag-and-drop functionality with @dnd-kit
+  - `nextjs_space/package.json` - Added @dnd-kit dependencies
+
+- **Features implemented**:
+  - **Drag-and-Drop Library**: Installed @dnd-kit/core, @dnd-kit/sortable, @dnd-kit/utilities
+  - **Database Schema**: Added displayOrder integer field (default 0) to products table
+  - **SortableProductRow Component**: 
+    - Drag handle column with GripVertical icon (cursor-grab, active:cursor-grabbing)
+    - useSortable hook for drag behavior
+    - Visual feedback: opacity 0.5 while dragging, shadow-lg elevation
+    - Row styling preserved: hover states, selection highlighting
+  - **DndContext Integration**:
+    - PointerSensor and KeyboardSensor for mouse and keyboard dragging
+    - closestCenter collision detection strategy
+    - verticalListSortingStrategy for table rows
+  - **Optimistic Updates**: 
+    - arrayMove updates local state immediately for smooth UX
+    - Shows loading state during save (isSavingOrder)
+    - Reverts to original order on error
+  - **API Endpoint** (`/api/tenant-admin/products/reorder`):
+    - POST endpoint accepting array of { id, displayOrder } updates
+    - Rate limiting (20 requests/minute)
+    - Tenant isolation: validates all products belong to user's tenant
+    - Bulk update using Promise.all for efficiency
+  - **Default Ordering**: Products now ordered by displayOrder asc by default (instead of createdAt desc)
+  - **Toast Notifications**: Success/error feedback using sonner toast
+
+- **Learnings for future iterations**:
+  - **@dnd-kit is perfect for table drag-and-drop**: The library provides a clean API with useSortable hook and automatic transform/transition CSS
+  - **Optimistic updates pattern**: Update local state immediately with arrayMove, persist to server, revert on error - creates smooth UX
+  - **Drag handle column**: Adding a separate column with GripVertical icon is more intuitive than making entire row draggable
+  - **Visual feedback is critical**: Reducing opacity and adding shadow-lg while dragging clearly indicates draggable state
+  - **DnD sensors**: PointerSensor handles mouse dragging, KeyboardSensor enables accessibility (Tab + Space/Enter to drag)
+  - **Rate limit pattern**: The checkRateLimit() function returns `{ success: true }` or `{ success: false; response }` - check success and return response directly
+  - **Prisma migration pattern**: Create directory with timestamp, write migration.sql, run `prisma migrate deploy` then `prisma generate`
+  - **Default ordering matters**: Changed default from createdAt desc to displayOrder asc so products appear in custom order by default
+  - **Bulk updates with Promise.all**: When updating multiple products, use Promise.all for parallel execution instead of sequential
+  - **SortableContext items prop**: Must provide array of IDs (`orderedProducts.map(p => p.id)`) not the full objects
+  - **CSS.Transform.toString()**: Use this helper from @dnd-kit/utilities to convert transform object to CSS string
+  - **Keep existing functionality**: Preserved all table features (search, filters, sorting, bulk actions, pagination) while adding drag-and-drop
+  - **Sensor coordinateGetter**: KeyboardSensor needs sortableKeyboardCoordinates for proper keyboard navigation
+
+---

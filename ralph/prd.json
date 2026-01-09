@@ -635,7 +635,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 34,
-      "passes": false,
+      "passes": true,
       "notes": "UI STORY: Invoke frontend-design skill first. Requires @dnd-kit library and Prisma migration for displayOrder."
     }
   ]
