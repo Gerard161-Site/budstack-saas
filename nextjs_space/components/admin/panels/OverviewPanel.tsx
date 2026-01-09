@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Building2, TrendingUp, UserPlus, Users } from 'lucide-react';
+import { PlatformAnalytics } from '@/components/admin/analytics/PlatformAnalytics';
 
 interface OverviewPanelProps {
     totalTenants: number;
@@ -106,6 +107,9 @@ export function OverviewPanel({
                         </div>
                     </CardContent>
                 </Card>
+
+                {/* Platform Analytics Section */}
+                <PlatformAnalytics className="mt-8" />
             </div>
         </div>
     );
