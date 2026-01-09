@@ -1011,3 +1011,69 @@ Started: Fri  9 Jan 2026 16:34:28 WET
   - **Simulated processing delay improves perceived quality**: Brief 300ms delay allows loading state to be seen, avoiding jarring instant downloads
   - **Consistent placement across tables**: Export button always appears in the filters/controls area, never buried
 ---
+
+## 2026-01-09 - US-025
+
+- **What was implemented**: Keyboard Shortcuts
+- **Files created**:
+  - `nextjs_space/components/admin/KeyboardShortcutsProvider.tsx` - Complete keyboard shortcuts system with provider, help modal, and keyboard hint component
+- **Files modified**:
+  - `nextjs_space/components/admin/AccessibleAdminLayout.tsx` - Integrated KeyboardShortcutsProvider wrapper
+  - `nextjs_space/components/admin/AdminSidebar.tsx` - Added shortcut prop to AdminMenuItem interface, imported KeyboardHint, rendered hints in menu items
+  - `nextjs_space/components/admin/SuperAdminSidebar.tsx` - Added keyboard shortcuts to menu items (G+D for Overview, G+T for Tenants)
+  - `nextjs_space/components/admin/TenantAdminSidebar.tsx` - Added keyboard shortcuts to menu items (G+D for Overview, G+P for Products, G+O for Orders)
+
+- **Features implemented**:
+  - **KeyboardShortcutsProvider Context**:
+    - Global keyboard event listener with support for modifier combos and key sequences
+    - Mac/Windows detection for ⌘ vs Ctrl key mapping
+    - Built-in shortcuts: Cmd+K (focus search), G+D (dashboard), G+T (tenants - super admin), G+P (products - tenant admin), G+O (orders), Escape (close modal), Cmd+/ (show help)
+    - Sequence key tracking with 1-second timeout for "G then D" style shortcuts
+    - Theme-aware shortcuts (super-admin vs tenant-admin)
+    - Custom shortcut registration API (registerShortcut, unregisterShortcut)
+    - Auto-reset sequence on route changes
+  - **Command Interface Help Modal**:
+    - "Command Interface" aesthetic with terminal-inspired design
+    - Theme-specific styling: super-admin (slate gradient), tenant-admin (cyan gradient)
+    - Shortcuts grouped by category: Navigation, Search, Actions
+    - Category headers with icons and uppercase labels
+    - Shortcut cards with icon, label, description, and key badges
+    - Animated key badges with hover scale effect
+    - "then" vs "+" separator logic for sequence vs modifier shortcuts
+    - Decorative scanline animation effect in header
+    - Platform detection footer showing Mac vs Windows/Linux
+    - Responsive design with max-height scrollable content
+  - **KeyboardHint Component**:
+    - Theme-specific styling matching admin panel colors
+    - Compact kbd badges showing shortcut keys
+    - Used in sidebar menu items (visible when expanded)
+    - Also shown in collapsed sidebar tooltips
+  - **Sidebar Integration**:
+    - Menu items now support optional `shortcut` prop (array of keys)
+    - KeyboardHint rendered next to menu item labels when sidebar expanded
+    - Shortcut text shown in collapsed tooltips
+    - Flex-1 layout ensures hints align to the right
+  - **Accessibility**:
+    - ARIA labels on all interactive elements
+    - Keyboard hints marked with aria-hidden="true" (redundant with labels)
+    - Focus trap not needed - help modal uses shadcn Dialog which handles it
+    - All shortcuts work globally across admin pages
+  - Typecheck passed via `npm run build`
+
+- **Learnings for future iterations**:
+  - **"Command Interface" aesthetic**: Terminal/tactical HUD-inspired design with monospace fonts, crisp borders, kbd badges, and satisfying animations
+  - Keyboard event handling requires careful consideration of input focus - don't trigger sequence shortcuts when user is typing in input/textarea
+  - Sequence shortcuts need timeout-based reset (1 second) to avoid stuck states
+  - Platform detection (Mac vs Windows) crucial for showing correct modifier key symbols (⌘ vs Ctrl)
+  - React Context is perfect for global keyboard shortcut management - no prop drilling needed
+  - The `useEffect` cleanup pattern is essential for removing event listeners and clearing timeouts
+  - shadcn Dialog component already handles focus trapping - no need for custom implementation
+  - KeyboardHint component benefits from being small and self-contained - easy to drop anywhere
+  - The AdminMenuItem interface extension pattern (adding optional shortcut prop) maintains backward compatibility
+  - Sidebar flex layout: icon + flex-1 label + hint creates perfect right-alignment for shortcuts
+  - Theme-specific styling should be consistent across provider, modal, and hints for cohesive UX
+  - The "then" separator for sequence shortcuts (G then D) is more intuitive than "+" which implies simultaneous press
+  - Category-based grouping in help modal improves scannability over flat list
+  - Staggered animations and hover effects on key badges add tactile satisfaction
+  - Export both the provider (KeyboardShortcutsProvider) and utility components (KeyboardHint) from same file for convenience
+---

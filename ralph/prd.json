@@ -548,7 +548,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 29,
-      "passes": false,
+      "passes": true,
       "notes": "UI STORY: Invoke frontend-design skill first. Create KeyboardShortcuts provider and help modal."
     },
     {
