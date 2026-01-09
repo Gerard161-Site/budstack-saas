@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
       };
 
       // Check if product exists
-      const existingProduct = await prisma.product.findFirst({
+      const existingProduct = await prisma.products.findFirst({
         where: {
           tenantId,
           doctorGreenId: dgProduct.id,
@@ -59,14 +59,14 @@ export async function POST(request: NextRequest) {
 
       // Upsert product
       const product = existingProduct
-        ? await prisma.product.update({
+        ? await prisma.products.update({
           where: { id: existingProduct.id },
           data: {
             ...productData,
             updatedAt: new Date(),
           },
         })
-        : await prisma.product.create({
+        : await prisma.products.create({
           data: productData,
         });
 
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update tenant's last sync time
-    await prisma.tenant.update({
+    await prisma.tenants.update({
       where: { id: tenantId },
       data: { lastProductSync: new Date() },
     });

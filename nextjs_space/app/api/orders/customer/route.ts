@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Fetch all orders for this customer
-    const orders = await prisma.order.findMany({
+    const orders = await prisma.orders.findMany({
       where: {
         userId: session.user.id,
       },

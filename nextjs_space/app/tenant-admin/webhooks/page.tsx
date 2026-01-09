@@ -155,27 +155,16 @@ export default function WebhooksPage() {
   };
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="mb-6">
-        <Link href="/tenant-admin">
-          <Button variant="ghost" size="sm" className="mb-4">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
-          </Button>
-        </Link>
+    <div className="p-8">
+      <div className="mb-8">
         <div className="flex items-center justify-between">
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Webhook className="h-6 w-6" />
-              <h1 className="text-3xl font-bold">Webhooks</h1>
-            </div>
-            <p className="text-muted-foreground">
-              Send real-time event notifications to external systems
-            </p>
+            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Webhooks</h1>
+            <p className="text-slate-600 mt-2">Send real-time event notifications to external systems</p>
           </div>
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-medium shadow-md hover:shadow-lg transition-all">
                 <Plus className="h-4 w-4 mr-2" />
                 Create Webhook
               </Button>
@@ -187,7 +176,7 @@ export default function WebhooksPage() {
                   Add a webhook endpoint to receive real-time event notifications
                 </DialogDescription>
               </DialogHeader>
-              
+
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="url">Webhook URL *</Label>
@@ -367,7 +356,7 @@ export default function WebhooksPage() {
           </p>
           <h4>Example Payload:</h4>
           <pre className="bg-muted p-3 rounded text-xs overflow-x-auto">
-{`{
+            {`{
   "event": "order.created",
   "tenantId": "your-tenant-id",
   "data": {

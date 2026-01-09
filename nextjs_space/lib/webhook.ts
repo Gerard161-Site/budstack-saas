@@ -41,7 +41,7 @@ export async function triggerWebhook(params: {
 
   try {
     // Find all active webhooks subscribed to this event
-    const webhooks = await prisma.webhook.findMany({
+    const webhooks = await prisma.webhooks.findMany({
       where: {
         isActive: true,
         tenantId: tenantId || null,
@@ -81,7 +81,7 @@ async function deliverWebhook(
   attemptCount: number = 1
 ): Promise<void> {
   try {
-    const webhook = await prisma.webhook.findUnique({
+    const webhook = await prisma.webhooks.findUnique({
       where: { id: webhookId },
     });
 

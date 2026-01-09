@@ -10,6 +10,7 @@ interface HeroProps {
   heroImagePath?: string | null;
   logoPath?: string | null;
   consultationUrl: string;
+  ctaText?: string;
 }
 
 export default function Hero({
@@ -18,7 +19,8 @@ export default function Hero({
   subtitle,
   heroImagePath,
   logoPath,
-  consultationUrl
+  consultationUrl,
+  ctaText
 }: HeroProps) {
   const displayTitle = title || `Welcome to ${businessName}`;
   const displaySubtitle = subtitle || 'Premium Medical Cannabis';
@@ -107,7 +109,7 @@ export default function Hero({
             className="retro-button px-8 py-3 text-base font-semibold text-white rounded-full transition-all neon-glow"
             style={{ backgroundColor: '#FF6B6B' }}
           >
-            Book Consultation
+            {ctaText || 'Book Consultation'}
           </a>
           <a
             href="#about"

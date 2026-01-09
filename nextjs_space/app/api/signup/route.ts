@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await prisma.users.findUnique({
       where: { email },
     });
 
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create user
-    const user = await prisma.user.create({
+    const user = await prisma.users.create({
       data: {
         email,
         password: hashedPassword,
@@ -71,10 +71,14 @@ export async function POST(request: NextRequest) {
     });
 
     // Send welcome email (don't wait for it)
+    // Send welcome email (don't wait for it)
+    const html = await emailTemplates.welcome(`${firstName} ${lastName}`, tenant.businessName);
     sendEmail({
       to: email,
       subject: `Welcome to ${tenant.businessName}!`,
-      html: emailTemplates.welcome(`${firstName} ${lastName}`, tenant.businessName),
+      html,
+      tenantId: tenant.id,
+      templateName: 'welcome',
     }).catch((error) => {
       console.error('Failed to send welcome email:', error);
     });

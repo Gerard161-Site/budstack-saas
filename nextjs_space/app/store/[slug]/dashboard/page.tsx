@@ -49,21 +49,16 @@ export default function DashboardPage() {
                     </p>
                 </div>
 
-                {/* Verification Status */}
-                {!session?.user?.isVerified && (
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 mb-8 flex items-start gap-4">
-                        <AlertCircle className="w-6 h-6 text-yellow-600 flex-shrink-0 mt-0.5" />
-                        <div className="flex-1">
-                            <h3 className="font-semibold text-yellow-900 mb-2">Account Verification Pending</h3>
-                            <p className="text-yellow-800 text-sm mb-4">
-                                Please complete your KYC verification to schedule consultations and receive prescriptions.
-                            </p>
-                            <Button size="sm" className="bg-yellow-600 hover:bg-yellow-700">
-                                Complete Verification
-                            </Button>
-                        </div>
+                {/* Verification Status - Show for all new users */}
+                <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 mb-8 flex items-start gap-4">
+                    <AlertCircle className="w-6 h-6 text-yellow-600 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                        <h3 className="font-semibold text-yellow-900 mb-2">Account Verification Pending</h3>
+                        <p className="text-yellow-800 text-sm mb-4">
+                            Your consultation is being reviewed. You'll receive an email once your account is verified.
+                        </p>
                     </div>
-                )}
+                </div>
 
                 {/* Quick Stats */}
                 <div className="grid md:grid-cols-4 gap-6 mb-8">
@@ -83,22 +78,18 @@ export default function DashboardPage() {
                         <h3 className="text-gray-600 text-sm">Active Prescriptions</h3>
                     </div>
 
-                    <Link href={`/store/${slug}/orders`} className="block">
-                        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200 hover:shadow-md transition-shadow cursor-pointer">
-                            <div className="flex items-center justify-between mb-4">
-                                <FileText className="w-8 h-8 text-purple-600" />
-                                <span className="text-2xl font-bold text-gray-900">View</span>
-                            </div>
-                            <h3 className="text-gray-600 text-sm">My Orders</h3>
+                    <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+                        <div className="flex items-center justify-between mb-4">
+                            <FileText className="w-8 h-8 text-purple-600" />
+                            <span className="text-2xl font-bold text-gray-900">0</span>
                         </div>
-                    </Link>
+                        <h3 className="text-gray-600 text-sm">Order History</h3>
+                    </div>
 
                     <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
                         <div className="flex items-center justify-between mb-4">
                             <CheckCircle2 className="w-8 h-8 text-orange-600" />
-                            <span className="text-2xl font-bold text-gray-900">
-                                {session?.user?.isVerified ? 'Yes' : 'No'}
-                            </span>
+                            <span className="text-2xl font-bold text-gray-900">Pending</span>
                         </div>
                         <h3 className="text-gray-600 text-sm">Verification Status</h3>
                     </div>
@@ -112,9 +103,6 @@ export default function DashboardPage() {
                         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
                             <div className="flex items-center justify-between mb-6">
                                 <h2 className="text-xl font-bold text-green-900">Recent Consultations</h2>
-                                <Link href={`/store/${slug}/consultations`}>
-                                    <Button variant="outline" size="sm">View All</Button>
-                                </Link>
                             </div>
 
                             <div className="text-center py-12">
@@ -189,16 +177,12 @@ export default function DashboardPage() {
                                     <p className="text-green-900">{session?.user?.email}</p>
                                 </div>
                                 <div>
-                                    <span className="text-green-700 font-medium">Member Since:</span>
-                                    <p className="text-green-900">
-                                        {new Date().toLocaleDateString()}
-                                    </p>
+                                    <span className="text-green-700 font-medium">Role:</span>
+                                    <p className="text-green-900">{(session?.user as any)?.role || 'PATIENT'}</p>
                                 </div>
                                 <div>
                                     <span className="text-green-700 font-medium">Status:</span>
-                                    <p className="text-green-900">
-                                        {session?.user?.isVerified ? 'Verified' : 'Pending Verification'}
-                                    </p>
+                                    <p className="text-green-900">Pending Verification</p>
                                 </div>
                             </div>
                         </div>

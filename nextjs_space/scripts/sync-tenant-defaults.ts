@@ -9,7 +9,7 @@ async function main() {
 
     console.log(`--- SYNCING SETTINGS FOR [${subdomain}] ---`);
 
-    const tenant = await prisma.tenant.findUnique({
+    const tenant = await prisma.tenants.findUnique({
         where: { subdomain },
         include: { template: true }
     });
@@ -45,7 +45,7 @@ async function main() {
             }
         };
 
-        await prisma.tenant.update({
+        await prisma.tenants.update({
             where: { id: tenant.id },
             data: {
                 settings: updatedSettings

@@ -20,7 +20,7 @@ export async function DELETE(
       );
     }
 
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
       where: { email: session.user.email },
     });
 
@@ -34,7 +34,7 @@ export async function DELETE(
     const templateId = params.id;
 
     // Find template
-    const template = await prisma.template.findUnique({
+    const template = await prisma.templates.findUnique({
       where: { id: templateId },
       include: {
         _count: {
@@ -77,7 +77,7 @@ export async function DELETE(
     }
 
     // Delete database record
-    await prisma.template.delete({
+    await prisma.templates.delete({
       where: { id: templateId },
     });
 

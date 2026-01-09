@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const config = await prisma.platformConfig.findUnique({
+        const config = await prisma.platform_config.findUnique({
             where: { id: 'config' },
         });
 
@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
         console.log('Updating platform config...');
 
         // Upsert the config
-        await prisma.platformConfig.upsert({
+        await prisma.platform_config.upsert({
             where: { id: 'config' },
             create: { id: 'config', ...dataToUpdate },
             update: dataToUpdate,

@@ -10,14 +10,14 @@ import { Order, OrderItem } from '@prisma/client';
 async function getOrder(orderId: string, slug: string) {
     // This would call the API in a real scenario
     // For now, get from database directly
-    const tenant = await prisma.tenant.findUnique({
+    const tenant = await prisma.tenants.findUnique({
         where: { subdomain: slug },
         select: { id: true },
     });
 
     if (!tenant) return null;
 
-    const order = await prisma.order.findFirst({
+    const order = await prisma.orders.findFirst({
         where: {
             id: orderId,
             tenantId: tenant.id,

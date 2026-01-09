@@ -23,20 +23,49 @@ export default async function TenantStoreLayout({
   }
 
   // Fetch tenant with template relation
-  const tenantWithTemplate = await prisma.tenant.findUnique({
+  // Fetch tenant with template relation AND active tenant template
+  const tenantWithTemplate = await prisma.tenants.findUnique({
     where: { id: tenant.id },
-    include: { template: true }
+    include: {
+      template: true,
+      activeTenantTemplate: {
+        include: {
+          templates: true,
+        }
+      },
+    }
   });
 
   if (!tenantWithTemplate) {
     notFound();
   }
 
-  // Get logo URL if uploaded
+  // Get active template customizations  
+  const activeTemplate = tenantWithTemplate.activeTenantTemplate;
+  const designSystem = (activeTemplate?.designSystem as any) || {};
+  const pageContent = (activeTemplate?.pageContent as any) || {};
+
+  // Get logo URL - prioritize active template logoUrl over legacy settings
   const settings = (tenantWithTemplate.settings as any) || {};
   let logoUrl: string | null = null;
 
-  if (settings.logoPath) {
+  // 1. Try active template first
+  if (activeTemplate?.logoUrl) {
+    // Check if it's an S3 path (doesn't start with / or http)
+    if (!activeTemplate.logoUrl.startsWith('/') && !activeTemplate.logoUrl.startsWith('http')) {
+      try {
+        logoUrl = await getFileUrl(activeTemplate.logoUrl);
+      } catch (error) {
+        console.error('Error fetching template logo from S3:', error);
+        // Fallback to raw string if signing fails, though it likely won't work
+        logoUrl = activeTemplate.logoUrl;
+      }
+    } else {
+      logoUrl = activeTemplate.logoUrl;
+    }
+  }
+  // 2. Fallback to legacy settings
+  else if (settings.logoPath) {
     // If logoPath starts with '/', it's a public folder path - use directly
     if (settings.logoPath.startsWith('/')) {
       logoUrl = settings.logoPath;
@@ -51,7 +80,9 @@ export default async function TenantStoreLayout({
   }
 
   // Determine which footer to render based on template
-  const templateSlug = tenantWithTemplate.template?.slug;
+  // Prioritize active custom template's base template, falling back to tenant's assigned template
+  const activeBaseTemplate = tenantWithTemplate.activeTenantTemplate?.templates;
+  const templateSlug = activeBaseTemplate?.slug || tenantWithTemplate.template?.slug;
   const subdomain = tenantWithTemplate.subdomain;
 
   // Prepare URLs for template footers
@@ -121,7 +152,13 @@ export default async function TenantStoreLayout({
   };
 
   return (
-    <TenantThemeProvider tenant={tenantWithTemplate}>
+    <TenantThemeProvider
+      tenant={tenantWithTemplate}
+      tenantTemplate={activeTemplate ? {
+        designSystem: activeTemplate.designSystem,
+        customCss: activeTemplate.customCss,
+      } : undefined}
+    >
       <div className={`min-h-screen ${getTemplateClass()}`}>
         {renderNavigation()}
         <main>{children}</main>

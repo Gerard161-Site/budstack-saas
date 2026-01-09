@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     const currency = shippingInfo?.country ? getCurrencyByCountry(shippingInfo.country) : 'ZAR';
 
     // Create order in BudStack database first
-    const order = await prisma.order.create({
+    const order = await prisma.orders.create({
       data: {
         userId: session.user.id,
         tenantId: tenant.id,
@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
       drGreenOrderId = drGreenOrder.id;
 
       // Update local order with Dr. Green order ID
-      await prisma.order.update({
+      await prisma.orders.update({
         where: { id: order.id },
         data: {
           notes: `${shippingInfo?.notes || ''}\nDr. Green Order ID: ${drGreenOrderId}`,
@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
       console.error('❌ Failed to submit order to Dr. Green API:', drGreenError);
 
       // Update order status to indicate Dr. Green submission failed
-      await prisma.order.update({
+      await prisma.orders.update({
         where: { id: order.id },
         data: {
           status: 'PENDING',
@@ -121,20 +121,25 @@ export async function POST(req: NextRequest) {
     }
 
     // Send order confirmation email
+    const html = await emailTemplates.orderConfirmation(
+      session.user.name || 'Customer',
+      order.orderNumber,
+      calculatedTotal.toFixed(2),
+      items.map((item: any) => ({
+        name: item.name,
+        quantity: item.quantity,
+        price: item.price.toFixed(2),
+      })),
+      tenant.businessName
+    );
+
     sendEmail({
       to: session.user.email || '',
       subject: `Order Confirmation - #${order.orderNumber}`,
-      html: emailTemplates.orderConfirmation(
-        session.user.name || 'Customer',
-        order.orderNumber,
-        calculatedTotal.toFixed(2),
-        items.map((item: any) => ({
-          name: item.name,
-          quantity: item.quantity,
-          price: item.price.toFixed(2),
-        })),
-        tenant.businessName
-      ),
+      html,
+      tenantId: tenant.id,
+      templateName: 'orderConfirmation',
+      metadata: { orderId: order.id, orderNumber: order.orderNumber }
     }).catch((error) => {
       console.error('Failed to send order confirmation email:', error);
     });
@@ -180,7 +185,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Get orders for the current user
-    const orders = await prisma.order.findMany({
+    const orders = await prisma.orders.findMany({
       where: {
         userId: session.user.id,
         tenantId: tenant.id,

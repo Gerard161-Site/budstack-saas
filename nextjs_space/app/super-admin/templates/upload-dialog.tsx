@@ -37,30 +37,30 @@ export function UploadTemplateDialog() {
       toast.error('Please enter a template name');
       return;
     }
-    
+
     if (!githubUrl.trim()) {
       toast.error('Please enter a GitHub URL');
       return;
     }
 
     setIsUploading(true);
-    
+
     console.log('[Template Upload] Starting upload...');
     console.log('[Template Upload] GitHub URL:', githubUrl.trim());
     console.log('[Template Upload] Structure Type:', structureType);
 
     try {
       console.log('[Template Upload] Sending POST request...');
-      
+
       const response = await fetch('/api/super-admin/templates/upload', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           templateName: templateName.trim(),
           githubUrl: githubUrl.trim(),
-          structureType 
+          structureType
         }),
       });
 
@@ -69,7 +69,7 @@ export function UploadTemplateDialog() {
 
       let data;
       const contentType = response.headers.get('content-type');
-      
+
       if (contentType && contentType.includes('application/json')) {
         data = await response.json();
         console.log('[Template Upload] Response data:', data);
@@ -98,11 +98,11 @@ export function UploadTemplateDialog() {
     } catch (error: any) {
       console.error('[Template Upload] ERROR:', error);
       console.error('[Template Upload] Error stack:', error.stack);
-      
+
       // Show detailed error to user
       const errorMessage = error.message || 'Failed to upload template';
       toast.error(errorMessage);
-      
+
       // Also log for debugging
       console.error('[Template Upload] Full error object:', error);
     } finally {
@@ -114,7 +114,7 @@ export function UploadTemplateDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
+        <Button className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-medium shadow-md hover:shadow-lg transition-all">
           <Plus className="mr-2 h-4 w-4" />
           Upload New Template
         </Button>
@@ -166,7 +166,7 @@ export function UploadTemplateDialog() {
               </SelectContent>
             </Select>
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="template-name">
               Template Name
@@ -182,7 +182,7 @@ export function UploadTemplateDialog() {
               Give your template a unique, descriptive name (e.g., "Portugal Wellness", "GTA Vice City").
             </p>
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="github-url">
               <Github className="inline-block w-4 h-4 mr-1" />

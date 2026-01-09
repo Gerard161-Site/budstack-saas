@@ -6,7 +6,7 @@ import { prisma } from '@/lib/db';
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user?.email) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Find the most recent consultation for this user
-    const consultation = await prisma.consultationQuestionnaire.findFirst({
+    const consultation = await prisma.consultation_questionnaires.findFirst({
       where: {
         email: session.user.email,
       },

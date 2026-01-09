@@ -6,7 +6,7 @@ async function main() {
     console.log('🔄 Syncing Template Database Slugs...');
 
     // Update the lovable template record to the new 'healingbuds' name
-    const result = await prisma.template.updateMany({
+    const result = await prisma.templates.updateMany({
         where: { slug: 'lovable-template-1764245125103' },
         data: {
             id: 'healingbuds',
@@ -19,7 +19,7 @@ async function main() {
         console.log(`✅ Updated ${result.count} template record(s) to 'healingbuds'`);
     } else {
         // Fallback: Check if it exists with another name or needs creation
-        const existing = await prisma.template.findUnique({
+        const existing = await prisma.templates.findUnique({
             where: { slug: 'healingbuds' }
         });
 
@@ -27,7 +27,7 @@ async function main() {
             console.log('✨ Template "healingbuds" already exists in database.');
         } else {
             console.log('📝 Creating new "healingbuds" template record...');
-            await prisma.template.create({
+            await prisma.templates.create({
                 data: {
                     id: 'healingbuds',
                     slug: 'healingbuds',

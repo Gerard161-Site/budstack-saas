@@ -34,7 +34,7 @@ export async function GET(
     const { id } = params;
 
     // Verify webhook belongs to tenant
-    const webhook = await prisma.webhook.findFirst({
+    const webhook = await prisma.webhooks.findFirst({
       where: { id, tenantId },
     });
 

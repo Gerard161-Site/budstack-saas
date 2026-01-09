@@ -20,38 +20,38 @@ export async function GET(req: NextRequest) {
     const startDate = startOfDay(subDays(new Date(), days));
 
     // Get all-time totals
-    const totalTenants = await prisma.tenant.count();
-    const activeTenants = await prisma.tenant.count({ where: { isActive: true } });
-    const totalUsers = await prisma.user.count();
-    const totalProducts = await prisma.product.count();
-    const totalOrders = await prisma.order.count();
+    const totalTenants = await prisma.tenants.count();
+    const activeTenants = await prisma.tenants.count({ where: { isActive: true } });
+    const totalUsers = await prisma.users.count();
+    const totalProducts = await prisma.products.count();
+    const totalOrders = await prisma.orders.count();
 
     // Get total revenue
-    const totalRevenueResult = await prisma.order.aggregate({
+    const totalRevenueResult = await prisma.orders.aggregate({
       _sum: { total: true },
     });
     const totalRevenue = totalRevenueResult._sum.total || 0;
 
     // Get recent stats
-    const recentTenants = await prisma.tenant.count({
+    const recentTenants = await prisma.tenants.count({
       where: { createdAt: { gte: startDate } },
     });
-    const recentUsers = await prisma.user.count({
+    const recentUsers = await prisma.users.count({
       where: { createdAt: { gte: startDate } },
     });
-    const recentOrders = await prisma.order.count({
+    const recentOrders = await prisma.orders.count({
       where: { createdAt: { gte: startDate } },
     });
 
     // Get recent revenue
-    const recentRevenueResult = await prisma.order.aggregate({
+    const recentRevenueResult = await prisma.orders.aggregate({
       where: { createdAt: { gte: startDate } },
       _sum: { total: true },
     });
     const recentRevenue = recentRevenueResult._sum.total || 0;
 
     // Get top tenants by revenue and orders
-    const topTenants = await prisma.tenant.findMany({
+    const topTenants = await prisma.tenants.findMany({
       take: 5,
       include: {
         _count: {
@@ -82,7 +82,7 @@ export async function GET(req: NextRequest) {
         const dayStart = startOfDay(date);
         const dayEnd = startOfDay(subDays(date, -1));
 
-        const result = await prisma.order.aggregate({
+        const result = await prisma.orders.aggregate({
           where: {
             createdAt: {
               gte: dayStart,
@@ -105,7 +105,7 @@ export async function GET(req: NextRequest) {
         const dayStart = startOfDay(date);
         const dayEnd = startOfDay(subDays(date, -1));
 
-        const count = await prisma.order.count({
+        const count = await prisma.orders.count({
           where: {
             createdAt: {
               gte: dayStart,
@@ -122,7 +122,7 @@ export async function GET(req: NextRequest) {
     );
 
     // Get revenue by tenant for pie chart
-    const tenantsWithRevenue = await prisma.tenant.findMany({
+    const tenantsWithRevenue = await prisma.tenants.findMany({
       include: {
         orders: {
           select: {
@@ -147,7 +147,7 @@ export async function GET(req: NextRequest) {
         const dayStart = startOfDay(date);
         const dayEnd = startOfDay(subDays(date, -1));
 
-        const count = await prisma.user.count({
+        const count = await prisma.users.count({
           where: {
             createdAt: {
               gte: dayStart,

@@ -110,10 +110,10 @@ export function AddressStep({ data, onUpdate, onNext, onBack }: AddressStepProps
               value={data.countryCode || 'GB'}
               onValueChange={(value) => {
                 const country = COUNTRY_CODES.find(c => c.code === value);
-                onUpdate({ 
+                onUpdate({
                   countryCode: value,
                   country: country?.label || '',
-                  phoneCode: country?.phoneCode || data.phoneCode
+                  // DO NOT update phoneCode - user selected it on previous step!
                 });
               }}
             >
@@ -228,7 +228,7 @@ export function AddressStep({ data, onUpdate, onNext, onBack }: AddressStepProps
                   value={data.businessCountryCode || 'none'}
                   onValueChange={(value) => {
                     const country = COUNTRY_CODES.find(c => c.code === value);
-                    onUpdate({ 
+                    onUpdate({
                       businessCountryCode: value === 'none' ? '' : value,
                       businessCountry: country?.label || ''
                     });

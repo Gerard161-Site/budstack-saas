@@ -6,9 +6,11 @@ import { Calendar, MessageCircle, Video } from 'lucide-react';
 interface ConsultationCTAProps {
   businessName: string;
   consultationUrl: string;
+  title?: string;
+  description?: string;
 }
 
-export default function ConsultationCTA({ businessName, consultationUrl }: ConsultationCTAProps) {
+export default function ConsultationCTA({ businessName, consultationUrl, title, description }: ConsultationCTAProps) {
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.2 });
 
   return (
@@ -16,9 +18,9 @@ export default function ConsultationCTA({ businessName, consultationUrl }: Consu
       {/* Animated Background Shapes */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute top-10 left-10 w-64 h-64 rounded-full"
-             style={{ background: 'radial-gradient(circle, white 0%, transparent 70%)' }} />
+          style={{ background: 'radial-gradient(circle, white 0%, transparent 70%)' }} />
         <div className="absolute bottom-10 right-10 w-80 h-80 rounded-full"
-             style={{ background: 'radial-gradient(circle, white 0%, transparent 70%)' }} />
+          style={{ background: 'radial-gradient(circle, white 0%, transparent 70%)' }} />
       </div>
 
       <div ref={ref} className="container mx-auto px-6 relative z-10">
@@ -30,10 +32,10 @@ export default function ConsultationCTA({ businessName, consultationUrl }: Consu
         >
           {/* Header */}
           <h2 className="text-5xl md:text-6xl font-black text-white mb-6 comic-text">
-            Ready to Get Started?
+            {title || 'Ready to Get Started?'}
           </h2>
           <p className="text-xl md:text-2xl text-white/95 mb-12 max-w-2xl mx-auto">
-            Book your free consultation with our medical cannabis specialists today
+            {description || 'Book your free consultation with our medical cannabis specialists today'}
           </p>
 
           {/* Consultation Steps */}

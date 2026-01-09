@@ -30,9 +30,9 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const user = await prisma.user.findUnique({
+        const user = await prisma.users.findUnique({
             where: { id: session.user.id },
-            include: { tenant: true },
+            include: { tenants: true },
         });
 
         if (!user?.tenant) {
@@ -48,14 +48,14 @@ export async function POST(req: NextRequest) {
         // Ensure uniqueness within tenant
         let uniqueSlug = slug;
         let counter = 1;
-        while (await prisma.post.findUnique({
+        while (await prisma.posts.findUnique({
             where: { slug_tenantId: { slug: uniqueSlug, tenantId: user.tenant.id } }
         })) {
             uniqueSlug = `${slug}-${counter}`;
             counter++;
         }
 
-        const post = await prisma.post.create({
+        const post = await prisma.posts.create({
             data: {
                 title: validatedData.title,
                 slug: uniqueSlug,
@@ -85,16 +85,16 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const user = await prisma.user.findUnique({
+        const user = await prisma.users.findUnique({
             where: { id: session.user.id },
-            include: { tenant: true },
+            include: { tenants: true },
         });
 
         if (!user?.tenant) {
             return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
         }
 
-        const posts = await prisma.post.findMany({
+        const posts = await prisma.posts.findMany({
             where: { tenantId: user.tenant.id },
             orderBy: { createdAt: 'desc' },
             include: { author: { select: { name: true, email: true } } }

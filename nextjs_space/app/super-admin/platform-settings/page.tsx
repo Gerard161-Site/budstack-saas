@@ -14,7 +14,7 @@ export default async function PlatformSettingsPage() {
     redirect('/auth/login');
   }
 
-  const user = await prisma.user.findUnique({
+  const user = await prisma.users.findUnique({
     where: { email: session.user.email },
   });
 
@@ -34,27 +34,15 @@ export default async function PlatformSettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 theme-force-light">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Back Button */}
-        <div className="mb-6">
-          <Link href="/super-admin">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Dashboard
-            </Button>
-          </Link>
-        </div>
-
-        {/* Page Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Platform Branding</h1>
-          <p className="text-gray-600 mt-2">Customize the look and feel of the main BudStack platform</p>
-        </div>
-
-        {/* Branding Form */}
-        <PlatformBrandingForm settings={settings} />
+    <div className="p-8">
+      {/* Page Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Platform Branding</h1>
+        <p className="text-slate-600 mt-2">Customize the look and feel of the main BudStack platform</p>
       </div>
+
+      {/* Branding Form */}
+      <PlatformBrandingForm settings={settings} />
     </div>
   );
 }

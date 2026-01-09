@@ -19,7 +19,7 @@ export default async function TenantsPage() {
     redirect('/auth/login');
   }
 
-  const tenants = await prisma.tenant.findMany({
+  const tenants = await prisma.tenants.findMany({
     include: {
       _count: {
         select: {
@@ -35,56 +35,63 @@ export default async function TenantsPage() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50 theme-force-light">
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <Link href="/super-admin">
-                <Button variant="ghost" className="mb-2">← Back to Dashboard</Button>
-              </Link>
-              <h1 className="text-3xl font-bold text-gray-900">Tenant Management</h1>
-            </div>
-            <Link href="/super-admin/onboarding">
-              <Button>Review Applications</Button>
-            </Link>
+    <div className="p-8">
+      {/* Header */}
+      <div className="mb-8">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Tenant Management</h1>
+            <p className="text-slate-600 mt-2">Manage all tenant accounts and NFT holders</p>
           </div>
+          <Link href="/super-admin/onboarding">
+            <Button className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-medium shadow-md hover:shadow-lg transition-all">
+              Review Applications
+            </Button>
+          </Link>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>All Tenants ({tenants.length})</CardTitle>
-          </CardHeader>
-          <CardContent>
+      {/* Tenants Table */}
+      <Card className="shadow-lg border-slate-200">
+        <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-slate-100">
+          <CardTitle className="flex items-center justify-between">
+            <span>All Tenants ({tenants.length})</span>
+            <Badge variant="outline" className="text-sm font-normal">
+              {tenants.filter(t => t.isActive).length} Active
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Business Name</TableHead>
-                  <TableHead>NFT Token ID</TableHead>
-                  <TableHead>Store URL</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Users</TableHead>
-                  <TableHead>Products</TableHead>
-                  <TableHead>Orders</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead>Actions</TableHead>
+                <TableRow className="bg-slate-50/50">
+                  <TableHead className="font-semibold">Business Name</TableHead>
+                  <TableHead className="font-semibold">NFT Token ID</TableHead>
+                  <TableHead className="font-semibold">Store URL</TableHead>
+                  <TableHead className="font-semibold">Status</TableHead>
+                  <TableHead className="font-semibold text-center">Users</TableHead>
+                  <TableHead className="font-semibold text-center">Products</TableHead>
+                  <TableHead className="font-semibold text-center">Orders</TableHead>
+                  <TableHead className="font-semibold">Created</TableHead>
+                  <TableHead className="font-semibold">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {tenants.map((tenant: any) => {
                   const tenantUrl = getTenantUrl(tenant);
                   return (
-                    <TableRow key={tenant.id}>
-                      <TableCell className="font-medium">{tenant.businessName}</TableCell>
-                      <TableCell>{tenant.nftTokenId || 'N/A'}</TableCell>
+                    <TableRow key={tenant.id} className="hover:bg-slate-50 transition-colors">
+                      <TableCell className="font-medium text-slate-900">{tenant.businessName}</TableCell>
+                      <TableCell className="text-slate-600 font-mono text-sm">
+                        {tenant.nftTokenId || <span className="text-slate-400">N/A</span>}
+                      </TableCell>
                       <TableCell>
                         <a
                           href={tenantUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline flex items-center gap-1"
+                          className="text-cyan-600 hover:text-cyan-700 hover:underline flex items-center gap-1 transition-colors"
                         >
                           <span className="truncate max-w-[200px]">{tenantUrl}</span>
                           <ExternalLink className="h-3 w-3 flex-shrink-0" />
@@ -92,18 +99,34 @@ export default async function TenantsPage() {
                       </TableCell>
                       <TableCell>
                         {tenant.isActive ? (
-                          <Badge variant="default" className="bg-green-500">Active</Badge>
+                          <Badge className="bg-emerald-500 hover:bg-emerald-600">Active</Badge>
                         ) : (
-                          <Badge variant="secondary">Inactive</Badge>
+                          <Badge variant="secondary" className="bg-slate-200">Inactive</Badge>
                         )}
                       </TableCell>
-                      <TableCell>{tenant._count.users}</TableCell>
-                      <TableCell>{tenant._count.products}</TableCell>
-                      <TableCell>{tenant._count.orders}</TableCell>
-                      <TableCell>{format(new Date(tenant.createdAt), 'MMM d, yyyy')}</TableCell>
+                      <TableCell className="text-center">
+                        <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-700 text-sm font-medium">
+                          {tenant._count.users}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-purple-100 text-purple-700 text-sm font-medium">
+                          {tenant._count.products}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-amber-100 text-amber-700 text-sm font-medium">
+                          {tenant._count.orders}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-slate-600 text-sm">
+                        {format(new Date(tenant.createdAt), 'MMM d, yyyy')}
+                      </TableCell>
                       <TableCell>
                         <Link href={`/super-admin/tenants/${tenant.id}`}>
-                          <Button variant="outline" size="sm">Manage</Button>
+                          <Button variant="outline" size="sm" className="hover:bg-cyan-50 hover:text-cyan-700 hover:border-cyan-300 transition-colors">
+                            Manage
+                          </Button>
                         </Link>
                       </TableCell>
                     </TableRow>
@@ -111,9 +134,9 @@ export default async function TenantsPage() {
                 })}
               </TableBody>
             </Table>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

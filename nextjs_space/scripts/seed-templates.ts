@@ -49,19 +49,19 @@ export async function seedTemplates() {
 
 
   for (const template of templates) {
-    const existing = await prisma.template.findUnique({
+    const existing = await prisma.templates.findUnique({
       where: { slug: template.slug },
     });
 
     if (existing) {
       console.log(`  ✓ Template "${template.name}" already exists, updating...`);
-      await prisma.template.update({
+      await prisma.templates.update({
         where: { slug: template.slug },
         data: template,
       });
     } else {
       console.log(`  + Creating template "${template.name}"...`);
-      await prisma.template.create({
+      await prisma.templates.create({
         data: template,
       });
     }

@@ -40,7 +40,7 @@ export interface AuditLogParams {
  */
 export async function createAuditLog(params: AuditLogParams): Promise<void> {
   try {
-    await prisma.auditLog.create({
+    await prisma.audit_logs.create({
       data: {
         action: params.action,
         entityType: params.entityType,

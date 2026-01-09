@@ -45,7 +45,7 @@ export async function POST(
         }
 
         // Get tenant by slug
-        const tenant = await prisma.tenant.findUnique({
+        const tenant = await prisma.tenants.findUnique({
             where: { subdomain: params.slug },
             select: { id: true },
         });

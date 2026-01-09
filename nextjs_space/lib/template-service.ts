@@ -35,7 +35,7 @@ export async function cloneTemplateForTenant(
 ) {
     try {
         // 1. Get base template
-        const baseTemplate = await prisma.template.findUnique({
+        const baseTemplate = await prisma.templates.findUnique({
             where: { slug: baseTemplateSlug },
         });
 
@@ -73,7 +73,7 @@ export async function cloneTemplateForTenant(
         const templateName = options?.customName || `${baseTemplate.name} - Custom`;
 
         // 5. Create TenantTemplate record
-        const tenantTemplate = await prisma.tenantTemplate.create({
+        const tenantTemplate = await prisma.tenant_templates.create({
             data: {
                 tenantId,
                 baseTemplateId: baseTemplate.id,
@@ -94,7 +94,7 @@ export async function cloneTemplateForTenant(
         // 6. If not a draft, set as active template
         if (!options?.isDraft) {
             // Deactivate all other templates for this tenant
-            await prisma.tenantTemplate.updateMany({
+            await prisma.tenant_templates.updateMany({
                 where: {
                     tenantId,
                     id: { not: tenantTemplate.id },
@@ -103,7 +103,7 @@ export async function cloneTemplateForTenant(
             });
 
             // Set this template as the active one
-            await prisma.tenant.update({
+            await prisma.tenants.update({
                 where: { id: tenantId },
                 data: { activeTenantTemplateId: tenantTemplate.id },
             });
@@ -127,7 +127,7 @@ export async function switchTenantTemplate(
 ) {
     try {
         // Verify the new template belongs to this tenant
-        const newTemplate = await prisma.tenantTemplate.findUnique({
+        const newTemplate = await prisma.tenant_templates.findUnique({
             where: { id: newTemplateId },
         });
 
@@ -136,19 +136,19 @@ export async function switchTenantTemplate(
         }
 
         // Deactivate all templates
-        await prisma.tenantTemplate.updateMany({
+        await prisma.tenant_templates.updateMany({
             where: { tenantId },
             data: { isActive: false },
         });
 
         // Activate the new template
-        await prisma.tenantTemplate.update({
+        await prisma.tenant_templates.update({
             where: { id: newTemplateId },
             data: { isActive: true },
         });
 
         // Update tenant's active template reference
-        await prisma.tenant.update({
+        await prisma.tenants.update({
             where: { id: tenantId },
             data: { activeTenantTemplateId: newTemplateId },
         });
@@ -174,7 +174,7 @@ export async function uploadTenantAsset(
 ): Promise<string> {
     try {
         // 1. Get tenant template
-        const tenantTemplate = await prisma.tenantTemplate.findUnique({
+        const tenantTemplate = await prisma.tenant_templates.findUnique({
             where: { id: tenantTemplateId },
         });
 
@@ -209,7 +209,7 @@ export async function uploadTenantAsset(
             updateData.faviconUrl = url;
         }
 
-        await prisma.tenantTemplate.update({
+        await prisma.tenant_templates.update({
             where: { id: tenantTemplateId },
             data: updateData,
         });
@@ -238,7 +238,7 @@ export async function updateTenantTemplate(
     }
 ) {
     try {
-        const updated = await prisma.tenantTemplate.update({
+        const updated = await prisma.tenant_templates.update({
             where: { id: tenantTemplateId },
             data: updates,
         });
@@ -257,7 +257,7 @@ export async function updateTenantTemplate(
  */
 export async function deleteTenantTemplate(tenantTemplateId: string) {
     try {
-        const template = await prisma.tenantTemplate.findUnique({
+        const template = await prisma.tenant_templates.findUnique({
             where: { id: tenantTemplateId },
         });
 
@@ -293,7 +293,7 @@ export async function deleteTenantTemplate(tenantTemplateId: string) {
         }
 
         // Delete database record
-        await prisma.tenantTemplate.delete({
+        await prisma.tenant_templates.delete({
             where: { id: tenantTemplateId },
         });
 
@@ -309,7 +309,7 @@ export async function deleteTenantTemplate(tenantTemplateId: string) {
  * Get all templates for a tenant
  */
 export async function getTenantTemplates(tenantId: string) {
-    return prisma.tenantTemplate.findMany({
+    return prisma.tenant_templates.findMany({
         where: { tenantId },
         include: { baseTemplate: true },
         orderBy: { createdAt: 'desc' },
@@ -320,7 +320,7 @@ export async function getTenantTemplates(tenantId: string) {
  * Get tenant's active template
  */
 export async function getActiveTenantTemplate(tenantId: string) {
-    const tenant = await prisma.tenant.findUnique({
+    const tenant = await prisma.tenants.findUnique({
         where: { id: tenantId },
         include: {
             activeTenantTemplate: {
@@ -339,7 +339,7 @@ export async function getActiveTenantTemplate(tenantId: string) {
 export async function cleanupExpiredDrafts() {
     const now = new Date();
 
-    const expiredDrafts = await prisma.tenantTemplate.findMany({
+    const expiredDrafts = await prisma.tenant_templates.findMany({
         where: {
             isDraft: true,
             expiresAt: { lte: now },

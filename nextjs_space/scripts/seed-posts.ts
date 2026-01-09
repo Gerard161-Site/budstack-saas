@@ -7,7 +7,7 @@ export async function seedPosts() {
     console.log('Starting migration of legacy articles...');
 
     const subdomain = 'healingbuds';
-    const tenant = await prisma.tenant.findUnique({
+    const tenant = await prisma.tenants.findUnique({
         where: { subdomain },
         include: { users: true }
     });
@@ -30,7 +30,7 @@ export async function seedPosts() {
             ? article.content.map(p => `<p>${p}</p>`).join('')
             : article.content;
 
-        await prisma.post.upsert({
+        await prisma.posts.upsert({
             where: {
                 slug_tenantId: {
                     slug: article.id,

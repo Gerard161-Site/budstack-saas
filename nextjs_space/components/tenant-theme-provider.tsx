@@ -26,7 +26,9 @@ interface TenantThemeProviderProps {
  * - LEGACY: tenant.settings (Tenant)
  */
 export function TenantThemeProvider({ tenant, tenantTemplate, children }: TenantThemeProviderProps) {
+  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
   const settings = tenant ? (tenant.settings as TenantSettings) || {} : {};
+  // Prioritize tenantTemplate.designSystem, then settings.designSystem
   const designSystem = tenantTemplate?.designSystem || (settings as any).designSystem;
   const customCss = tenantTemplate?.customCss || settings.customCSS;
   const containerRef = useRef<HTMLDivElement>(null);
@@ -59,15 +61,15 @@ export function TenantThemeProvider({ tenant, tenantTemplate, children }: Tenant
 
 /**
  * Apply theme CSS variables to SCOPED container (not document root)
- * This prevents tenant themes from affecting BudStack.io core pages
  */
 function applyThemeToContainer(container: HTMLElement, designSystem: any, settings: TenantSettings) {
   const root = container;
 
   // === COMPREHENSIVE DESIGN SYSTEM ===
   if (designSystem) {
-    // Apply all color variables
+    // Apply colors
     if (designSystem.colors) {
+      // 1. Set specific tenant variables using formatColorValue (Example: --tenant-color-primary: hsl(123 45% 67%))
       Object.entries(designSystem.colors).forEach(([key, value]) => {
         if (value) {
           const colorValue = formatColorValue(value as string);
@@ -76,165 +78,119 @@ function applyThemeToContainer(container: HTMLElement, designSystem: any, settin
           }
         }
       });
+
+      // 2. Set CORE Tailwind/Shadcn variables using the RAW HSL value if available
+      // Shadcn expects variables like --primary: 123 45% 67%; (NO hsl() wrapper)
+      // If the value in designSystem is raw HSL, use it directly. If it's hex, we might need conversion (or just use hex if standard css)
+      // Assuming designSystem stores valid CSS values. For Shadcn, we really need the HSL channels.
+
+      const primary = designSystem.colors.primary;
+      const secondary = designSystem.colors.secondary;
+      const accent = designSystem.colors.accent;
+      const background = designSystem.colors.background;
+      const text = designSystem.colors.text;
+
+      // Helper to strip "hsl(" and ")" if present, or return as is if it looks like raw channels
+      const toChannels = (val: string) => {
+        if (!val) return null;
+        if (val.startsWith('hsl(')) return val.replace('hsl(', '').replace(')', '');
+        return val;
+      };
+
+      if (primary) root.style.setProperty('--primary', toChannels(primary as string));
+      if (secondary) root.style.setProperty('--secondary', toChannels(secondary as string));
+      if (accent) root.style.setProperty('--accent', toChannels(accent as string));
+      if (background) root.style.setProperty('--background', toChannels(background as string));
+      // Map text color to foreground
+      if (text) root.style.setProperty('--foreground', toChannels(text as string));
     }
 
-    // Apply typography variables
-    if (designSystem.typography) {
-      // Font families
-      if (designSystem.typography.fontFamily) {
-        Object.entries(designSystem.typography.fontFamily).forEach(([key, value]) => {
-          root.style.setProperty(`--tenant-font-${camelToKebab(key)}`, value as string);
-        });
-      }
-      // Font sizes
-      if (designSystem.typography.fontSize) {
-        Object.entries(designSystem.typography.fontSize).forEach(([key, value]) => {
-          root.style.setProperty(`--tenant-text-${key}`, value as string);
-        });
-      }
-      // Font weights
-      if (designSystem.typography.fontWeight) {
-        Object.entries(designSystem.typography.fontWeight).forEach(([key, value]) => {
-          root.style.setProperty(`--tenant-font-weight-${key}`, value as string);
-        });
-      }
-      // Line heights
-      if (designSystem.typography.lineHeight) {
-        Object.entries(designSystem.typography.lineHeight).forEach(([key, value]) => {
-          root.style.setProperty(`--tenant-leading-${key}`, value as string);
-        });
-      }
-    }
+    // === TYPOGRAPHY ===
+    const fontMap: Record<string, string> = {
+      inter: "'Inter', sans-serif",
+      playfair: "'Playfair Display', serif",
+      roboto: "'Roboto', sans-serif",
+      montserrat: "'Montserrat', sans-serif",
+      lato: "'Lato', sans-serif",
+      poppins: "'Poppins', sans-serif",
+    };
 
-    // Apply spacing variables
-    if (designSystem.spacing) {
-      Object.entries(designSystem.spacing).forEach(([key, value]) => {
-        root.style.setProperty(`--tenant-space-${key}`, value as string);
-      });
-    }
+    root.style.setProperty(
+      '--tenant-font-body',
+      fontMap[settings.fontFamily || 'inter'] || settings.fontFamily || "'Inter', sans-serif"
+    );
+    root.style.setProperty(
+      '--tenant-font-heading',
+      fontMap[settings.headingFontFamily || settings.fontFamily || 'inter'] || settings.headingFontFamily || "'Inter', sans-serif"
+    );
 
-    // Apply border radius variables
-    if (designSystem.borderRadius) {
-      Object.entries(designSystem.borderRadius).forEach(([key, value]) => {
-        root.style.setProperty(`--tenant-radius-${key}`, value as string);
-      });
-    }
+    // Font size scale
+    const fontSizeMap: Record<string, string> = {
+      small: '0.875rem',
+      medium: '1rem',
+      large: '1.125rem',
+    };
+    root.style.setProperty(
+      '--tenant-font-size-base',
+      fontSizeMap[settings.fontSize || 'medium']
+    );
 
-    // Apply shadow variables
-    if (designSystem.shadows) {
-      Object.entries(designSystem.shadows).forEach(([key, value]) => {
-        root.style.setProperty(`--tenant-shadow-${key}`, value as string);
-      });
-    }
+    // === BORDER RADIUS ===
+    const borderRadiusMap: Record<string, string> = {
+      none: '0',
+      small: '0.25rem',
+      medium: '0.5rem',
+      large: '1rem',
+    };
+    root.style.setProperty(
+      '--tenant-border-radius',
+      borderRadiusMap[settings.borderRadius || 'medium']
+    );
+
+    // Button-specific border radius
+    const buttonStyleMap: Record<string, string> = {
+      rounded: '0.5rem',
+      square: '0.25rem',
+      pill: '9999px',
+    };
+    root.style.setProperty(
+      '--tenant-button-radius',
+      buttonStyleMap[settings.buttonStyle || 'rounded']
+    );
+
+    // === SPACING ===
+    const spacingMap: Record<string, string> = {
+      compact: '0.75',
+      normal: '1',
+      comfortable: '1.5',
+    };
+    root.style.setProperty(
+      '--tenant-spacing-scale',
+      spacingMap[settings.spacing || 'normal']
+    );
+
+    // === SHADOWS ===
+    const shadowMap: Record<string, string> = {
+      none: 'none',
+      soft: '0 1px 3px 0 rgb(0 0 0 / 0.1)',
+      medium: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+      bold: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+    };
+    root.style.setProperty(
+      '--tenant-shadow',
+      shadowMap[settings.shadowStyle || 'soft']
+    );
+
+    // === BUTTON SIZE ===
+    const buttonSizeMap: Record<string, { padding: string; fontSize: string }> = {
+      small: { padding: '0.5rem 1rem', fontSize: '0.875rem' },
+      medium: { padding: '0.75rem 1.5rem', fontSize: '1rem' },
+      large: { padding: '1rem 2rem', fontSize: '1.125rem' },
+    };
+    const buttonSize = buttonSizeMap[settings.buttonSize || 'medium'];
+    root.style.setProperty('--tenant-button-padding', buttonSize.padding);
+    root.style.setProperty('--tenant-button-font-size', buttonSize.fontSize);
   }
-
-  // === BACKWARD COMPATIBILITY: Basic theme variables ===
-  root.style.setProperty('--tenant-primary', formatColorValue(settings.primaryColor || '#059669'));
-  root.style.setProperty('--tenant-secondary', formatColorValue(settings.secondaryColor || '#34d399'));
-  root.style.setProperty('--tenant-accent', formatColorValue(settings.accentColor || '#10b981'));
-  root.style.setProperty('--tenant-bg', formatColorValue(settings.backgroundColor || '#ffffff'));
-  root.style.setProperty('--tenant-text', formatColorValue(settings.textColor || '#1f2937'));
-  root.style.setProperty('--tenant-heading', formatColorValue(settings.headingColor || '#111827'));
-
-  // === TAILWIND COLOR INTEGRATION ===
-  // Map tenant colors to Tailwind's CSS variables so UI components work
-  const primaryColor = formatColorValue(settings.primaryColor || designSystem?.colors?.primary || '#059669');
-  const secondaryColor = formatColorValue(settings.secondaryColor || designSystem?.colors?.secondary || '#34d399');
-  const accentColor = formatColorValue(settings.accentColor || designSystem?.colors?.accent || '#10b981');
-
-  // Set color variables for Tailwind components
-  root.style.setProperty('--primary', primaryColor);
-  root.style.setProperty('--primary-foreground', '#ffffff');
-  root.style.setProperty('--secondary', secondaryColor);
-  root.style.setProperty('--secondary-foreground', '#ffffff');
-  root.style.setProperty('--accent', accentColor);
-  root.style.setProperty('--accent-foreground', '#ffffff');
-
-  // === TYPOGRAPHY ===
-  const fontMap: Record<string, string> = {
-    inter: "'Inter', sans-serif",
-    playfair: "'Playfair Display', serif",
-    roboto: "'Roboto', sans-serif",
-    montserrat: "'Montserrat', sans-serif",
-    lato: "'Lato', sans-serif",
-    poppins: "'Poppins', sans-serif",
-  };
-
-  root.style.setProperty(
-    '--tenant-font-body',
-    fontMap[settings.fontFamily || 'inter'] || settings.fontFamily || "'Inter', sans-serif"
-  );
-  root.style.setProperty(
-    '--tenant-font-heading',
-    fontMap[settings.headingFontFamily || settings.fontFamily || 'inter'] || settings.headingFontFamily || "'Inter', sans-serif"
-  );
-
-  // Font size scale
-  const fontSizeMap: Record<string, string> = {
-    small: '0.875rem',
-    medium: '1rem',
-    large: '1.125rem',
-  };
-  root.style.setProperty(
-    '--tenant-font-size-base',
-    fontSizeMap[settings.fontSize || 'medium']
-  );
-
-  // === BORDER RADIUS ===
-  const borderRadiusMap: Record<string, string> = {
-    none: '0',
-    small: '0.25rem',
-    medium: '0.5rem',
-    large: '1rem',
-  };
-  root.style.setProperty(
-    '--tenant-border-radius',
-    borderRadiusMap[settings.borderRadius || 'medium']
-  );
-
-  // Button-specific border radius
-  const buttonStyleMap: Record<string, string> = {
-    rounded: '0.5rem',
-    square: '0.25rem',
-    pill: '9999px',
-  };
-  root.style.setProperty(
-    '--tenant-button-radius',
-    buttonStyleMap[settings.buttonStyle || 'rounded']
-  );
-
-  // === SPACING ===
-  const spacingMap: Record<string, string> = {
-    compact: '0.75',
-    normal: '1',
-    comfortable: '1.5',
-  };
-  root.style.setProperty(
-    '--tenant-spacing-scale',
-    spacingMap[settings.spacing || 'normal']
-  );
-
-  // === SHADOWS ===
-  const shadowMap: Record<string, string> = {
-    none: 'none',
-    soft: '0 1px 3px 0 rgb(0 0 0 / 0.1)',
-    medium: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-    bold: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
-  };
-  root.style.setProperty(
-    '--tenant-shadow',
-    shadowMap[settings.shadowStyle || 'soft']
-  );
-
-  // === BUTTON SIZE ===
-  const buttonSizeMap: Record<string, { padding: string; fontSize: string }> = {
-    small: { padding: '0.5rem 1rem', fontSize: '0.875rem' },
-    medium: { padding: '0.75rem 1.5rem', fontSize: '1rem' },
-    large: { padding: '1rem 2rem', fontSize: '1.125rem' },
-  };
-  const buttonSize = buttonSizeMap[settings.buttonSize || 'medium'];
-  root.style.setProperty('--tenant-button-padding', buttonSize.padding);
-  root.style.setProperty('--tenant-button-font-size', buttonSize.fontSize);
 }
 
 /**

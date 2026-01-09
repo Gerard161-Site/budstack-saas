@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Find user with valid token
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
       where: { resetToken: token },
     });
 
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Update password and clear reset token
-    await prisma.user.update({
+    await prisma.users.update({
       where: { id: user.id },
       data: {
         password: hashedPassword,

@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Find order by Dr. Green Order ID
-        const order = await prisma.order.findFirst({
+        const order = await prisma.orders.findFirst({
             where: {
                 drGreenOrderId: custom_data2,
             },
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Update order payment status
-        const updatedOrder = await prisma.order.update({
+        const updatedOrder = await prisma.orders.update({
             where: { id: order.id },
             data: {
                 paymentStatus,

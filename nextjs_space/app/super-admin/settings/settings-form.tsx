@@ -75,12 +75,12 @@ export default function SettingsForm({ config }: SettingsFormProps) {
             </Alert>
 
             {/* Dr. Green API */}
-            <Card>
-                <CardHeader>
+            <Card className="shadow-lg border-slate-200">
+                <CardHeader className="border-b bg-gradient-to-r from-emerald-50 to-teal-50">
                     <CardTitle>Dr. Green API Configuration</CardTitle>
                     <CardDescription>Configure the default Dr. Green API endpoint</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 pt-6">
                     <div>
                         <Label htmlFor="drGreenApiUrl">API URL</Label>
                         <Input
@@ -97,12 +97,12 @@ export default function SettingsForm({ config }: SettingsFormProps) {
             </Card>
 
             {/* AWS S3 Configuration */}
-            <Card>
-                <CardHeader>
+            <Card className="shadow-lg border-slate-200">
+                <CardHeader className="border-b bg-gradient-to-r from-blue-50 to-cyan-50">
                     <CardTitle>AWS S3 Configuration</CardTitle>
                     <CardDescription>Configure file storage settings</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 pt-6">
                     <div>
                         <Label htmlFor="awsBucketName">Bucket Name</Label>
                         <Input
@@ -160,12 +160,12 @@ export default function SettingsForm({ config }: SettingsFormProps) {
             </Card>
 
             {/* Email Configuration */}
-            <Card>
-                <CardHeader>
+            <Card className="shadow-lg border-slate-200">
+                <CardHeader className="border-b bg-gradient-to-r from-purple-50 to-pink-50">
                     <CardTitle>Email Configuration</CardTitle>
                     <CardDescription>Configure SMTP settings for sending emails</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 pt-6">
                     <div>
                         <Label htmlFor="emailServer">SMTP Server URL (Encrypted)</Label>
                         <Input
@@ -192,12 +192,12 @@ export default function SettingsForm({ config }: SettingsFormProps) {
             </Card>
 
             {/* Redis Configuration */}
-            <Card>
-                <CardHeader>
+            <Card className="shadow-lg border-slate-200">
+                <CardHeader className="border-b bg-gradient-to-r from-amber-50 to-orange-50">
                     <CardTitle>Redis Configuration</CardTitle>
                     <CardDescription>Configure Redis for caching and sessions</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 pt-6">
                     <div>
                         <Label htmlFor="redisUrl">Redis Connection URL (Encrypted)</Label>
                         <Input
@@ -216,7 +216,11 @@ export default function SettingsForm({ config }: SettingsFormProps) {
 
             {/* Submit */}
             <div className="flex justify-end">
-                <Button type="submit" disabled={isLoading}>
+                <Button
+                    type="submit"
+                    disabled={isLoading}
+                    className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-medium shadow-md hover:shadow-lg transition-all"
+                >
                     {isLoading ? 'Saving...' : 'Save Settings'}
                 </Button>
             </div>

@@ -17,7 +17,7 @@ export default async function EditPostPage({ params }: { params: { id: string } 
 
     const { id } = params;
 
-    const post = await prisma.post.findUnique({
+    const post = await prisma.posts.findUnique({
         where: { id },
     });
 
@@ -26,9 +26,9 @@ export default async function EditPostPage({ params }: { params: { id: string } 
     }
 
     // Verify tenant access
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
         where: { id: session.user.id },
-        include: { tenant: true }
+        include: { tenants: true }
     });
 
     if (post.tenantId !== user?.tenantId) {

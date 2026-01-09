@@ -19,20 +19,20 @@ export default async function TheWirePage({ params }: TheWirePageProps) {
   const { slug } = params;
 
   // 1. Fetch Tenant
-  const tenant = await prisma.tenant.findUnique({
+  const tenant = await prisma.tenants.findUnique({
     where: { subdomain: slug },
   });
 
   if (!tenant) notFound();
 
   // 2. Fetch Posts
-  const posts = await prisma.post.findMany({
+  const posts = await prisma.posts.findMany({
     where: {
       tenantId: tenant.id,
       published: true
     },
     orderBy: { createdAt: "desc" },
-    include: { author: true },
+    include: { users: true },
   });
 
   return (

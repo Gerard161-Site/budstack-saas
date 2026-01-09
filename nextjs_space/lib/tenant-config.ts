@@ -8,7 +8,7 @@ import { DoctorGreenConfig } from "@/lib/doctor-green-api";
  * Throws an error if credentials are missing or invalid.
  */
 export async function getTenantDrGreenConfig(tenantId: string): Promise<DoctorGreenConfig> {
-    const tenant = await prisma.tenant.findUnique({
+    const tenant = await prisma.tenants.findUnique({
         where: { id: tenantId },
         select: {
             drGreenApiKey: true,

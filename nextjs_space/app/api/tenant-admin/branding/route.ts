@@ -14,12 +14,12 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
       where: { id: session.user.id },
-      include: { tenant: true },
+      include: { tenants: true },
     });
 
-    if (!user?.tenant) {
+    if (!user?.tenants) {
       return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
     }
 
@@ -58,11 +58,11 @@ export async function PUT(req: NextRequest) {
     }
 
     // Check for active template
-    const activeTemplateId = user.tenant.activeTenantTemplateId;
+    const activeTemplateId = user.tenants.activeTenantTemplateId;
 
     if (activeTemplateId) {
       // Fetch current template to get existing designSystem
-      const currentTemplate = await prisma.tenantTemplate.findUnique({
+      const currentTemplate = await prisma.tenant_templates.findUnique({
         where: { id: activeTemplateId }
       });
 
@@ -120,14 +120,14 @@ export async function PUT(req: NextRequest) {
       if (settings.faviconPath) updateData.faviconUrl = settings.faviconPath;
 
       // Update TenantTemplate
-      await prisma.tenantTemplate.update({
+      await prisma.tenant_templates.update({
         where: { id: activeTemplateId },
         data: updateData
       });
 
       // ALSO update Tenant settings for fallback/consistency
-      await prisma.tenant.update({
-        where: { id: user.tenant.id },
+      await prisma.tenants.update({
+        where: { id: user.tenants.id },
         data: {
           businessName,
           settings: settings as any,
@@ -136,8 +136,8 @@ export async function PUT(req: NextRequest) {
 
     } else {
       // Legacy behavior: Update only Tenant settings
-      await prisma.tenant.update({
-        where: { id: user.tenant.id },
+      await prisma.tenants.update({
+        where: { id: user.tenants.id },
         data: {
           businessName,
           settings: settings as any,

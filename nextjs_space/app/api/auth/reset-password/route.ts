@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Find user by email
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
       where: { email },
     });
 
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour from now
 
     // Save token to database
-    await prisma.user.update({
+    await prisma.users.update({
       where: { id: user.id },
       data: {
         resetToken,
@@ -44,10 +44,14 @@ export async function POST(request: NextRequest) {
     const resetLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/reset-password/${resetToken}`;
 
     // Send password reset email
+    // Send password reset email
+    const html = await emailTemplates.passwordReset(user.name || 'User', resetLink, 'BudStack');
     await sendEmail({
       to: email,
       subject: 'Password Reset Request',
-      html: emailTemplates.passwordReset(user.name || 'User', resetLink, 'BudStack'),
+      html,
+      tenantId: user.tenantId || 'SYSTEM',
+      templateName: 'passwordReset',
     }).catch((error) => {
       console.error('Failed to send password reset email:', error);
     });

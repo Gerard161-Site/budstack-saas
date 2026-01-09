@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if subdomain already exists
-    const existingTenant = await prisma.tenant.findUnique({
+    const existingTenant = await prisma.tenants.findUnique({
       where: { subdomain },
     });
 
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if email already exists
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await prisma.users.findUnique({
       where: { email },
     });
 
@@ -72,13 +72,13 @@ export async function POST(req: NextRequest) {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Get actual template from database or fallback to healingbuds
-    let dbTemplate = await prisma.template.findFirst({
+    let dbTemplate = await prisma.templates.findFirst({
       where: { slug: templateId || 'healingbuds' },
     });
 
     // If requested template not found, use healingbuds as default
     if (!dbTemplate) {
-      dbTemplate = await prisma.template.findFirst({
+      dbTemplate = await prisma.templates.findFirst({
         where: { slug: 'healingbuds' },
       });
     }
@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
     // If still no template, create a basic one (safety fallback)
     if (!dbTemplate) {
       console.error('[CRITICAL] No templates found in database! Creating default template.');
-      dbTemplate = await prisma.template.create({
+      dbTemplate = await prisma.templates.create({
         data: {
           name: 'HealingBuds Default',
           slug: 'healingbuds',
@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
     const template = TEMPLATE_PRESETS[templateId as keyof typeof TEMPLATE_PRESETS] || TEMPLATE_PRESETS.modern;
 
     // Create tenant with actual template relation
-    const tenant = await prisma.tenant.create({
+    const tenant = await prisma.tenants.create({
       data: {
         businessName,
         subdomain,
@@ -119,7 +119,7 @@ export async function POST(req: NextRequest) {
     });
 
     // Create tenant branding with template colors
-    await prisma.tenantBranding.create({
+    await prisma.tenant_branding.create({
       data: {
         tenantId: tenant.id,
         primaryColor: template.primaryColor,
@@ -130,7 +130,7 @@ export async function POST(req: NextRequest) {
     });
 
     // Create tenant admin user
-    await prisma.user.create({
+    await prisma.users.create({
       data: {
         email,
         password: hashedPassword,
@@ -141,10 +141,14 @@ export async function POST(req: NextRequest) {
     });
 
     // Send tenant welcome email (don't wait for it)
+    // Send tenant welcome email (don't wait for it)
+    const html = await emailTemplates.tenantWelcome(businessName, businessName, subdomain);
     sendEmail({
       to: email,
       subject: 'Welcome to BudStack - Your Store is Ready!',
-      html: emailTemplates.tenantWelcome(businessName, businessName, subdomain),
+      html,
+      tenantId: tenant.id,
+      templateName: 'tenantWelcome',
     }).catch((error) => {
       console.error('Failed to send tenant welcome email:', error);
     });

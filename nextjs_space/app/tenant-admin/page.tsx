@@ -5,7 +5,7 @@ import { authOptions } from '@/lib/auth';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ShoppingBag, Package, Palette, Settings, ExternalLink, BarChart3, Shield, Webhook, Newspaper } from 'lucide-react';
+import { ShoppingBag, Package, Palette, Settings, ExternalLink, BarChart3, Shield, Webhook, Newspaper, Users } from 'lucide-react';
 import { prisma } from '@/lib/db';
 import { getTenantUrl } from '@/lib/tenant';
 
@@ -16,7 +16,7 @@ export default async function TenantAdminDashboard() {
     redirect('/auth/login');
   }
 
-  const user = await prisma.user.findUnique({
+  const user = await prisma.users.findUnique({
     where: { id: session.user.id },
     include: {
       tenant: {
@@ -63,7 +63,7 @@ export default async function TenantAdminDashboard() {
   const tenantUrl = getTenantUrl(tenant);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="p-8">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight">Tenant Admin Dashboard</h1>
@@ -81,7 +81,10 @@ export default async function TenantAdminDashboard() {
             </div>
           </div>
           <Link href={tenantStoreUrl} target="_blank">
-            <Button variant="outline" size="sm">
+            <Button
+              size="sm"
+              className="border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-medium shadow-sm hover:shadow transition-all"
+            >
               Visit Store
               <ExternalLink className="ml-2 h-4 w-4" />
             </Button>
@@ -91,178 +94,36 @@ export default async function TenantAdminDashboard() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <Card className="bg-white text-slate-900 border-slate-200 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Products</CardTitle>
-            <Package className="h-4 w-4 text-slate-400" />
+        <Card className="bg-white text-slate-900 border-slate-200 shadow-lg hover:shadow-xl transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 border-b bg-gradient-to-r from-emerald-50 to-teal-50">
+            <CardTitle className="text-sm font-semibold text-slate-900">Total Products</CardTitle>
+            <Package className="h-5 w-5 text-emerald-600" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-slate-900">{tenant._count.products}</div>
-            <p className="text-xs text-slate-500 font-medium tracking-wide">Active listings</p>
+          <CardContent className="pt-6">
+            <div className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">{tenant._count.products}</div>
+            <p className="text-xs text-slate-600 font-medium tracking-wide mt-1">Active listings</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-white text-slate-900 border-slate-200 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
-            <ShoppingBag className="h-4 w-4 text-slate-400" />
+        <Card className="bg-white text-slate-900 border-slate-200 shadow-lg hover:shadow-xl transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 border-b bg-gradient-to-r from-purple-50 to-pink-50">
+            <CardTitle className="text-sm font-semibold text-slate-900">Total Orders</CardTitle>
+            <ShoppingBag className="h-5 w-5 text-purple-600" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-slate-900">{tenant._count.orders}</div>
-            <p className="text-xs text-slate-500 font-medium tracking-wide">All time</p>
+          <CardContent className="pt-6">
+            <div className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">{tenant._count.orders}</div>
+            <p className="text-xs text-slate-600 font-medium tracking-wide mt-1">All time</p>
           </CardContent>
         </Card>
 
-        <Card className="bg-white text-slate-900 border-slate-200 shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Team Members</CardTitle>
-            <Settings className="h-4 w-4 text-slate-400" />
+        <Card className="bg-white text-slate-900 border-slate-200 shadow-lg hover:shadow-xl transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 border-b bg-gradient-to-r from-cyan-50 to-blue-50">
+            <CardTitle className="text-sm font-semibold text-slate-900">Team Members</CardTitle>
+            <Users className="h-5 w-5 text-cyan-600" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-slate-900">{tenant._count.users}</div>
-            <p className="text-xs text-slate-500 font-medium tracking-wide">Active users</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="bg-white text-slate-900 border-slate-200 shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-xl font-bold">Analytics</CardTitle>
-            <CardDescription className="text-slate-500 font-medium">View store performance</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link href="/tenant-admin/analytics">
-              <Button className="w-full bg-slate-900 hover:bg-slate-800 text-white border-none">
-                <BarChart3 className="mr-2 h-4 w-4" />
-                View Analytics
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white text-slate-900 border-slate-200 shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-xl font-bold">Branding</CardTitle>
-            <CardDescription className="text-slate-500 font-medium">Customize your store appearance</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link href="/tenant-admin/branding">
-              <Button className="w-full bg-slate-900 hover:bg-slate-800 text-white border-none">
-                <Palette className="mr-2 h-4 w-4" />
-                Customize
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white text-slate-900 border-slate-200 shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-xl font-bold">Templates</CardTitle>
-            <CardDescription className="text-slate-500 font-medium">Manage store design</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link href="/tenant-admin/templates">
-              <Button className="w-full bg-slate-900 hover:bg-slate-800 text-white border-none">
-                <Palette className="mr-2 h-4 w-4" />
-                Manage Templates
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white text-slate-900 border-slate-200 shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-xl font-bold">Products</CardTitle>
-            <CardDescription className="text-slate-500 font-medium">Manage your product catalog</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link href="/tenant-admin/products">
-              <Button className="w-full bg-slate-900 hover:bg-slate-800 text-white border-none">
-                <Package className="mr-2 h-4 w-4" />
-                Manage Products
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white text-slate-900 border-slate-200 shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-xl font-bold">Orders</CardTitle>
-            <CardDescription className="text-slate-500 font-medium">View and manage orders</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link href="/tenant-admin/orders">
-              <Button className="w-full bg-slate-900 hover:bg-slate-800 text-white border-none">
-                <ShoppingBag className="mr-2 h-4 w-4" />
-                View Orders
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white text-slate-900 border-slate-200 shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-xl font-bold">Settings</CardTitle>
-            <CardDescription className="text-slate-500 font-medium">Store configuration</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link href="/tenant-admin/settings">
-              <Button className="w-full bg-slate-900 hover:bg-slate-800 text-white border-none">
-                <Settings className="mr-2 h-4 w-4" />
-                Settings
-              </Button>
-            </Link>
-            {/* Post-restoration polish tasks */}
-            {/* - [x] Inject Terminal Beacon (`ADMIN_DASHBOARD_RENDERED_V4`) */}
-            {/* - [x] Revert Port 3000 (User Preference) */}
-            {/* - [ ] Restart in Hybrid Mode (Docker Infra + Local App) */}
-            {/* - [x] Update Documentation (`SUBDOMAIN_DEPLOYMENT_STATUS.md`, `DESIGNER_README.md`) */}
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white text-slate-900 border-slate-200 shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-xl font-bold">Audit Logs</CardTitle>
-            <CardDescription className="text-slate-500 font-medium">View activity history</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link href="/tenant-admin/audit-logs">
-              <Button className="w-full bg-slate-900 hover:bg-slate-800 text-white border-none">
-                <Shield className="mr-2 h-4 w-4" />
-                View Logs
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white text-slate-900 border-slate-200 shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-xl font-bold">Webhooks</CardTitle>
-            <CardDescription className="text-slate-500 font-medium">Manage integrations</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link href="/tenant-admin/webhooks">
-              <Button className="w-full bg-slate-900 hover:bg-slate-800 text-white border-none">
-                <Webhook className="mr-2 h-4 w-4" />
-                Configure
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-        <Card className="bg-white text-slate-900 border-slate-200 shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-xl font-bold">The Wire</CardTitle>
-            <CardDescription className="text-slate-500 font-medium">Manage news and articles</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link href="/tenant-admin/the-wire">
-              <Button className="w-full bg-slate-900 hover:bg-slate-800 text-white border-none">
-                <Newspaper className="mr-2 h-4 w-4" />
-                Manage Content
-              </Button>
-            </Link>
+          <CardContent className="pt-6">
+            <div className="text-3xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">{tenant._count.users}</div>
+            <p className="text-xs text-slate-600 font-medium tracking-wide mt-1">Active users</p>
           </CardContent>
         </Card>
       </div>

@@ -9,6 +9,7 @@ declare module 'next-auth' {
     lastName?: string | null;
     isVerified?: boolean;
     role?: string;
+    tenantId?: string | null;
   }
 
   interface Session {
@@ -21,6 +22,7 @@ declare module 'next-auth' {
       lastName?: string | null;
       isVerified?: boolean;
       role?: string;
+      tenantId?: string | null;
     };
   }
 }
@@ -33,5 +35,6 @@ declare module 'next-auth/jwt' {
     lastName?: string | null;
     isVerified?: boolean;
     role?: string;
+    tenantId?: string | null;
   }
 }

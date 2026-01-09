@@ -98,7 +98,7 @@ export function ContactDetailsStep({ data, onUpdate, onNext }: ContactDetailsSte
             value={data.phoneCode}
             onValueChange={(value) => {
               const country = COUNTRY_CODES.find(c => c.phoneCode === value);
-              onUpdate({ 
+              onUpdate({
                 phoneCode: value,
                 countryCode: country?.code || 'GB'
               });
@@ -129,30 +129,73 @@ export function ContactDetailsStep({ data, onUpdate, onNext }: ContactDetailsSte
 
       <div>
         <Label>Date of Birth*</Label>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className={cn(
-                'w-full justify-start text-left font-normal',
-                !data.dateOfBirth && 'text-muted-foreground',
-                errors.dateOfBirth && 'border-red-500'
-              )}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {data.dateOfBirth ? format(data.dateOfBirth, 'PPP') : 'Pick a date'}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0">
-            <Calendar
-              mode="single"
-              selected={data.dateOfBirth || undefined}
-              onSelect={(date) => onUpdate({ dateOfBirth: date || null })}
-              disabled={(date) => date > new Date() || date < new Date('1900-01-01')}
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
+        <div className="grid grid-cols-3 gap-2 mt-2">
+          {/* Day Select */}
+          <Select
+            value={data.dateOfBirth ? data.dateOfBirth.getDate().toString() : ''}
+            onValueChange={(value) => {
+              const newDate = data.dateOfBirth ? new Date(data.dateOfBirth) : new Date(2000, 0, 1);
+              newDate.setDate(parseInt(value));
+              onUpdate({ dateOfBirth: newDate });
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Day" />
+            </SelectTrigger>
+            <SelectContent>
+              {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => (
+                <SelectItem key={day} value={day.toString()}>
+                  {day}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Month Select */}
+          <Select
+            value={data.dateOfBirth ? data.dateOfBirth.getMonth().toString() : ''}
+            onValueChange={(value) => {
+              const newDate = data.dateOfBirth ? new Date(data.dateOfBirth) : new Date(2000, 0, 1);
+              newDate.setMonth(parseInt(value));
+              onUpdate({ dateOfBirth: newDate });
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Month" />
+            </SelectTrigger>
+            <SelectContent>
+              {[
+                "January", "February", "March", "April", "May", "June",
+                "July", "August", "September", "October", "November", "December"
+              ].map((month, index) => (
+                <SelectItem key={index} value={index.toString()}>
+                  {month}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Year Select */}
+          <Select
+            value={data.dateOfBirth ? data.dateOfBirth.getFullYear().toString() : ''}
+            onValueChange={(value) => {
+              const newDate = data.dateOfBirth ? new Date(data.dateOfBirth) : new Date(2000, 0, 1);
+              newDate.setFullYear(parseInt(value));
+              onUpdate({ dateOfBirth: newDate });
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Year" />
+            </SelectTrigger>
+            <SelectContent>
+              {Array.from({ length: 100 }, (_, i) => new Date().getFullYear() - i).map((year) => (
+                <SelectItem key={year} value={year.toString()}>
+                  {year}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         {errors.dateOfBirth && <p className="text-sm text-red-500 mt-1">{errors.dateOfBirth}</p>}
       </div>
 

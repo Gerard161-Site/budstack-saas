@@ -19,54 +19,72 @@ export default async function OnboardingPage() {
   }
 
   // Get pending onboarding requests (inactive tenants)
-  const pendingRequests = await prisma.tenant.findMany({
+  const pendingRequests = await prisma.tenants.findMany({
     where: { isActive: false },
     orderBy: { createdAt: 'desc' },
   });
 
   return (
-    <div className="min-h-screen bg-gray-50 theme-force-light">
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <Link href="/super-admin">
-            <Button variant="ghost" className="mb-2">← Back to Dashboard</Button>
-          </Link>
-          <h1 className="text-3xl font-bold text-gray-900">Onboarding Requests</h1>
-        </div>
+    <div className="p-8">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Onboarding Requests</h1>
+        <p className="text-slate-600 mt-2">Review and approve new tenant applications</p>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Pending Approvals ({pendingRequests.length})</CardTitle>
-            <CardDescription>Review and approve new tenant applications</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {pendingRequests.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-gray-500">No pending onboarding requests</p>
+      {/* Pending Approvals Table */}
+      <Card className="shadow-lg border-slate-200">
+        <CardHeader className="border-b bg-gradient-to-r from-amber-50 to-orange-50">
+          <CardTitle className="flex items-center justify-between">
+            <span>Pending Approvals ({pendingRequests.length})</span>
+            {pendingRequests.length > 0 && (
+              <Badge className="bg-amber-500 hover:bg-amber-600">
+                {pendingRequests.length} Waiting
+              </Badge>
+            )}
+          </CardTitle>
+          <CardDescription>Review and approve new tenant applications</CardDescription>
+        </CardHeader>
+        <CardContent className="p-0">
+          {pendingRequests.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
+                <span className="text-3xl">✓</span>
               </div>
-            ) : (
+              <p className="text-slate-500 font-medium">No pending onboarding requests</p>
+              <p className="text-slate-400 text-sm mt-1">All applications have been processed</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Business Name</TableHead>
-                    <TableHead>NFT Token ID</TableHead>
-                    <TableHead>Subdomain</TableHead>
-                    <TableHead>Requested</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
+                  <TableRow className="bg-slate-50/50">
+                    <TableHead className="font-semibold">Business Name</TableHead>
+                    <TableHead className="font-semibold">NFT Token ID</TableHead>
+                    <TableHead className="font-semibold">Subdomain</TableHead>
+                    <TableHead className="font-semibold">Requested</TableHead>
+                    <TableHead className="font-semibold">Status</TableHead>
+                    <TableHead className="font-semibold">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {pendingRequests.map((request: any) => (
-                    <TableRow key={request.id}>
-                      <TableCell className="font-medium">{request.businessName}</TableCell>
-                      <TableCell>{request.nftTokenId || 'Not provided'}</TableCell>
-                      <TableCell>{request.subdomain}</TableCell>
-                      <TableCell>{format(new Date(request.createdAt), 'MMM d, yyyy')}</TableCell>
+                    <TableRow key={request.id} className="hover:bg-slate-50 transition-colors">
+                      <TableCell className="font-medium text-slate-900">{request.businessName}</TableCell>
+                      <TableCell className="font-mono text-sm text-slate-600">
+                        {request.nftTokenId || <span className="text-slate-400">Not provided</span>}
+                      </TableCell>
                       <TableCell>
-                        <Badge variant="secondary">Pending</Badge>
+                        <span className="text-cyan-600 font-medium">{request.subdomain}</span>
+                        <span className="text-slate-400">.budstack.io</span>
+                      </TableCell>
+                      <TableCell className="text-slate-600 text-sm">
+                        {format(new Date(request.createdAt), 'MMM d, yyyy')}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className="bg-amber-100 text-amber-700 hover:bg-amber-200">
+                          Pending
+                        </Badge>
                       </TableCell>
                       <TableCell>
                         <OnboardingActions tenantId={request.id} />
@@ -75,10 +93,10 @@ export default async function OnboardingPage() {
                   ))}
                 </TableBody>
               </Table>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

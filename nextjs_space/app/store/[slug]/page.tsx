@@ -28,13 +28,13 @@ export default async function TenantStorePage() {
   }
 
   // Fetch tenant with active template
-  const tenantWithTemplate = await prisma.tenant.findUnique({
+  const tenantWithTemplate = await prisma.tenants.findUnique({
     where: { id: tenant.id },
     include: {
       template: true, // Base template (legacy)
       activeTenantTemplate: {
         include: {
-          baseTemplate: true,
+          templates: true,
         },
       },
     },
@@ -56,21 +56,48 @@ export default async function TenantStorePage() {
   // NEW: Check if tenant has an active TenantTemplate
   if (tenantWithTemplate.activeTenantTemplate) {
     const tenantTemplate = tenantWithTemplate.activeTenantTemplate;
-    const baseTemplate = tenantTemplate.baseTemplate;
+    const baseTemplate = tenantTemplate.templates;
 
     // Fetch latest posts for the template
-    const latestPosts = await prisma.post.findMany({
+    const latestPosts = await prisma.posts.findMany({
       where: {
         tenantId: tenant.id,
         published: true
       },
       take: 3,
       orderBy: { createdAt: 'desc' },
-      include: { author: true }
+      include: { users: true }
     });
 
     // Get the template component
     const TemplateComponent = TEMPLATE_COMPONENTS[baseTemplate.slug!];
+
+    // Process hero image URL (sign if S3 path)
+    let heroImageUrl = tenantTemplate.heroImageUrl || null;
+    if (heroImageUrl && !heroImageUrl.startsWith('/') && !heroImageUrl.startsWith('http')) {
+      try {
+        console.log('[DEBUG] StorePage: Signing heroImageUrl:', heroImageUrl);
+        const signedUrl = await getFileUrl(heroImageUrl);
+        console.log('[DEBUG] StorePage: Signed hero URL result:', signedUrl ? signedUrl.substring(0, 50) + '...' : 'null');
+        heroImageUrl = signedUrl;
+      } catch (error) {
+        console.error('Error fetching hero image from S3:', error);
+        // Fallback to original, though likely broken if private S3
+      }
+    }
+
+    // Process logo URL (sign if S3 path)
+    let logoUrl = tenantTemplate.logoUrl || null;
+    if (logoUrl && !logoUrl.startsWith('/') && !logoUrl.startsWith('http')) {
+      try {
+        console.log('[DEBUG] StorePage: Signing logoUrl:', logoUrl);
+        const signedUrl = await getFileUrl(logoUrl);
+        console.log('[DEBUG] StorePage: Signed logo URL result:', signedUrl ? signedUrl.substring(0, 50) + '...' : 'null');
+        logoUrl = signedUrl;
+      } catch (error) {
+        console.error('Error fetching logo from S3:', error);
+      }
+    }
 
     if (TemplateComponent) {
       // Build template props with tenant customizations
@@ -81,8 +108,8 @@ export default async function TenantStorePage() {
         contactUrl,
         aboutUrl,
         // Pass tenant template customizations
-        heroImageUrl: tenantTemplate.heroImageUrl || null,
-        logoUrl: tenantTemplate.logoUrl || null,
+        heroImageUrl,
+        logoUrl,
         // Pass design system and content customizations
         designSystem: tenantTemplate.designSystem,
         pageContent: tenantTemplate.pageContent,
@@ -93,8 +120,15 @@ export default async function TenantStorePage() {
       };
 
       // Wrap in theme provider to inject CSS variables
+      // Create a shallow copy with the signed URLs to ensure the provider sees the updated values
+      const signedTenantTemplate = {
+        ...tenantTemplate,
+        heroImageUrl, // This is the SIGNED url
+        logoUrl,      // This is the SIGNED url
+      };
+
       return (
-        <TenantThemeProvider tenantTemplate={tenantTemplate}>
+        <TenantThemeProvider tenantTemplate={signedTenantTemplate}>
           <TemplateComponent {...templateProps} />
         </TenantThemeProvider>
       );

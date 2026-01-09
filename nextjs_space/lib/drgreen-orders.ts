@@ -86,7 +86,7 @@ export async function submitOrder(params: {
     const { userId, tenantId, shippingInfo, apiKey, secretKey } = params;
 
     // Get user's Dr. Green client ID
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
         where: { id: userId },
         select: { drGreenClientId: true, email: true },
     });
@@ -136,7 +136,7 @@ export async function submitOrder(params: {
     const total = subtotal + shippingCost;
 
     // Create local order record
-    const order = await prisma.order.create({
+    const order = await prisma.orders.create({
         data: {
             userId,
             tenantId,
@@ -193,7 +193,7 @@ export async function getOrder(params: {
     const { orderId, userId, tenantId, apiKey, secretKey } = params;
 
     // Get local order
-    const order = await prisma.order.findFirst({
+    const order = await prisma.orders.findFirst({
         where: {
             id: orderId,
             userId,
@@ -222,7 +222,7 @@ export async function getOrder(params: {
 
             if (orderDetails) {
                 // Update local order with latest Dr. Green status
-                const updated = await prisma.order.update({
+                const updated = await prisma.orders.update({
                     where: { id: order.id },
                     data: {
                         // Map Dr. Green payment status to local

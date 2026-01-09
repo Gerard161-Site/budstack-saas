@@ -10,7 +10,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Check, Copy, Palette, Layout, ArrowLeft } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import TemplateCloneButton from './clone-button';
-import { TenantTemplate, Template } from '@prisma/client';
+import ActivateButton from './activate-button';
+import { Prisma, Template } from '@prisma/client';
+
+// Define typed interface for the cloned template with the included base template relation
+type ClonedTemplate = Prisma.TenantTemplateGetPayload<{
+    include: {
+        baseTemplate: {
+            select: {
+                thumbnailUrl: true;
+                previewUrl: true;
+            };
+        };
+    };
+}>;
 
 export default async function TemplatesPage() {
     const session = await getServerSession(authOptions);
@@ -19,9 +32,9 @@ export default async function TemplatesPage() {
         redirect('/auth/login');
     }
 
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
         where: { id: session.user.id },
-        include: { tenant: true },
+        include: { tenants: true },
     });
 
     if (!user?.tenant) {
@@ -31,29 +44,29 @@ export default async function TemplatesPage() {
     const tenant = user.tenant;
 
     // 1. Fetch Tenant's Templates
-    const myTemplates = await prisma.tenantTemplate.findMany({
+    const myTemplates = await prisma.tenant_templates.findMany({
         where: { tenantId: tenant.id },
+        include: {
+            baseTemplate: {
+                select: {
+                    thumbnailUrl: true,
+                    previewUrl: true,
+                },
+            },
+        },
         orderBy: { createdAt: 'desc' },
     });
 
     // 2. Fetch Available Base Templates (Marketplace)
-    const baseTemplates = await prisma.template.findMany({
+    const baseTemplates = await prisma.templates.findMany({
         where: { isActive: true, isPublic: true },
     });
 
     return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="mb-8 flex items-center justify-between">
-                <div>
-                    <Link href="/tenant-admin" className="text-slate-500 hover:text-slate-700 flex items-center mb-2">
-                        <ArrowLeft className="w-4 h-4 mr-1" />
-                        Back to Dashboard
-                    </Link>
-                    <h1 className="text-3xl font-bold tracking-tight">Template Management</h1>
-                    <p className="text-muted-foreground mt-2">
-                        Manage your store's design and layout.
-                    </p>
-                </div>
+        <div className="p-8">
+            <div className="mb-8">
+                <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Template Management</h1>
+                <p className="text-slate-600 mt-2">Manage your store's design and layout</p>
             </div>
 
             <Tabs defaultValue="my-templates" className="w-full">
@@ -74,13 +87,20 @@ export default async function TemplatesPage() {
                             </div>
                         )}
 
-                        {myTemplates.map((item: TenantTemplate) => (
+                        {myTemplates.map((item: ClonedTemplate) => (
                             <Card key={item.id} className={`overflow-hidden transition-all ${item.isActive ? 'ring-2 ring-primary border-primary' : ''}`}>
-                                <div className="aspect-video bg-slate-100 relative">
-                                    {/* Placeholder for Screenshot */}
-                                    <div className="absolute inset-0 flex items-center justify-center text-slate-400">
-                                        <Layout className="h-12 w-12 opacity-20" />
-                                    </div>
+                                <div className="aspect-video bg-gradient-to-br from-slate-100 to-slate-200 relative">
+                                    {item.baseTemplate?.thumbnailUrl ? (
+                                        <img
+                                            src={item.baseTemplate.thumbnailUrl}
+                                            alt={`${item.templateName} preview`}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="absolute inset-0 flex items-center justify-center text-slate-400">
+                                            <Layout className="h-12 w-12 opacity-20" />
+                                        </div>
+                                    )}
                                     {item.isActive && (
                                         <div className="absolute top-2 right-2">
                                             <Badge className="bg-green-500 hover:bg-green-600">Active</Badge>
@@ -96,17 +116,18 @@ export default async function TemplatesPage() {
                                         Based on: {item.baseTemplateId}
                                     </p>
                                 </CardContent>
-                                <CardFooter className="flex justify-between border-t bg-slate-50/50 p-4">
-                                    <Link href="/tenant-admin/branding">
-                                        <Button variant="outline" size="sm">
+                                <CardFooter className="flex justify-between gap-2 border-t bg-slate-50/50 p-4">
+                                    <Link href="/tenant-admin/branding" className="flex-1">
+                                        <Button variant="outline" size="sm" className="w-full">
+                                            <Palette className="mr-2 h-4 w-4" />
                                             Customize
                                         </Button>
                                     </Link>
-                                    {!item.isActive && (
-                                        <Button size="sm" variant="secondary">
-                                            Verify Design
-                                        </Button>
-                                    )}
+                                    <ActivateButton
+                                        templateId={item.id}
+                                        templateName={item.templateName}
+                                        isActive={item.isActive}
+                                    />
                                 </CardFooter>
                             </Card>
                         ))}
@@ -117,20 +138,26 @@ export default async function TemplatesPage() {
                 <TabsContent value="marketplace">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {baseTemplates.map((template: Template) => (
-                            <Card key={template.id} className="overflow-hidden hover:shadow-md transition-shadow">
-                                <div className="aspect-video bg-slate-900 relative group">
-                                    {/* Placeholder for Thumbnail */}
+                            <Card key={template.id} className="overflow-hidden hover:shadow-lg transition-all border-slate-200">
+                                <div className="aspect-video bg-gradient-to-br from-slate-100 to-slate-200 relative group">
                                     {template.thumbnailUrl ? (
-                                        <img src={template.thumbnailUrl} alt={template.name} className="w-full h-full object-cover" />
+                                        <img
+                                            src={template.thumbnailUrl}
+                                            alt={`${template.name} template preview`}
+                                            className="w-full h-full object-cover"
+                                        />
                                     ) : (
-                                        <div className="absolute inset-0 flex items-center justify-center text-slate-600">
-                                            <Palette className="h-12 w-12 opacity-20" />
+                                        <div className="absolute inset-0 flex items-center justify-center text-slate-400">
+                                            <Palette className="h-16 w-16 opacity-30" />
                                         </div>
                                     )}
-                                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-4">
                                         {template.demoUrl && (
-                                            <a href={template.demoUrl} target="_blank" rel="noopener noreferrer" className="mr-2">
-                                                <Button variant="secondary" size="sm">Live Demo</Button>
+                                            <a href={template.demoUrl} target="_blank" rel="noopener noreferrer">
+                                                <Button variant="secondary" size="sm" className="shadow-lg">
+                                                    <Layout className="mr-2 h-4 w-4" />
+                                                    Live Demo
+                                                </Button>
                                             </a>
                                         )}
                                     </div>

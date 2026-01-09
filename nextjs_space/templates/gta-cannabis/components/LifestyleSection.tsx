@@ -6,9 +6,11 @@ import { Sparkles, Heart, Sun, Zap } from 'lucide-react';
 
 interface LifestyleSectionProps {
   businessName: string;
+  title?: string;
+  content?: string;
 }
 
-export default function LifestyleSection({ businessName }: LifestyleSectionProps) {
+export default function LifestyleSection({ businessName, title, content }: LifestyleSectionProps) {
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
 
   return (
@@ -38,7 +40,7 @@ export default function LifestyleSection({ businessName }: LifestyleSectionProps
               {/* Decorative Overlay Gradient */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
             </div>
-            
+
             {/* Floating Badge */}
             <motion.div
               initial={{ scale: 0 }}
@@ -81,7 +83,7 @@ export default function LifestyleSection({ businessName }: LifestyleSectionProps
             </div>
 
             {/* Heading */}
-            <h2 
+            <h2
               className="text-4xl md:text-5xl font-black leading-tight"
               style={{
                 background: 'linear-gradient(135deg, #FF6B6B 0%, #FFE66D 50%, #4ECDC4 100%)',
@@ -91,20 +93,26 @@ export default function LifestyleSection({ businessName }: LifestyleSectionProps
                 textShadow: '0 0 40px rgba(255, 230, 109, 0.3)'
               }}
             >
-              Live Your Best Life
+              {title || 'Live Your Best Life'}
             </h2>
 
             {/* Description */}
             <div className="space-y-3">
-              <p className="text-gray-700 text-base leading-relaxed">
-                At <span className="font-bold text-gray-900">{businessName}</span>, we believe in the power of nature 
-                to enhance your well-being. Our carefully curated selection of premium medical cannabis products 
-                is designed to help you live life to the fullest.
-              </p>
-              <p className="text-gray-700 text-base leading-relaxed">
-                Whether you're seeking relief, relaxation, or simply exploring natural wellness alternatives, 
-                our expert team is here to guide you every step of the way.
-              </p>
+              {content ? (
+                <p className="text-gray-700 text-base leading-relaxed whitespace-pre-line">{content}</p>
+              ) : (
+                <>
+                  <p className="text-gray-700 text-base leading-relaxed">
+                    At <span className="font-bold text-gray-900">{businessName}</span>, we believe in the power of nature
+                    to enhance your well-being. Our carefully curated selection of premium medical cannabis products
+                    is designed to help you live life to the fullest.
+                  </p>
+                  <p className="text-gray-700 text-base leading-relaxed">
+                    Whether you're seeking relief, relaxation, or simply exploring natural wellness alternatives,
+                    our expert team is here to guide you every step of the way.
+                  </p>
+                </>
+              )}
             </div>
 
             {/* Features Grid */}
@@ -115,7 +123,7 @@ export default function LifestyleSection({ businessName }: LifestyleSectionProps
                 transition={{ delay: 0.4 }}
                 className="text-center"
               >
-                <div 
+                <div
                   className="w-14 h-14 mx-auto mb-2 rounded-xl flex items-center justify-center retro-button"
                   style={{
                     background: 'linear-gradient(135deg, #FFE66D 0%, #FF6B6B 100%)',
@@ -134,7 +142,7 @@ export default function LifestyleSection({ businessName }: LifestyleSectionProps
                 transition={{ delay: 0.5 }}
                 className="text-center"
               >
-                <div 
+                <div
                   className="w-14 h-14 mx-auto mb-2 rounded-xl flex items-center justify-center retro-button"
                   style={{
                     background: 'linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%)',
@@ -153,7 +161,7 @@ export default function LifestyleSection({ businessName }: LifestyleSectionProps
                 transition={{ delay: 0.6 }}
                 className="text-center"
               >
-                <div 
+                <div
                   className="w-14 h-14 mx-auto mb-2 rounded-xl flex items-center justify-center retro-button"
                   style={{
                     background: 'linear-gradient(135deg, #FF6B6B 0%, #C44569 100%)',

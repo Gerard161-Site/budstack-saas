@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const webhooks = await prisma.webhook.findMany({
+    const webhooks = await prisma.webhooks.findMany({
       where: { tenantId },
       include: {
         _count: {
@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
     // Generate a secret for webhook signature
     const secret = crypto.randomBytes(32).toString('hex');
 
-    const webhook = await prisma.webhook.create({
+    const webhook = await prisma.webhooks.create({
       data: {
         tenantId,
         url,

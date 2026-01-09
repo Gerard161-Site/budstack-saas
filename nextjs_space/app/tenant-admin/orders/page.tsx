@@ -161,126 +161,124 @@ export default function TenantOrdersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <Link href="/tenant-admin">
-            <Button variant="ghost" className="mb-2">← Back to Dashboard</Button>
-          </Link>
-          <h1 className="text-3xl font-bold text-gray-900">Order Management</h1>
-          <p className="text-gray-600 mt-2">Manage and fulfill customer orders</p>
-        </div>
+    <div className="p-8">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Order Management</h1>
+        <p className="text-slate-600 mt-2">Manage and fulfill customer orders</p>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Order Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-600">Total Orders</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{orders.length}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-600">Pending</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-yellow-600">
-                {orders.filter(o => o.status === 'PENDING').length}
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-600">Processing</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-blue-600">
-                {orders.filter(o => o.status === 'PROCESSING').length}
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-600">Completed</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-green-600">
-                {orders.filter(o => o.status === 'COMPLETED').length}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Orders Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>All Orders ({orders.length})</CardTitle>
+      {/* Order Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <Card className="border-none shadow-lg bg-gradient-to-br from-slate-500 to-gray-500 text-white overflow-hidden relative group hover:shadow-xl transition-shadow duration-300">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform duration-300" />
+          <CardHeader className="pb-3 relative z-10">
+            <CardTitle className="text-sm font-medium text-slate-50">Total Orders</CardTitle>
           </CardHeader>
-          <CardContent>
-            {orders.length === 0 ? (
-              <div className="text-center py-12">
-                <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500">No orders yet</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Order ID</TableHead>
-                      <TableHead>Customer</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Items</TableHead>
-                      <TableHead>Total</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {orders.map((order) => (
-                      <TableRow key={order.id}>
-                        <TableCell className="font-medium">
-                          #{order.orderNumber.slice(-8).toUpperCase()}
-                        </TableCell>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{order.user?.name || 'Guest'}</p>
-                            <p className="text-sm text-gray-500">{order.user?.email || 'N/A'}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={`${getStatusColor(order.status)} text-white gap-1`}>
-                            {getStatusIcon(order.status)}
-                            {order.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{order.items.length}</TableCell>
-                        <TableCell>€{order.total.toFixed(2)}</TableCell>
-                        <TableCell>{format(new Date(order.createdAt), 'MMM d, yyyy')}</TableCell>
-                        <TableCell>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setSelectedOrder(order)}
-                            className="gap-2"
-                          >
-                            <Eye className="w-4 h-4" />
-                            View
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
+          <CardContent className="relative z-10">
+            <div className="text-3xl font-bold">{orders.length}</div>
+          </CardContent>
+        </Card>
+        <Card className="border-none shadow-lg bg-gradient-to-br from-amber-500 to-orange-500 text-white overflow-hidden relative group hover:shadow-xl transition-shadow duration-300">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform duration-300" />
+          <CardHeader className="pb-3 relative z-10">
+            <CardTitle className="text-sm font-medium text-amber-50">Pending</CardTitle>
+          </CardHeader>
+          <CardContent className="relative z-10">
+            <div className="text-3xl font-bold">
+              {orders.filter(o => o.status === 'PENDING').length}
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-none shadow-lg bg-gradient-to-br from-cyan-500 to-blue-500 text-white overflow-hidden relative group hover:shadow-xl transition-shadow duration-300">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform duration-300" />
+          <CardHeader className="pb-3 relative z-10">
+            <CardTitle className="text-sm font-medium text-cyan-50">Processing</CardTitle>
+          </CardHeader>
+          <CardContent className="relative z-10">
+            <div className="text-3xl font-bold">
+              {orders.filter(o => o.status === 'PROCESSING').length}
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-none shadow-lg bg-gradient-to-br from-emerald-500 to-teal-500 text-white overflow-hidden relative group hover:shadow-xl transition-shadow duration-300">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform duration-300" />
+          <CardHeader className="pb-3 relative z-10">
+            <CardTitle className="text-sm font-medium text-emerald-50">Completed</CardTitle>
+          </CardHeader>
+          <CardContent className="relative z-10">
+            <div className="text-3xl font-bold">
+              {orders.filter(o => o.status === 'COMPLETED').length}
+            </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Orders Table */}
+      <Card className="shadow-lg border-slate-200">
+        <CardHeader className="border-b bg-gradient-to-r from-purple-50 to-pink-50">
+          <CardTitle className="text-2xl font-bold text-slate-900">All Orders ({orders.length})</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-6">
+          {orders.length === 0 ? (
+            <div className="text-center py-12">
+              <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500">No orders yet</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Order ID</TableHead>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Items</TableHead>
+                    <TableHead>Total</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {orders.map((order) => (
+                    <TableRow key={order.id}>
+                      <TableCell className="font-medium">
+                        #{order.orderNumber.slice(-8).toUpperCase()}
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">{order.user?.name || 'Guest'}</p>
+                          <p className="text-sm text-gray-500">{order.user?.email || 'N/A'}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={`${getStatusColor(order.status)} text-white gap-1`}>
+                          {getStatusIcon(order.status)}
+                          {order.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{order.items.length}</TableCell>
+                      <TableCell>€{order.total.toFixed(2)}</TableCell>
+                      <TableCell>{format(new Date(order.createdAt), 'MMM d, yyyy')}</TableCell>
+                      <TableCell>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSelectedOrder(order)}
+                          className="gap-2"
+                        >
+                          <Eye className="w-4 h-4" />
+                          View
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Order Detail Modal */}
       <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
@@ -425,6 +423,6 @@ export default function TenantOrdersPage() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </div >
   );
 }

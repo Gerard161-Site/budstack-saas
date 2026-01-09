@@ -14,10 +14,10 @@ interface ArticlePageProps {
 
 export async function generateMetadata({ params }: ArticlePageProps) {
     const { slug, postSlug } = params;
-    const tenant = await prisma.tenant.findUnique({ where: { subdomain: slug } });
+    const tenant = await prisma.tenants.findUnique({ where: { subdomain: slug } });
     if (!tenant) return { title: 'Not Found' };
 
-    const post = await prisma.post.findUnique({
+    const post = await prisma.posts.findUnique({
         where: { slug_tenantId: { slug: postSlug, tenantId: tenant.id } },
     });
 
@@ -35,12 +35,12 @@ export async function generateMetadata({ params }: ArticlePageProps) {
 export default async function ArticlePage({ params }: ArticlePageProps) {
     const { slug, postSlug } = params;
 
-    const tenant = await prisma.tenant.findUnique({ where: { subdomain: slug } });
+    const tenant = await prisma.tenants.findUnique({ where: { subdomain: slug } });
     if (!tenant) notFound();
 
-    const post = await prisma.post.findUnique({
+    const post = await prisma.posts.findUnique({
         where: { slug_tenantId: { slug: postSlug, tenantId: tenant.id } },
-        include: { author: true }
+        include: { users: true }
     });
 
     if (!post || !post.published) notFound();

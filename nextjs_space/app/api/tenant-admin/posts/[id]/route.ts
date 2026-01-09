@@ -35,7 +35,7 @@ export async function GET(
 
         const { id } = params;
 
-        const post = await prisma.post.findUnique({
+        const post = await prisma.posts.findUnique({
             where: { id },
             include: { author: { select: { name: true } } },
         });
@@ -45,7 +45,7 @@ export async function GET(
         }
 
         // Verify tenant
-        const user = await prisma.user.findUnique({ where: { id: session.user.id }, include: { tenant: true } });
+        const user = await prisma.users.findUnique({ where: { id: session.user.id }, include: { tenants: true } });
         if (post.tenantId !== user?.tenantId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
@@ -71,9 +71,9 @@ export async function PATCH(
         const body = await req.json();
         const validatedData = postSchema.partial().parse(body);
 
-        const user = await prisma.user.findUnique({ where: { id: session.user.id }, include: { tenant: true } });
+        const user = await prisma.users.findUnique({ where: { id: session.user.id }, include: { tenants: true } });
 
-        const existingPost = await prisma.post.findUnique({ where: { id } });
+        const existingPost = await prisma.posts.findUnique({ where: { id } });
         if (!existingPost || existingPost.tenantId !== user?.tenantId) {
             return NextResponse.json({ error: 'Post not found or unauthorized' }, { status: 404 });
         }
@@ -86,7 +86,7 @@ export async function PATCH(
             let uniqueSlug = slug;
             let counter = 1;
             // Check collision excluding current post
-            while (await prisma.post.findFirst({
+            while (await prisma.posts.findFirst({
                 where: {
                     slug: uniqueSlug,
                     tenantId: user!.tenant!.id,
@@ -99,7 +99,7 @@ export async function PATCH(
             dataToUpdate.slug = uniqueSlug;
         }
 
-        const updatedPost = await prisma.post.update({
+        const updatedPost = await prisma.posts.update({
             where: { id },
             data: dataToUpdate,
         });
@@ -125,14 +125,14 @@ export async function DELETE(
         }
 
         const { id } = params;
-        const user = await prisma.user.findUnique({ where: { id: session.user.id }, include: { tenant: true } });
+        const user = await prisma.users.findUnique({ where: { id: session.user.id }, include: { tenants: true } });
 
-        const existingPost = await prisma.post.findUnique({ where: { id } });
+        const existingPost = await prisma.posts.findUnique({ where: { id } });
         if (!existingPost || existingPost.tenantId !== user?.tenantId) {
             return NextResponse.json({ error: 'Post not found or unauthorized' }, { status: 404 });
         }
 
-        await prisma.post.delete({ where: { id } });
+        await prisma.posts.delete({ where: { id } });
 
         return NextResponse.json({ success: true });
     } catch (error) {

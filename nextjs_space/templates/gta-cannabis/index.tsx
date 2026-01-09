@@ -18,7 +18,14 @@ interface TemplateProps {
   logoUrl?: string | null;
 }
 
-export default function GTACannabisTemplate({ tenant, consultationUrl, productsUrl, contactUrl }: TemplateProps) {
+export default function GTACannabisTemplate({
+  tenant,
+  consultationUrl,
+  productsUrl,
+  contactUrl,
+  heroImageUrl,
+  logoUrl
+}: TemplateProps) {
   const settings = (tenant.settings as any) || {};
   const pageContent = settings.pageContent || {};
 
@@ -26,11 +33,12 @@ export default function GTACannabisTemplate({ tenant, consultationUrl, productsU
     <div className="gta-template overflow-x-hidden">
       <Hero
         businessName={tenant.businessName}
-        title={pageContent.homeHeroTitle}
-        subtitle={pageContent.homeHeroSubtitle}
-        heroImagePath={settings.heroImagePath}
-        logoPath={settings.logoPath}
+        title={pageContent.home?.heroTitle}
+        subtitle={pageContent.home?.heroSubtitle}
+        heroImagePath={heroImageUrl || settings.heroImagePath}
+        logoPath={logoUrl || settings.logoPath}
         consultationUrl={consultationUrl}
+        ctaText={pageContent.home?.heroCtaText}
       />
 
       <ProductShowcase
@@ -40,11 +48,15 @@ export default function GTACannabisTemplate({ tenant, consultationUrl, productsU
 
       <LifestyleSection
         businessName={tenant.businessName}
+        title={pageContent.about?.title}
+        content={pageContent.about?.content}
       />
 
       <ConsultationCTA
         businessName={tenant.businessName}
         consultationUrl={consultationUrl}
+        title={pageContent.contact?.title}
+        description={pageContent.contact?.description}
       />
     </div>
   );

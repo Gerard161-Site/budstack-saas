@@ -31,6 +31,42 @@ function generateSignature(payload: string, secretKey: string): string {
   }
 }
 
+/**
+ * Convert ISO 3166-1 Alpha-2 to Alpha-3 country codes
+ * Dr Green API requires Alpha-3 codes
+ */
+function convertToAlpha3CountryCode(alpha2: string): string {
+  const mapping: Record<string, string> = {
+    'PT': 'PRT', // Portugal
+    'GB': 'GBR', // United Kingdom
+    'IE': 'IRL', // Ireland
+    'ES': 'ESP', // Spain
+    'FR': 'FRA', // France
+    'DE': 'DEU', // Germany
+    'IT': 'ITA', // Italy
+    'NL': 'NLD', // Netherlands
+    'BE': 'BEL', // Belgium
+    'US': 'USA', // United States
+    // Add more as needed
+  };
+  return mapping[alpha2.toUpperCase()] || alpha2;
+}
+
+/**
+ * Map form medical condition values to Dr Green API enum values
+ * Dr Green has specific enum values that must match exactly
+ */
+function mapMedicalConditionsForDrGreen(conditions: string[]): string[] {
+  // Only map the few extras that aren't in Dr Green's enum
+  const extrasToOther: Record<string, string> = {
+    'asthma': 'other_medical_condition',
+    'glaucoma': 'other_medical_condition',
+    'lupus': 'other_medical_condition',
+  };
+
+  return conditions.map(c => extrasToOther[c] || c); // Most pass through unchanged
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -38,10 +74,37 @@ export async function POST(request: NextRequest) {
     // Hash the password before storing
     const hashedPassword = await bcrypt.hash(body.password, 10);
 
-    // Save to database first
+    // Check if user already exists
+    const existingUser = await prisma.users.findUnique({
+      where: { email: body.email },
+    });
+
+    let userId: string | undefined;
+
+    // Create user account if doesn't exist
+    if (!existingUser) {
+      const newUser = await prisma.users.create({
+        data: {
+          email: body.email.toLowerCase(), // Ensure lowercase
+          password: hashedPassword,
+          name: `${body.firstName} ${body.lastName}`,
+          role: 'PATIENT',
+          tenantId: body.tenantId, // Fixed: was || null, now always uses provided tenantId
+        },
+      });
+      userId = newUser.id;
+      console.log(`✅ Created user account for ${body.email}`);
+    } else {
+      userId = existingUser.id;
+      console.log(`⚠️  User ${body.email} already exists, using existing account`);
+    }
+
+    // Save questionnaire to database
     const questionnaire = await prisma.consultationQuestionnaire.create({
       data: {
         tenantId: body.tenantId || null,
+        // Note: ConsultationQuestionnaire doesn't have userId field
+        // User account is linked separately via email
         firstName: body.firstName,
         lastName: body.lastName,
         email: body.email,
@@ -118,20 +181,20 @@ export async function POST(request: NextRequest) {
       const drGreenPayload = {
         firstName: body.firstName,
         lastName: body.lastName,
-        email: body.email,
-        phoneCode: body.phoneCode,
-        phoneNumber: body.phoneNumber,
-        contactNumber: `${body.phoneCode}${body.phoneNumber}`,
+        email: body.email.toLowerCase(), // Dr Green requires lowercase
+        phoneCode: body.phoneCode.replace(/[^\+\d]/g, ''), // e.g. "+351"
+        phoneCountryCode: body.countryCode, // e.g. "PT" (2-letter ISO code)
+        contactNumber: body.phoneNumber.replace(/\D/g, ''), // e.g. "7970433737" (digits only, NO prefix)
 
         shipping: {
           address1: body.addressLine1,
-          address2: body.addressLine2 || '',
+          address2: body.address2 || '',
           landmark: '',
           city: body.city,
           state: body.state,
           postalCode: body.postalCode,
           country: body.country,
-          countryCode: body.countryCode,
+          countryCode: convertToAlpha3CountryCode(body.countryCode), // Convert PT → PRT
         },
 
         ...(body.businessType && body.businessName ? {
@@ -151,32 +214,52 @@ export async function POST(request: NextRequest) {
         medicalRecord: {
           dob: dobFormatted,
           gender: body.gender,
-          medicalConditions: body.medicalConditions || [],
-          ...(body.otherCondition ? { otherMedicalCondition: body.otherCondition } : {}),
+          medicalConditions: mapMedicalConditionsForDrGreen(body.medicalConditions || []),
+          // Only include otherMedicalCondition if we have conditions that map to 'other_medical_condition'
+          ...(body.medicalConditions?.includes('lupus') || body.medicalConditions?.includes('asthma') || body.medicalConditions?.includes('glaucoma') || body.medicalConditions?.includes('other_medical_condition') || body.medicalConditions?.includes('other') || body.otherCondition
+            ? {
+              otherMedicalCondition: body.medicalConditions?.filter((c: string) => ['lupus', 'asthma', 'glaucoma', 'other_medical_condition', 'other'].includes(c))
+                .map((c: string) => c.charAt(0).toUpperCase() + c.slice(1))
+                .join(', ') || body.otherCondition || 'Other medical condition'
+            }
+            : {}),
           otherMedicalTreatments: '',
           prescribedSupplements: body.prescribedSupplements || '',
 
-          medicalHistory1: body.hasHeartProblems ? 'yes' : 'no',
-          medicalHistory2: body.hasCancerTreatment ? 'yes' : 'no',
-          medicalHistory3: body.hasImmunosuppressants ? 'yes' : 'no',
-          medicalHistory4: body.hasLiverDisease ? 'yes' : 'no',
-          medicalHistory5: body.hasPsychiatricHistory ? 'yes' : 'no',
-          medicalHistory6: body.hasAlcoholAbuse ? 'yes' : 'no',
-          medicalHistory7: body.hasDrugServices ? 'yes' : 'no',
-          medicalHistory8: body.alcoholUnitsPerWeek || '0',
-          medicalHistory9: body.cannabisReducesMeds ? 'yes' : 'no',
-          medicalHistory10: body.cannabisFrequency ? [body.cannabisFrequency] : ['never'],
+          // Medical History - Dr Green uses specific field names
+          medicalHistory0: body.hasHeartProblems,
+          medicalHistory1: body.hasCancerTreatment,
+          medicalHistory2: body.hasImmunosuppressants,
+          medicalHistory3: body.hasLiverDisease,
+          medicalHistory4: false, // Placeholder for other condition
+          medicalHistory5: body.hasPsychiatricHistory ? ['depression'] : ['none'], // Must be array
+          medicalHistory6: body.hasAlcoholAbuse,
+          medicalHistory7: body.hasDrugServices ? ['anxiety'] : ['none'], // Must be array
+          medicalHistory7Relation: '', // Required string
+          medicalHistory8: false, // Placeholder
+          medicalHistory9: false, // Placeholder
+          medicalHistory10: false, // Placeholder
+          medicalHistory12: body.cannabisReducesMeds,
+          medicalHistory13: body.cannabisFrequency || 'never',
+          medicalHistory14: body.cannabisFrequency && body.cannabisFrequency !== 'never' ? ['vaporizing'] : ['never'],
         },
       };
 
       // Submit to Dr. Green API
       const payloadStr = JSON.stringify(drGreenPayload);
-      console.log('Dr. Green API Request:', {
-        url: `${drGreenApiUrl}/dapp/clients`,
-        payload: drGreenPayload,
-        hasApiKey: !!apiKey,
-        hasSecretKey: !!secretKey
-      });
+
+      console.log('\n=== DR GREEN API DEBUG ===');
+      console.log('API URL:', `${drGreenApiUrl}/dapp/clients`);
+      console.log('Has API Key:', !!apiKey);
+      console.log('Has Secret Key:', !!secretKey);
+      console.log('\n=== PHONE FIELDS DEBUG ===');
+      console.log('Raw phoneCode from form:', JSON.stringify(body.phoneCode));
+      console.log('Raw phoneNumber from form:', JSON.stringify(body.phoneNumber));
+      console.log('Cleaned phoneCode:', JSON.stringify(body.phoneCode.replace(/[^\+\d]/g, '')));
+      console.log('Cleaned contactNumber:', JSON.stringify(body.phoneNumber.replace(/\D/g, '')));
+      console.log('\n=== PAYLOAD ===');
+      console.log(JSON.stringify(drGreenPayload, null, 2));
+      console.log('\n===================\n');
 
       const signature = generateSignature(payloadStr, secretKey);
 

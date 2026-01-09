@@ -81,24 +81,13 @@ export default function TenantAuditLogsPage() {
   };
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="mb-6">
-        <Link href="/tenant-admin">
-          <Button variant="ghost" size="sm" className="mb-4">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
-          </Button>
-        </Link>
-        <div className="flex items-center gap-2 mb-2">
-          <Shield className="h-6 w-6" />
-          <h1 className="text-3xl font-bold">Audit Logs</h1>
-        </div>
-        <p className="text-muted-foreground">
-          Track all actions and changes in your dispensary
-        </p>
+    <div className="p-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Audit Logs</h1>
+        <p className="text-slate-600 mt-2">Track all actions and changes in your dispensary</p>
       </div>
 
-      <Card>
+      <Card className="shadow-lg border-slate-200">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams, useRouter, useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { CheckCircle2, ExternalLink, Clock, UserCheck, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 export default function ConsultationSuccessPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const params = useParams();
+  const slug = params.slug as string;
   const [loading, setLoading] = useState(true);
   const [consultationData, setConsultationData] = useState<{
     questionnaireId?: string;
@@ -37,7 +39,7 @@ export default function ConsultationSuccessPage() {
 
   if (loading) {
     return (
-      <div 
+      <div
         className="min-h-screen flex items-center justify-center pb-24 lg:pb-0"
         style={{ backgroundColor: 'var(--tenant-color-background)' }}
       >
@@ -47,7 +49,7 @@ export default function ConsultationSuccessPage() {
   }
 
   return (
-    <div 
+    <div
       className="min-h-screen pb-24 lg:pb-0 pt-28 md:pt-32"
       style={{ backgroundColor: 'var(--tenant-color-background)' }}
     >
@@ -58,9 +60,9 @@ export default function ConsultationSuccessPage() {
           transition={{ duration: 0.3 }}
         >
           {/* Success Header */}
-          <Card 
+          <Card
             className="border text-center mb-6"
-            style={{ 
+            style={{
               backgroundColor: 'var(--tenant-color-surface, var(--tenant-color-background))',
               borderColor: 'var(--tenant-color-border, rgba(0,0,0,0.2))'
             }}
@@ -73,28 +75,28 @@ export default function ConsultationSuccessPage() {
                 className="h-20 w-20 rounded-full flex items-center justify-center mx-auto mb-6"
                 style={{ backgroundColor: 'rgba(var(--tenant-color-primary-rgb, 28, 79, 77), 0.2)' }}
               >
-                <CheckCircle2 
+                <CheckCircle2
                   className="h-10 w-10"
                   style={{ color: 'var(--tenant-color-primary)' }}
                 />
               </motion.div>
-              
-              <h1 
+
+              <h1
                 className="text-3xl font-bold mb-3"
                 style={{ color: 'var(--tenant-color-heading)', fontFamily: 'var(--tenant-font-heading)' }}
               >
                 Consultation Submitted!
               </h1>
-              
-              <p 
+
+              <p
                 className="text-lg mb-2"
                 style={{ color: 'var(--tenant-color-text)', fontFamily: 'var(--tenant-font-base)' }}
               >
                 Thank you for completing your medical consultation.
               </p>
-              
+
               {consultationData.drGreenClientId && (
-                <p 
+                <p
                   className="text-sm"
                   style={{ color: 'var(--tenant-color-text)', fontFamily: 'var(--tenant-font-base)', opacity: 0.7 }}
                 >
@@ -105,15 +107,15 @@ export default function ConsultationSuccessPage() {
           </Card>
 
           {/* Next Steps */}
-          <Card 
+          <Card
             className="border mb-6"
-            style={{ 
+            style={{
               backgroundColor: 'var(--tenant-color-surface, var(--tenant-color-background))',
               borderColor: 'var(--tenant-color-border, rgba(0,0,0,0.2))'
             }}
           >
             <CardHeader>
-              <CardTitle 
+              <CardTitle
                 style={{ color: 'var(--tenant-color-heading)', fontFamily: 'var(--tenant-font-heading)' }}
               >
                 Next Steps
@@ -122,7 +124,7 @@ export default function ConsultationSuccessPage() {
             <CardContent className="space-y-4">
               {/* Step 1: KYC Verification */}
               <div className="flex items-start gap-4">
-                <div 
+                <div
                   className="flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center"
                   style={{ backgroundColor: consultationData.kycLink ? 'rgba(var(--tenant-color-primary-rgb, 28, 79, 77), 0.2)' : 'rgba(100,100,100,0.2)' }}
                 >
@@ -133,22 +135,22 @@ export default function ConsultationSuccessPage() {
                   )}
                 </div>
                 <div className="flex-1">
-                  <h3 
+                  <h3
                     className="font-semibold mb-1"
                     style={{ color: 'var(--tenant-color-heading)', fontFamily: 'var(--tenant-font-heading)' }}
                   >
                     1. Complete KYC Verification
                   </h3>
-                  <p 
+                  <p
                     className="text-sm mb-2"
                     style={{ color: 'var(--tenant-color-text)', fontFamily: 'var(--tenant-font-base)' }}
                   >
                     Verify your identity to comply with medical cannabis regulations.
                   </p>
                   {consultationData.kycLink ? (
-                    <Button 
+                    <Button
                       onClick={() => window.open(consultationData.kycLink, '_blank')}
-                      style={{ 
+                      style={{
                         backgroundColor: 'var(--tenant-color-primary)',
                         color: 'white',
                         fontFamily: 'var(--tenant-font-base)'
@@ -170,20 +172,20 @@ export default function ConsultationSuccessPage() {
 
               {/* Step 2: Medical Review */}
               <div className="flex items-start gap-4">
-                <div 
+                <div
                   className="flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center"
                   style={{ backgroundColor: 'rgba(100,100,100,0.2)' }}
                 >
                   <Clock className="h-5 w-5" style={{ color: 'var(--tenant-color-text)', opacity: 0.5 }} />
                 </div>
                 <div className="flex-1">
-                  <h3 
+                  <h3
                     className="font-semibold mb-1"
                     style={{ color: 'var(--tenant-color-heading)', fontFamily: 'var(--tenant-font-heading)' }}
                   >
                     2. Medical Review
                   </h3>
-                  <p 
+                  <p
                     className="text-sm"
                     style={{ color: 'var(--tenant-color-text)', fontFamily: 'var(--tenant-font-base)' }}
                   >
@@ -200,20 +202,20 @@ export default function ConsultationSuccessPage() {
 
               {/* Step 3: Start Shopping */}
               <div className="flex items-start gap-4">
-                <div 
+                <div
                   className="flex-shrink-0 h-10 w-10 rounded-full flex items-center justify-center"
                   style={{ backgroundColor: 'rgba(100,100,100,0.2)' }}
                 >
                   <Clock className="h-5 w-5" style={{ color: 'var(--tenant-color-text)', opacity: 0.5 }} />
                 </div>
                 <div className="flex-1">
-                  <h3 
+                  <h3
                     className="font-semibold mb-1"
                     style={{ color: 'var(--tenant-color-heading)', fontFamily: 'var(--tenant-font-heading)' }}
                   >
                     3. Start Shopping
                   </h3>
-                  <p 
+                  <p
                     className="text-sm"
                     style={{ color: 'var(--tenant-color-text)', fontFamily: 'var(--tenant-font-base)' }}
                   >
@@ -234,17 +236,17 @@ export default function ConsultationSuccessPage() {
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-3">
-            <Button 
-              onClick={() => router.push('/products')}
+            <Button
+              onClick={() => router.push(`/store/${slug}/products`)}
               className="flex-1"
               variant="outline"
             >
               View Products
             </Button>
-            <Button 
+            <Button
               onClick={() => router.push('/dashboard')}
               className="flex-1"
-              style={{ 
+              style={{
                 backgroundColor: 'var(--tenant-color-primary)',
                 color: 'white',
                 fontFamily: 'var(--tenant-font-base)'

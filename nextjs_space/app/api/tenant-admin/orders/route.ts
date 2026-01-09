@@ -18,9 +18,9 @@ export async function GET(req: NextRequest) {
     }
 
     // Get user's tenant
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
       where: { id: session.user.id },
-      include: { tenant: true },
+      include: { tenants: true },
     });
 
     if (!user?.tenant) {
@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Fetch all orders for this tenant
-    const orders = await prisma.order.findMany({
+    const orders = await prisma.orders.findMany({
       where: {
         tenantId: user.tenant.id,
       },
@@ -89,9 +89,9 @@ export async function PATCH(req: NextRequest) {
     }
 
     // Get user's tenant
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
       where: { id: session.user.id },
-      include: { tenant: true },
+      include: { tenants: true },
     });
 
     if (!user?.tenant) {
@@ -99,7 +99,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     // Verify the order belongs to this tenant
-    const order = await prisma.order.findFirst({
+    const order = await prisma.orders.findFirst({
       where: {
         id: orderId,
         tenantId: user.tenant.id,
@@ -114,7 +114,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     // Update order status
-    const updatedOrder = await prisma.order.update({
+    const updatedOrder = await prisma.orders.update({
       where: { id: orderId },
       data: { status },
       include: {

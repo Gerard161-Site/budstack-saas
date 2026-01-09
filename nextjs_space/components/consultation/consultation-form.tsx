@@ -24,7 +24,7 @@ export interface ConsultationFormData {
   gender: string;
   password: string;
   confirmPassword: string;
-  
+
   // Shipping Address
   addressLine1: string;
   addressLine2: string;
@@ -33,7 +33,7 @@ export interface ConsultationFormData {
   postalCode: string;
   country: string;
   countryCode: string;
-  
+
   // Business Info (Optional)
   businessType: string;
   businessName: string;
@@ -44,20 +44,20 @@ export interface ConsultationFormData {
   businessPostalCode: string;
   businessCountry: string;
   businessCountryCode: string;
-  
+
   // Medical Conditions
   medicalConditions: string[];
   otherCondition: string;
   prescribedMedications: string[];
   prescribedSupplements: string;
-  
+
   // Medical History Part 1
   hasHeartProblems: boolean;
   hasCancerTreatment: boolean;
   hasImmunosuppressants: boolean;
   hasLiverDisease: boolean;
   hasPsychiatricHistory: boolean;
-  
+
   // Medical History Part 2
   hasAlcoholAbuse: boolean;
   hasDrugServices: boolean;
@@ -76,7 +76,12 @@ const STEP_NAMES = [
   'Medical History (Part 2)',
 ];
 
-export function ConsultationForm() {
+interface ConsultationFormProps {
+  tenantSlug: string;
+  tenantId: string;
+}
+
+export function ConsultationForm({ tenantSlug, tenantId }: ConsultationFormProps) {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -90,7 +95,7 @@ export function ConsultationForm() {
     gender: '',
     password: '',
     confirmPassword: '',
-    
+
     addressLine1: '',
     addressLine2: '',
     city: '',
@@ -98,7 +103,7 @@ export function ConsultationForm() {
     postalCode: '',
     country: '',
     countryCode: 'GB',
-    
+
     businessType: '',
     businessName: '',
     businessAddress1: '',
@@ -108,18 +113,18 @@ export function ConsultationForm() {
     businessPostalCode: '',
     businessCountry: '',
     businessCountryCode: '',
-    
+
     medicalConditions: [],
     otherCondition: '',
     prescribedMedications: [],
     prescribedSupplements: '',
-    
+
     hasHeartProblems: false,
     hasCancerTreatment: false,
     hasImmunosuppressants: false,
     hasLiverDisease: false,
     hasPsychiatricHistory: false,
-    
+
     hasAlcoholAbuse: false,
     hasDrugServices: false,
     alcoholUnitsPerWeek: '',
@@ -154,7 +159,10 @@ export function ConsultationForm() {
       const response = await fetch('/api/consultation/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          tenantId: tenantId, // Include tenant ID
+        }),
       });
 
       const result = await response.json();
@@ -164,16 +172,15 @@ export function ConsultationForm() {
       }
 
       toast.success('Consultation submitted successfully!');
-      
-      // Redirect to success page with consultation data
-      const params = new URLSearchParams({
+      toast.success(`Account created! You can now login at /store/${tenantSlug}/login`);
+
+      // Redirect to tenant-scoped success page
+      router.push(`/store/${tenantSlug}/consultation/success?${new URLSearchParams({
         id: result.questionnaireId || '',
         clientId: result.drGreenClientId || '',
         ...(result.kycLink && { kycLink: result.kycLink }),
         approval: result.adminApproval || 'PENDING',
-      });
-      
-      router.push(`/consultation/success?${params.toString()}`);
+      }).toString()}`);
     } catch (error: any) {
       toast.error(error.message || 'Failed to submit consultation');
     } finally {

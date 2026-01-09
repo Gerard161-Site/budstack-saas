@@ -16,9 +16,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
       where: { email: session.user.email },
-      include: { tenant: true },
+      include: { tenants: true },
     });
 
     if (!user?.tenant || (user.role !== 'TENANT_ADMIN' && user.role !== 'SUPER_ADMIN')) {
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify template exists and is active
-    const template = await prisma.template.findUnique({
+    const template = await prisma.templates.findUnique({
       where: { id: templateId },
     });
 
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     };
 
     // Update tenant's template selection AND settings
-    const updatedTenant = await prisma.tenant.update({
+    const updatedTenant = await prisma.tenants.update({
       where: { id: user.tenant.id },
       data: { 
         templateId,
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Increment template usage count
-    await prisma.template.update({
+    await prisma.templates.update({
       where: { id: templateId },
       data: { usageCount: { increment: 1 } },
     });

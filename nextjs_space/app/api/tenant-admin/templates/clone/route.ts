@@ -22,9 +22,9 @@ export async function POST(request: NextRequest) {
         }
 
         // 2. Verify Tenant
-        const user = await prisma.user.findUnique({
+        const user = await prisma.users.findUnique({
             where: { id: session.user.id },
-            include: { tenant: true },
+            include: { tenants: true },
         });
 
         if (!user?.tenant) {
@@ -32,44 +32,38 @@ export async function POST(request: NextRequest) {
         }
 
         // 3. Fetch Base Template
-        // Since we don't have a Template table yet (assuming simplistic model for now),
-        // we might just be cloning from a hardcoded list or if a Template model exists.
-        // Let's assume we are cloning based on a "Template" concept.
-        // Ideally we'd look up `prisma.template.findUnique(...)` if it existed.
-        // For now, let's assume 'baseTemplateId' maps to a folder in S3 `templates/{baseTemplateId}/`.
+        const baseTemplate = await prisma.templates.findUnique({
+            where: { id: baseTemplateId },
+        });
 
-        const sourceS3Prefix = `templates/${baseTemplateId}/`;
+        if (!baseTemplate) {
+            return NextResponse.json({ error: 'Template not found' }, { status: 404 });
+        }
+
+        // 4. Define S3 paths
+        const sourceS3Prefix = `templates/${baseTemplate.slug || baseTemplateId}/`;
         const timestamp = Date.now();
         const destS3Prefix = `tenants/${user.tenant.id}/templates/${timestamp}/`;
 
-        // 4. Copy S3 Assets
+        console.log(`Cloning template from ${sourceS3Prefix} to ${destS3Prefix}`);
+
+        // 5. Copy S3 Assets
         const filesCopied = await copyDirectory(sourceS3Prefix, destS3Prefix);
+        console.log(`Copied ${filesCopied} files`);
 
-        // 5. Create TenantTemplate Record (or Update Tenant settings)
-        // We need to see if TenantTemplate model exists in schema.
-        // If not, we might be storing this in `tenant.settings` or creating a record.
-        // Docs say: "TenantTemplate (database + S3)".
-        // Let's check schema.prisma first? 
-        // Assuming schema exists. I'll write code assuming it works, or fallback to JSON log.
-
-        // Let's assume `TenantTemplate` model exists.
-        const tenantTemplate = await prisma.tenantTemplate.create({
+        // 6. Create TenantTemplate Record with correct schema fields
+        const tenantTemplate = await prisma.tenant_templates.create({
             data: {
                 tenantId: user.tenant.id,
-                name: `Clone of ${baseTemplateId}`,
-                s3Prefix: destS3Prefix,
-                config: {}, // Default config
-                isActive: true, // Auto-activate
+                baseTemplateId: baseTemplateId,
+                templateName: `${baseTemplate.name}`,
+                s3Path: destS3Prefix,
+                isActive: false, // Not active by default - user needs to activate
+                isDraft: true,
             },
         });
 
-        // 6. Update Tenant Active Template (if separate from isActive flag)
-        await prisma.tenant.update({
-            where: { id: user.tenant.id },
-            data: {
-                activeTemplateId: tenantTemplate.id,
-            },
-        });
+        console.log(`Created tenant template: ${tenantTemplate.id}`);
 
         // 7. Audit Log
         await createAuditLog({
@@ -81,14 +75,16 @@ export async function POST(request: NextRequest) {
             tenantId: user.tenant.id,
             metadata: {
                 baseTemplateId,
+                baseTemplateName: baseTemplate.name,
                 filesCopied,
-                s3Prefix: destS3Prefix
+                s3Path: destS3Prefix
             }
         });
 
         return NextResponse.json({
             success: true,
             templateId: tenantTemplate.id,
+            templateName: tenantTemplate.templateName,
             filesCopied
         });
 

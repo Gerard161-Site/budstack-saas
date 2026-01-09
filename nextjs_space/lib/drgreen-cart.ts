@@ -87,7 +87,7 @@ export async function ensureClientId(
     secretKey: string
 ): Promise<string> {
     // Check if user already has a client ID
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
         where: { id: userId },
         select: { drGreenClientId: true, email: true },
     });

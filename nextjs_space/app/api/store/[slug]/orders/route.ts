@@ -29,7 +29,7 @@ export async function GET(
         }
 
         // Get orders for the current user AND specific tenant
-        const orders = await prisma.order.findMany({
+        const orders = await prisma.orders.findMany({
             where: {
                 userId: session.user.id,
                 tenantId: tenant.id,

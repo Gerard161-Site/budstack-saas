@@ -102,40 +102,39 @@ export default function AnalyticsPage() {
     : '0.0';
 
   return (
-    <div className="min-h-screen bg-gray-50 theme-force-light">
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <Link href="/super-admin">
-            <Button variant="ghost" className="mb-2">← Back to Dashboard</Button>
-          </Link>
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Platform Analytics</h1>
-              <p className="text-gray-600 mt-1">Comprehensive insights and performance metrics</p>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant={timeRange === '7d' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setTimeRange('7d')}
-              >
-                7 Days
-              </Button>
-              <Button
-                variant={timeRange === '30d' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setTimeRange('30d')}
-              >
-                30 Days
-              </Button>
-              <Button
-                variant={timeRange === '90d' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setTimeRange('90d')}
-              >
-                90 Days
-              </Button>
-            </div>
+    <div className="p-8">
+      {/* Header */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Platform Analytics</h1>
+            <p className="text-slate-600 mt-2">Comprehensive insights and performance metrics</p>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant={timeRange === '7d' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setTimeRange('7d')}
+              className={timeRange === '7d' ? 'bg-gradient-to-r from-cyan-600 to-blue-600' : ''}
+            >
+              7 Days
+            </Button>
+            <Button
+              variant={timeRange === '30d' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setTimeRange('30d')}
+              className={timeRange === '30d' ? 'bg-gradient-to-r from-cyan-600 to-blue-600' : ''}
+            >
+              30 Days
+            </Button>
+            <Button
+              variant={timeRange === '90d' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setTimeRange('90d')}
+              className={timeRange === '90d' ? 'bg-gradient-to-r from-cyan-600 to-blue-600' : ''}
+            >
+              90 Days
+            </Button>
           </div>
         </div>
       </div>
@@ -143,62 +142,62 @@ export default function AnalyticsPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* Key Metrics */}
         <div>
-          <h2 className="text-xl font-semibold mb-4">Key Metrics</h2>
+          <h2 className="text-xl font-semibold mb-6 text-slate-900">Key Metrics</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription className="flex items-center gap-2">
-                  <DollarSign className="w-4 h-4" />
-                  Total Revenue
-                </CardDescription>
+            {/* Total Revenue */}
+            <Card className="border-none shadow-lg bg-gradient-to-br from-emerald-500 to-teal-500 text-white overflow-hidden relative group hover:shadow-xl transition-shadow duration-300">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform duration-300" />
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
+                <CardTitle className="text-sm font-medium text-emerald-50">Total Revenue</CardTitle>
+                <DollarSign className="h-5 w-5 text-emerald-100" />
               </CardHeader>
-              <CardContent>
+              <CardContent className="relative z-10">
                 <div className="text-3xl font-bold">€{analytics.totalRevenue.toFixed(2)}</div>
-                <div className="flex items-center gap-1 text-sm mt-1">
-                  <TrendingUp className="w-4 h-4 text-green-600" />
-                  <span className="text-green-600">+€{analytics.recentRevenue.toFixed(2)}</span>
-                  <span className="text-gray-500">this period</span>
+                <div className="flex items-center gap-1 text-xs mt-2">
+                  <TrendingUp className="w-3 h-3" />
+                  <span>+€{analytics.recentRevenue.toFixed(2)} this period</span>
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription className="flex items-center gap-2">
-                  <ShoppingCart className="w-4 h-4" />
-                  Total Orders
-                </CardDescription>
+            {/* Total Orders */}
+            <Card className="border-none shadow-lg bg-gradient-to-br from-amber-500 to-orange-500 text-white overflow-hidden relative group hover:shadow-xl transition-shadow duration-300">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform duration-300" />
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
+                <CardTitle className="text-sm font-medium text-amber-50">Total Orders</CardTitle>
+                <ShoppingCart className="h-5 w-5 text-amber-100" />
               </CardHeader>
-              <CardContent>
+              <CardContent className="relative z-10">
                 <div className="text-3xl font-bold">{analytics.totalOrders}</div>
-                <p className="text-xs text-green-600 mt-1">+{analytics.recentOrders} this period</p>
+                <p className="text-xs mt-2">+{analytics.recentOrders} this period</p>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription className="flex items-center gap-2">
-                  <Users className="w-4 h-4" />
-                  Total Customers
-                </CardDescription>
+            {/* Total Customers */}
+            <Card className="border-none shadow-lg bg-gradient-to-br from-purple-500 to-pink-500 text-white overflow-hidden relative group hover:shadow-xl transition-shadow duration-300">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform duration-300" />
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
+                <CardTitle className="text-sm font-medium text-purple-50">Total Customers</CardTitle>
+                <Users className="h-5 w-5 text-purple-100" />
               </CardHeader>
-              <CardContent>
+              <CardContent className="relative z-10">
                 <div className="text-3xl font-bold">{analytics.totalUsers}</div>
-                <p className="text-xs text-green-600 mt-1">+{analytics.recentUsers} this period</p>
+                <p className="text-xs mt-2">+{analytics.recentUsers} this period</p>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription className="flex items-center gap-2">
-                  <Store className="w-4 h-4" />
-                  Active Stores
-                </CardDescription>
+            {/* Active Stores */}
+            <Card className="border-none shadow-lg bg-gradient-to-br from-cyan-500 to-blue-500 text-white overflow-hidden relative group hover:shadow-xl transition-shadow duration-300">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform duration-300" />
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
+                <CardTitle className="text-sm font-medium text-cyan-50">Active Stores</CardTitle>
+                <Store className="h-5 w-5 text-cyan-100" />
               </CardHeader>
-              <CardContent>
+              <CardContent className="relative z-10">
                 <div className="text-3xl font-bold">{analytics.activeTenants}</div>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-xs mt-2">
                   of {analytics.totalTenants} total
+
                 </p>
               </CardContent>
             </Card>

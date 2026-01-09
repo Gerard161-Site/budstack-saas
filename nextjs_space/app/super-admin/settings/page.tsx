@@ -14,7 +14,7 @@ export default async function PlatformSettingsConfigPage() {
         redirect('/auth/login');
     }
 
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
         where: { email: session.user.email },
     });
 
@@ -23,12 +23,12 @@ export default async function PlatformSettingsConfigPage() {
     }
 
     // Get or create platform config
-    let config = await prisma.platformConfig.findUnique({
+    let config = await prisma.platform_config.findUnique({
         where: { id: 'config' },
     });
 
     if (!config) {
-        config = await prisma.platformConfig.create({
+        config = await prisma.platform_config.create({
             data: { id: 'config' },
         });
     }
@@ -43,27 +43,15 @@ export default async function PlatformSettingsConfigPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 theme-force-light">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Back Button */}
-                <div className="mb-6">
-                    <Link href="/super-admin">
-                        <Button variant="ghost" size="sm">
-                            <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back to Dashboard
-                        </Button>
-                    </Link>
-                </div>
-
-                {/* Page Header */}
-                <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900">Platform Settings</h1>
-                    <p className="text-gray-600 mt-2">Manage environment variables and system configuration</p>
-                </div>
-
-                {/* Settings Form */}
-                <SettingsForm config={maskedConfig} />
+        <div className="p-8">
+            {/* Page Header */}
+            <div className="mb-8">
+                <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Platform Settings</h1>
+                <p className="text-slate-600 mt-2">Manage environment variables and system configuration</p>
             </div>
+
+            {/* Settings Form */}
+            <SettingsForm config={maskedConfig} />
         </div>
     );
 }

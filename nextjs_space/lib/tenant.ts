@@ -4,7 +4,7 @@ import { prisma } from './db';
 import { cache } from 'react';
 
 // Extract Tenant type from Prisma query result
-type Tenant = Awaited<ReturnType<typeof prisma.tenant.findFirst>>;
+type Tenant = Awaited<ReturnType<typeof prisma.tenants.findFirst>>;
 
 /**
  * Get the current tenant from request headers (set by middleware)
@@ -25,21 +25,21 @@ export const getCurrentTenant = cache(async (): Promise<Tenant | null> => {
 
     if (tenantSlug) {
       // Path-based routing: /store/{slug}
-      tenant = await prisma.tenant.findFirst({
+      tenant = await prisma.tenants.findFirst({
         where: {
           subdomain: tenantSlug,
           isActive: true,
         },
       });
     } else if (subdomain) {
-      tenant = await prisma.tenant.findFirst({
+      tenant = await prisma.tenants.findFirst({
         where: {
           subdomain: subdomain,
           isActive: true,
         },
       });
     } else if (customDomain) {
-      tenant = await prisma.tenant.findFirst({
+      tenant = await prisma.tenants.findFirst({
         where: {
           customDomain: customDomain,
           isActive: true,
@@ -82,7 +82,7 @@ export async function requireTenant(): Promise<Tenant> {
 export async function getTenantBySlug(slug: string): Promise<Tenant | null> {
   try {
     // Try exact match first
-    let tenant = await prisma.tenant.findFirst({
+    let tenant = await prisma.tenants.findFirst({
       where: {
         subdomain: slug,
         isActive: true,
@@ -98,7 +98,7 @@ export async function getTenantBySlug(slug: string): Promise<Tenant | null> {
 
       // Attempt to find by lowercase slug if the original wasn't lowercase
       if (slug !== slug.toLowerCase()) {
-        tenant = await prisma.tenant.findFirst({
+        tenant = await prisma.tenants.findFirst({
           where: {
             subdomain: slug.toLowerCase(),
             isActive: true,
@@ -129,7 +129,7 @@ export async function getTenantFromRequest(req: Request): Promise<Tenant | null>
 
     // Check if it's a subdomain request
     if (host.includes(baseDomain) && subdomain && subdomain !== baseDomain.split('.')[0]) {
-      const tenant = await prisma.tenant.findFirst({
+      const tenant = await prisma.tenants.findFirst({
         where: {
           subdomain: subdomain,
           isActive: true,
@@ -140,7 +140,7 @@ export async function getTenantFromRequest(req: Request): Promise<Tenant | null>
     }
 
     // Fallback: get the first active tenant
-    const tenant = await prisma.tenant.findFirst({
+    const tenant = await prisma.tenants.findFirst({
       where: {
         isActive: true,
       },

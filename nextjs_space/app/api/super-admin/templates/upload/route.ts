@@ -183,7 +183,7 @@ export async function POST(req: NextRequest) {
       console.log(`[Template Upload] Template: ${config.name} (${config.id})`);
 
       // Check if template already exists
-      const existingTemplate = await prisma.template.findUnique({
+      const existingTemplate = await prisma.templates.findUnique({
         where: { slug: config.id },
       });
 
@@ -213,7 +213,7 @@ export async function POST(req: NextRequest) {
       await fs.cp(extractPath, targetDir, { recursive: true });
 
       // Create database record
-      const template = await prisma.template.create({
+      const template = await prisma.templates.create({
         data: {
           slug: config.id,
           name: config.name,

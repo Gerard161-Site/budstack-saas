@@ -14,9 +14,9 @@ export async function GET(req: NextRequest) {
     }
 
     // Get user's tenant
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
       where: { id: session.user.id },
-      include: { tenant: true },
+      include: { tenants: true },
     });
 
     if (!user?.tenantId || user.role !== 'TENANT_ADMIN') {
@@ -32,34 +32,34 @@ export async function GET(req: NextRequest) {
     const startDate = startOfDay(subDays(new Date(), days));
 
     // Get all-time totals for this tenant
-    const totalProducts = await prisma.product.count({
+    const totalProducts = await prisma.products.count({
       where: { tenantId },
     });
 
-    const totalOrders = await prisma.order.count({
+    const totalOrders = await prisma.orders.count({
       where: { tenantId },
     });
 
-    const totalCustomers = await prisma.user.count({
+    const totalCustomers = await prisma.users.count({
       where: { tenantId, role: 'PATIENT' },
     });
 
     // Get total revenue
-    const totalRevenueResult = await prisma.order.aggregate({
+    const totalRevenueResult = await prisma.orders.aggregate({
       where: { tenantId },
       _sum: { total: true },
     });
     const totalRevenue = totalRevenueResult._sum.total || 0;
 
     // Get recent stats
-    const recentOrders = await prisma.order.count({
+    const recentOrders = await prisma.orders.count({
       where: {
         tenantId,
         createdAt: { gte: startDate },
       },
     });
 
-    const recentCustomers = await prisma.user.count({
+    const recentCustomers = await prisma.users.count({
       where: {
         tenantId,
         role: 'PATIENT',
@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
     });
 
     // Get recent revenue
-    const recentRevenueResult = await prisma.order.aggregate({
+    const recentRevenueResult = await prisma.orders.aggregate({
       where: {
         tenantId,
         createdAt: { gte: startDate },
@@ -87,7 +87,7 @@ export async function GET(req: NextRequest) {
         const dayStart = startOfDay(date);
         const dayEnd = startOfDay(subDays(date, -1));
 
-        const result = await prisma.order.aggregate({
+        const result = await prisma.orders.aggregate({
           where: {
             tenantId,
             createdAt: {
@@ -111,7 +111,7 @@ export async function GET(req: NextRequest) {
         const dayStart = startOfDay(date);
         const dayEnd = startOfDay(subDays(date, -1));
 
-        const count = await prisma.order.count({
+        const count = await prisma.orders.count({
           where: {
             tenantId,
             createdAt: {
@@ -129,7 +129,7 @@ export async function GET(req: NextRequest) {
     );
 
     // Get top selling products
-    const topProducts = await prisma.orderItem.groupBy({
+    const topProducts = await prisma.order_items.groupBy({
       by: ['productId'],
       where: {
         order: {
@@ -155,7 +155,7 @@ export async function GET(req: NextRequest) {
     // Get product details for top products
     const topProductsWithDetails = await Promise.all(
       topProducts.map(async (item: any) => {
-        const product = await prisma.product.findUnique({
+        const product = await prisma.products.findUnique({
           where: { id: item.productId },
         });
         return {
@@ -174,7 +174,7 @@ export async function GET(req: NextRequest) {
         const dayStart = startOfDay(date);
         const dayEnd = startOfDay(subDays(date, -1));
 
-        const count = await prisma.user.count({
+        const count = await prisma.users.count({
           where: {
             tenantId,
             role: 'PATIENT',
@@ -193,7 +193,7 @@ export async function GET(req: NextRequest) {
     );
 
     // Get order status distribution
-    const orderStatusData = await prisma.order.groupBy({
+    const orderStatusData = await prisma.orders.groupBy({
       by: ['status'],
       where: {
         tenantId,

@@ -18,35 +18,30 @@ export default async function TheWirePage() {
         redirect('/auth/login');
     }
 
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
         where: { id: session.user.id },
-        include: { tenant: true },
+        include: { tenants: true },
     });
 
     if (!user?.tenant) {
         redirect('/tenant-admin');
     }
 
-    const posts = await prisma.post.findMany({
+    const posts = await prisma.posts.findMany({
         where: { tenantId: user.tenant.id },
         orderBy: { createdAt: 'desc' },
-        include: { author: true },
+        include: { users: true },
     });
 
     return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="flex justify-between items-center mb-6">
+        <div className="p-8">
+            <div className="flex justify-between items-center mb-8">
                 <div>
-                    <div className="mb-2">
-                        <Link href="/tenant-admin" className="text-sm text-muted-foreground hover:text-primary flex items-center gap-1">
-                            ← Back to Dashboard
-                        </Link>
-                    </div>
-                    <h1 className="text-2xl font-bold tracking-tight">The Wire</h1>
-                    <p className="text-muted-foreground">Manage your news and articles.</p>
+                    <h1 className="text-3xl font-bold text-slate-900 tracking-tight">The Wire</h1>
+                    <p className="text-slate-600 mt-2">Manage your news and articles</p>
                 </div>
                 <Link href="/tenant-admin/the-wire/new">
-                    <Button>
+                    <Button className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-medium shadow-md hover:shadow-lg transition-all">
                         <Plus className="mr-2 h-4 w-4" /> New Article
                     </Button>
                 </Link>

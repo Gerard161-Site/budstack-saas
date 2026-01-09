@@ -14,7 +14,6 @@ import {
     EyeOff,
     CheckCircle,
     AlertCircle,
-    Chrome,
     ArrowRight,
     Store
 } from 'lucide-react';
@@ -115,8 +114,8 @@ function TenantLoginForm() {
                     toast.info('Redirecting to Super Admin dashboard...');
                     router.replace('/super-admin');
                 } else {
-                    // Patients/customers go to the store homepage
-                    router.replace(`/store/${slug}`);
+                    // Patients/customers go to their dashboard
+                    router.replace(`/store/${slug}/dashboard`);
                 }
             }
 
@@ -127,14 +126,7 @@ function TenantLoginForm() {
         }
     };
 
-    const handleGoogleSignIn = async () => {
-        try {
-            // Let the middleware redirect based on role after Google sign-in
-            await signIn('google', { callbackUrl: `/store/${slug}` });
-        } catch (error) {
-            toast.error('Google sign in failed');
-        }
-    };
+    // Google OAuth removed for regulatory compliance (KYC required)
 
     if (tenantError) {
         return (
@@ -230,25 +222,7 @@ function TenantLoginForm() {
                         </motion.div>
                     )}
 
-                    {/* Google Sign In */}
-                    <Button
-                        type="button"
-                        variant="outline"
-                        className="w-full mb-6 bg-white border-gray-300 hover:bg-gray-50 text-gray-700"
-                        onClick={handleGoogleSignIn}
-                    >
-                        <Chrome className="w-4 h-4 mr-2" />
-                        Continue with Google
-                    </Button>
-
-                    <div className="relative mb-6">
-                        <div className="absolute inset-0 flex items-center">
-                            <div className="w-full border-t border-gray-300" />
-                        </div>
-                        <div className="relative flex justify-center text-sm">
-                            <span className="px-2 bg-white text-gray-500">Or sign in with email</span>
-                        </div>
-                    </div>
+                    {/* Removed Google OAuth for regulatory compliance */}
 
                     {/* Form */}
                     <form onSubmit={handleSubmit} className="space-y-6">
@@ -349,16 +323,16 @@ function TenantLoginForm() {
                         </Button>
                     </form>
 
-                    {/* Sign up link */}
+                    {/* Check Eligibility link */}
                     <div className="mt-6 text-center">
                         <p className="text-sm text-gray-600">
-                            Don't have an account?{' '}
+                            New patient?{' '}
                             <Link
-                                href={`/store/${slug}/register`}
+                                href={`/store/${slug}/consultation`}
                                 className="font-medium hover:opacity-80 transition-opacity"
                                 style={{ color: primaryColor }}
                             >
-                                Create one now
+                                Check Eligibility
                             </Link>
                         </p>
                     </div>

@@ -30,22 +30,22 @@ export async function getPlatformConfig(): Promise<PlatformConfig> {
     }
 
     try {
-        const dbConfig = await prisma.platformConfig.findUnique({
+        const dbConfig = await prisma.platform_config.findUnique({
             where: { id: 'config' },
         });
 
         if (dbConfig) {
-            // Decrypt sensitive fields
+            // Decrypt sensitive fields with environment variable fallback
             const decryptedConfig: PlatformConfig = {
-                drGreenApiUrl: dbConfig.drGreenApiUrl,
-                awsBucketName: dbConfig.awsBucketName,
-                awsFolderPrefix: dbConfig.awsFolderPrefix,
-                awsRegion: dbConfig.awsRegion,
-                awsAccessKeyId: dbConfig.awsAccessKeyId ? decrypt(dbConfig.awsAccessKeyId) : null,
-                awsSecretAccessKey: dbConfig.awsSecretAccessKey ? decrypt(dbConfig.awsSecretAccessKey) : null,
-                emailServer: dbConfig.emailServer ? decrypt(dbConfig.emailServer) : null,
-                emailFrom: dbConfig.emailFrom,
-                redisUrl: dbConfig.redisUrl ? decrypt(dbConfig.redisUrl) : null,
+                drGreenApiUrl: dbConfig.drGreenApiUrl || process.env.DRGREEN_API_URL || null,
+                awsBucketName: dbConfig.awsBucketName || process.env.AWS_BUCKET_NAME || null,
+                awsFolderPrefix: dbConfig.awsFolderPrefix || process.env.AWS_FOLDER_PREFIX || null,
+                awsRegion: dbConfig.awsRegion || process.env.AWS_REGION || null,
+                awsAccessKeyId: (dbConfig.awsAccessKeyId ? decrypt(dbConfig.awsAccessKeyId) : null) || process.env.AWS_ACCESS_KEY_ID || null,
+                awsSecretAccessKey: (dbConfig.awsSecretAccessKey ? decrypt(dbConfig.awsSecretAccessKey) : null) || process.env.AWS_SECRET_ACCESS_KEY || null,
+                emailServer: (dbConfig.emailServer ? decrypt(dbConfig.emailServer) : null) || process.env.EMAIL_SERVER || null,
+                emailFrom: dbConfig.emailFrom || process.env.EMAIL_FROM || null,
+                redisUrl: (dbConfig.redisUrl ? decrypt(dbConfig.redisUrl) : null) || process.env.REDIS_URL || null,
             };
 
             configCache = decryptedConfig;

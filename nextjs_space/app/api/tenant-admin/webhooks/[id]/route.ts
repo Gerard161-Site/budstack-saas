@@ -37,7 +37,7 @@ export async function PATCH(
     const { url, events, description, isActive } = body;
 
     // Verify webhook belongs to tenant
-    const existingWebhook = await prisma.webhook.findFirst({
+    const existingWebhook = await prisma.webhooks.findFirst({
       where: { id, tenantId },
     });
 
@@ -60,7 +60,7 @@ export async function PATCH(
       }
     }
 
-    const webhook = await prisma.webhook.update({
+    const webhook = await prisma.webhooks.update({
       where: { id },
       data: {
         ...(url && { url }),
@@ -123,7 +123,7 @@ export async function DELETE(
     const { id } = params;
 
     // Verify webhook belongs to tenant
-    const existingWebhook = await prisma.webhook.findFirst({
+    const existingWebhook = await prisma.webhooks.findFirst({
       where: { id, tenantId },
     });
 
@@ -134,7 +134,7 @@ export async function DELETE(
       );
     }
 
-    await prisma.webhook.delete({
+    await prisma.webhooks.delete({
       where: { id },
     });
 

@@ -11,12 +11,12 @@ import { prisma } from '@/lib/db';
 
 export default async function ProductsPage() {
   const session = await getServerSession(authOptions);
-  
+
   if (!session || (session.user.role !== 'TENANT_ADMIN' && session.user.role !== 'SUPER_ADMIN')) {
     redirect('/auth/login');
   }
 
-  const user = await prisma.user.findUnique({
+  const user = await prisma.users.findUnique({
     where: { id: session.user.id },
     include: {
       tenant: {
@@ -36,67 +36,67 @@ export default async function ProductsPage() {
   const products = user.tenant.products;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <Link href="/tenant-admin">
-            <Button variant="ghost" className="mb-2">← Back to Dashboard</Button>
-          </Link>
-          <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold text-gray-900">Product Management</h1>
-            <Button>Sync from Doctor Green</Button>
+    <div className="p-8">
+      <div className="mb-8">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Product Management</h1>
+            <p className="text-slate-600 mt-2">Manage your product catalog</p>
           </div>
+          <Button className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-medium shadow-md hover:shadow-lg transition-all">
+            Sync from Dr Green Admin
+          </Button>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>All Products ({products.length})</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {products.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-gray-500 mb-4">No products found</p>
-                <Button>Sync Products from Doctor Green</Button>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>THC %</TableHead>
-                    <TableHead>CBD %</TableHead>
-                    <TableHead>Price</TableHead>
-                    <TableHead>Stock</TableHead>
-                    <TableHead>Status</TableHead>
+      <Card className="shadow-lg border-slate-200">
+        <CardHeader className="border-b bg-gradient-to-r from-emerald-50 to-teal-50">
+          <CardTitle className="text-2xl font-bold text-slate-900">All Products ({products.length})</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-6">
+          {products.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-slate-600 mb-4">No products found</p>
+              <Button className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-medium shadow-md hover:shadow-lg transition-all">
+                Sync Products from Dr Green Admin
+              </Button>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow className="border-slate-200">
+                  <TableHead className="font-semibold text-slate-700">Name</TableHead>
+                  <TableHead className="font-semibold text-slate-700">Category</TableHead>
+                  <TableHead className="font-semibold text-slate-700">THC %</TableHead>
+                  <TableHead className="font-semibold text-slate-700">CBD %</TableHead>
+                  <TableHead className="font-semibold text-slate-700">Price</TableHead>
+                  <TableHead className="font-semibold text-slate-700">Stock</TableHead>
+                  <TableHead className="font-semibold text-slate-700">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {products.map((product: any) => (
+                  <TableRow key={product.id} className="border-slate-200">
+                    <TableCell className="font-medium text-slate-900">{product.name}</TableCell>
+                    <TableCell className="text-slate-700">{product.category}</TableCell>
+                    <TableCell className="text-slate-700">{product.thcContent}%</TableCell>
+                    <TableCell className="text-slate-700">{product.cbdContent}%</TableCell>
+                    <TableCell className="text-slate-700">€{product.price}</TableCell>
+                    <TableCell className="text-slate-700">{product.stock > 0 ? product.stock : 'Out of stock'}</TableCell>
+                    <TableCell>
+                      {product.stock > 0 ? (
+                        <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">In Stock</Badge>
+                      ) : (
+                        <Badge className="bg-amber-100 text-amber-700 border-amber-200">Out of Stock</Badge>
+                      )}
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {products.map((product: any) => (
-                    <TableRow key={product.id}>
-                      <TableCell className="font-medium">{product.name}</TableCell>
-                      <TableCell>{product.category}</TableCell>
-                      <TableCell>{product.thcContent}%</TableCell>
-                      <TableCell>{product.cbdContent}%</TableCell>
-                      <TableCell>€{product.price}</TableCell>
-                      <TableCell>{product.stock > 0 ? product.stock : 'Out of stock'}</TableCell>
-                      <TableCell>
-                        {product.stock > 0 ? (
-                          <Badge variant="default" className="bg-green-500">In Stock</Badge>
-                        ) : (
-                          <Badge variant="secondary">Out of Stock</Badge>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

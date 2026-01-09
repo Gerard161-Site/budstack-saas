@@ -52,11 +52,11 @@ export default function PlatformBrandingForm({ settings }: PlatformBrandingFormP
   const [isLoading, setIsLoading] = useState(false);
   const [logo, setLogo] = useState<File | null>(null);
   const [favicon, setFavicon] = useState<File | null>(null);
-  
+
   const [formData, setFormData] = useState({
     businessName: settings.businessName,
     tagline: settings.tagline || '',
-    
+
     // Colors
     primaryColor: settings.primaryColor,
     secondaryColor: settings.secondaryColor,
@@ -64,11 +64,11 @@ export default function PlatformBrandingForm({ settings }: PlatformBrandingFormP
     backgroundColor: settings.backgroundColor,
     textColor: settings.textColor,
     headingColor: settings.headingColor,
-    
+
     // Typography
     fontFamily: settings.fontFamily,
     headingFontFamily: settings.headingFontFamily,
-    
+
     // Template
     template: settings.template,
   });
@@ -79,12 +79,12 @@ export default function PlatformBrandingForm({ settings }: PlatformBrandingFormP
 
     try {
       const formDataToSend = new FormData();
-      
+
       // Append all form data
       Object.entries(formData).forEach(([key, value]) => {
         formDataToSend.append(key, value as string);
       });
-      
+
       // Append files
       if (logo) formDataToSend.append('logo', logo);
       if (favicon) formDataToSend.append('favicon', favicon);
@@ -126,12 +126,12 @@ export default function PlatformBrandingForm({ settings }: PlatformBrandingFormP
 
         {/* DESIGN TAB */}
         <TabsContent value="design" className="space-y-6">
-          <Card>
-            <CardHeader>
+          <Card className="shadow-lg border-slate-200">
+            <CardHeader className="border-b bg-gradient-to-r from-blue-50 to-cyan-50">
               <CardTitle>Platform Information</CardTitle>
               <CardDescription>Basic information about BudStack</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 pt-6">
               <div>
                 <Label htmlFor="businessName">Platform Name *</Label>
                 <Input
@@ -154,47 +154,46 @@ export default function PlatformBrandingForm({ settings }: PlatformBrandingFormP
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
+          <Card className="shadow-lg border-slate-200">
+            <CardHeader className="border-b bg-gradient-to-r from-purple-50 to-pink-50">
               <CardTitle>Template Style</CardTitle>
               <CardDescription>Choose the overall design aesthetic</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6">
               <div className="grid grid-cols-3 gap-4">
                 {TEMPLATES.map((template) => (
                   <div
                     key={template.id}
                     onClick={() => setFormData({ ...formData, template: template.id })}
-                    className={`relative p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                      formData.template === template.id
-                        ? 'border-green-500 bg-green-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
+                    className={`relative p-4 border-2 rounded-lg cursor-pointer transition-all ${formData.template === template.id
+                      ? 'border-emerald-500 bg-emerald-50 shadow-md'
+                      : 'border-slate-200 hover:border-slate-300 hover:shadow'
+                      }`}
                   >
                     {formData.template === template.id && (
-                      <Check className="absolute top-2 right-2 w-5 h-5 text-green-500" />
+                      <Check className="absolute top-2 right-2 w-5 h-5 text-emerald-600" />
                     )}
-                    <h3 className="font-semibold">{template.name}</h3>
-                    <p className="text-sm text-gray-600">{template.description}</p>
+                    <h3 className="font-semibold text-slate-900">{template.name}</h3>
+                    <p className="text-sm text-slate-600">{template.description}</p>
                   </div>
                 ))}
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
+          <Card className="shadow-lg border-slate-200">
+            <CardHeader className="border-b bg-gradient-to-r from-amber-50 to-orange-50">
               <CardTitle>Brand Images</CardTitle>
               <CardDescription>Upload your logo and favicon</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-6 pt-6">
               {/* Logo Upload */}
               <div className="space-y-2">
                 <Label>Platform Logo</Label>
-                <p className="text-sm text-gray-500">Recommended: PNG/SVG, transparent background</p>
-                
+                <p className="text-sm text-slate-500">Recommended: PNG/SVG, transparent background</p>
+
                 {settings.logoUrl && !logo && (
-                  <div className="relative w-48 h-24 border rounded-lg overflow-hidden bg-gray-50">
+                  <div className="relative w-48 h-24 border rounded-lg overflow-hidden bg-slate-50 shadow-sm">
                     <Image
                       src={settings.logoUrl}
                       alt="Current logo"
@@ -203,7 +202,7 @@ export default function PlatformBrandingForm({ settings }: PlatformBrandingFormP
                     />
                   </div>
                 )}
-                
+
                 <div className="flex items-center gap-4">
                   <Input
                     type="file"
@@ -212,8 +211,8 @@ export default function PlatformBrandingForm({ settings }: PlatformBrandingFormP
                     className="max-w-xs"
                   />
                   {logo && (
-                    <span className="text-sm text-green-600">
-                      <Check className="inline w-4 h-4 mr-1" />
+                    <span className="text-sm text-emerald-600 flex items-center gap-1">
+                      <Check className="w-4 h-4" />
                       New logo selected
                     </span>
                   )}
@@ -223,10 +222,10 @@ export default function PlatformBrandingForm({ settings }: PlatformBrandingFormP
               {/* Favicon Upload */}
               <div className="space-y-2">
                 <Label>Favicon</Label>
-                <p className="text-sm text-gray-500">Recommended: 32x32px or 64x64px, PNG/ICO</p>
-                
+                <p className="text-sm text-slate-500">Recommended: 32x32px or 64x64px, PNG/ICO</p>
+
                 {settings.faviconUrl && !favicon && (
-                  <div className="relative w-16 h-16 border rounded-lg overflow-hidden bg-gray-50">
+                  <div className="relative w-16 h-16 border rounded-lg overflow-hidden bg-slate-50 shadow-sm">
                     <Image
                       src={settings.faviconUrl}
                       alt="Current favicon"
@@ -235,7 +234,7 @@ export default function PlatformBrandingForm({ settings }: PlatformBrandingFormP
                     />
                   </div>
                 )}
-                
+
                 <div className="flex items-center gap-4">
                   <Input
                     type="file"
@@ -244,8 +243,8 @@ export default function PlatformBrandingForm({ settings }: PlatformBrandingFormP
                     className="max-w-xs"
                   />
                   {favicon && (
-                    <span className="text-sm text-green-600">
-                      <Check className="inline w-4 h-4 mr-1" />
+                    <span className="text-sm text-emerald-600 flex items-center gap-1">
+                      <Check className="w-4 h-4" />
                       New favicon selected
                     </span>
                   )}
@@ -257,12 +256,12 @@ export default function PlatformBrandingForm({ settings }: PlatformBrandingFormP
 
         {/* COLORS TAB */}
         <TabsContent value="colors" className="space-y-6">
-          <Card>
-            <CardHeader>
+          <Card className="shadow-lg border-slate-200">
+            <CardHeader className="border-b bg-gradient-to-r from-pink-50 to-rose-50">
               <CardTitle>Color Palette</CardTitle>
               <CardDescription>Define your brand colors</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 pt-6">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="primaryColor">Primary Color</Label>
@@ -388,21 +387,21 @@ export default function PlatformBrandingForm({ settings }: PlatformBrandingFormP
                   This is how your text will look with the selected colors and fonts.
                 </p>
                 <div className="flex gap-2">
-                  <button 
+                  <button
                     type="button"
                     className="px-4 py-2 rounded"
                     style={{ backgroundColor: formData.primaryColor, color: '#ffffff' }}
                   >
                     Primary Button
                   </button>
-                  <button 
+                  <button
                     type="button"
                     className="px-4 py-2 rounded"
                     style={{ backgroundColor: formData.secondaryColor, color: '#ffffff' }}
                   >
                     Secondary Button
                   </button>
-                  <button 
+                  <button
                     type="button"
                     className="px-4 py-2 rounded"
                     style={{ backgroundColor: formData.accentColor, color: '#ffffff' }}
@@ -417,12 +416,12 @@ export default function PlatformBrandingForm({ settings }: PlatformBrandingFormP
 
         {/* TYPOGRAPHY TAB */}
         <TabsContent value="typography" className="space-y-6">
-          <Card>
-            <CardHeader>
+          <Card className="shadow-lg border-slate-200">
+            <CardHeader className="border-b bg-gradient-to-r from-indigo-50 to-purple-50">
               <CardTitle>Font Selection</CardTitle>
               <CardDescription>Choose fonts for your platform</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-6 pt-6">
               <div>
                 <Label>Body Font</Label>
                 <div className="grid grid-cols-2 gap-3 mt-2">
@@ -430,11 +429,10 @@ export default function PlatformBrandingForm({ settings }: PlatformBrandingFormP
                     <div
                       key={font.id}
                       onClick={() => setFormData({ ...formData, fontFamily: font.id })}
-                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                        formData.fontFamily === font.id
-                          ? 'border-green-500 bg-green-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
+                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${formData.fontFamily === font.id
+                        ? 'border-emerald-500 bg-emerald-50 shadow-md'
+                        : 'border-slate-200 hover:border-slate-300 hover:shadow'
+                        }`}
                     >
                       <div className="flex items-start justify-between">
                         <div>
@@ -442,7 +440,7 @@ export default function PlatformBrandingForm({ settings }: PlatformBrandingFormP
                           <p className="text-sm text-gray-600">{font.description}</p>
                         </div>
                         {formData.fontFamily === font.id && (
-                          <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
+                          <Check className="w-5 h-5 text-emerald-600 flex-shrink-0" />
                         )}
                       </div>
                     </div>
@@ -457,11 +455,10 @@ export default function PlatformBrandingForm({ settings }: PlatformBrandingFormP
                     <div
                       key={font.id}
                       onClick={() => setFormData({ ...formData, headingFontFamily: font.id })}
-                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                        formData.headingFontFamily === font.id
-                          ? 'border-green-500 bg-green-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
+                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${formData.headingFontFamily === font.id
+                        ? 'border-emerald-500 bg-emerald-50 shadow-md'
+                        : 'border-slate-200 hover:border-slate-300 hover:shadow'
+                        }`}
                     >
                       <div className="flex items-start justify-between">
                         <div>
@@ -469,7 +466,7 @@ export default function PlatformBrandingForm({ settings }: PlatformBrandingFormP
                           <p className="text-sm text-gray-600">{font.description}</p>
                         </div>
                         {formData.headingFontFamily === font.id && (
-                          <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
+                          <Check className="w-5 h-5 text-emerald-600 flex-shrink-0" />
                         )}
                       </div>
                     </div>
@@ -483,7 +480,12 @@ export default function PlatformBrandingForm({ settings }: PlatformBrandingFormP
 
       {/* Save Button */}
       <div className="flex justify-end mt-8">
-        <Button type="submit" size="lg" disabled={isLoading}>
+        <Button
+          type="submit"
+          size="lg"
+          disabled={isLoading}
+          className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-medium shadow-md hover:shadow-lg transition-all"
+        >
           {isLoading ? 'Saving...' : 'Save Platform Branding'}
         </Button>
       </div>

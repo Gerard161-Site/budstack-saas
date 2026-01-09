@@ -12,9 +12,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const user = await prisma.user.findUnique({
+    const user = await prisma.users.findUnique({
       where: { id: session.user.id },
-      include: { tenant: true },
+      include: { tenants: true },
     });
 
     if (!user?.tenant) {
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     console.log('Updating tenant with data:', { ...dataToUpdate, drGreenSecretKey: dataToUpdate.drGreenSecretKey ? '***' : undefined });
 
     // Update tenant
-    await prisma.tenant.update({
+    await prisma.tenants.update({
       where: { id: user.tenant.id },
       data: dataToUpdate,
     });

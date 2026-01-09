@@ -13,10 +13,10 @@ export default async function BrandingPage() {
     redirect('/auth/login');
   }
 
-  const user = await prisma.user.findUnique({
+  const user = await prisma.users.findUnique({
     where: { email: session.user.email },
     include: {
-      tenant: {
+      tenants: {
         include: {
           template: true,
         },
@@ -24,43 +24,33 @@ export default async function BrandingPage() {
     },
   });
 
-  if (!user?.tenant) {
+  if (!user?.tenants) {
     redirect('/dashboard');
   }
 
   // Fetch all available templates
-  const templates = await prisma.template.findMany({
+  const templates = await prisma.templates.findMany({
     where: { isActive: true },
     orderBy: { name: 'asc' },
   });
 
   // Fetch active tenant template
-  const activeTemplate = user.tenant.activeTenantTemplateId
-    ? await prisma.tenantTemplate.findUnique({
-      where: { id: user.tenant.activeTenantTemplateId }
+  const activeTemplate = user.tenants.activeTenantTemplateId
+    ? await prisma.tenant_templates.findUnique({
+      where: { id: user.tenants.activeTenantTemplateId }
     })
     : null;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Back Button */}
-      <div className="mb-6">
-        <Link href="/tenant-admin">
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Dashboard
-          </Button>
-        </Link>
-      </div>
-
+    <div className="p-8">
       {/* Page Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Store Branding</h1>
-        <p className="text-gray-600 mt-2">Customize the look and feel of your storefront</p>
+        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Store Branding</h1>
+        <p className="text-slate-600 mt-2">Customize the look and feel of your storefront</p>
       </div>
 
       {/* Branding Form */}
-      <BrandingForm tenant={user.tenant} activeTemplate={activeTemplate} />
+      <BrandingForm tenant={user.tenants} activeTemplate={activeTemplate} />
     </div>
   );
 }

@@ -10,7 +10,7 @@ export async function seedCore() {
   console.log('Skipping template creation (use seed-templates.ts instead)...');
 
   // Fetch HealingBuds template (assumes seed-templates.ts has run)
-  const healingBudsTemplate = await prisma.template.findUnique({
+  const healingBudsTemplate = await prisma.templates.findUnique({
     where: { slug: 'healingbuds' },
   });
 
@@ -23,7 +23,7 @@ export async function seedCore() {
 
 
 
-  const healingBudsTenant = await prisma.tenant.upsert({
+  const healingBudsTenant = await prisma.tenants.upsert({
     where: { subdomain: 'healingbuds' },
     update: {
       templateId: healingBudsTemplate.id,
@@ -47,10 +47,10 @@ export async function seedCore() {
   console.log('HealingBuds tenant created:', healingBudsTenant.subdomain);
 
   // --- Create CooleysBuds Tenant (Wellness Template) ---
-  const wellnessTemplate = await prisma.template.findUnique({ where: { slug: 'wellness-nature' } });
+  const wellnessTemplate = await prisma.templates.findUnique({ where: { slug: 'wellness-nature' } });
   if (wellnessTemplate) {
     console.log('Creating CooleysBuds tenant...');
-    await prisma.tenant.upsert({
+    await prisma.tenants.upsert({
       where: { subdomain: 'cooleysbuds' },
       update: { templateId: wellnessTemplate.id },
       create: {
@@ -67,10 +67,10 @@ export async function seedCore() {
   }
 
   // --- Create PortugalBuds Tenant (GTA Template) ---
-  const gtaTemplate = await prisma.template.findUnique({ where: { slug: 'gta-cannabis' } });
+  const gtaTemplate = await prisma.templates.findUnique({ where: { slug: 'gta-cannabis' } });
   if (gtaTemplate) {
     console.log('Creating PortugalBuds tenant...');
-    await prisma.tenant.upsert({
+    await prisma.tenants.upsert({
       where: { subdomain: 'portugalbuds' },
       update: { templateId: gtaTemplate.id },
       create: {
@@ -91,31 +91,52 @@ export async function seedCore() {
 
   const superAdminPassword = await bcrypt.hash('admin123', 10);
 
-  const superAdmin = await prisma.user.upsert({
+  const superAdmin = await prisma.users.upsert({
     where: { email: 'admin@budstack.to' },
     update: {},
     create: {
       email: 'admin@budstack.to',
       password: superAdminPassword,
       name: 'Super Admin',
+      firstName: 'Super',
+      lastName: 'Admin',
+      isActive: true,
       role: 'SUPER_ADMIN',
     },
   });
 
   console.log('Super admin created:', superAdmin.email);
 
+  const superAdminIO = await prisma.users.upsert({
+    where: { email: 'admin@budstack.io' },
+    update: {},
+    create: {
+      email: 'admin@budstack.io',
+      password: superAdminPassword,
+      name: 'BudStack Super Admin',
+      firstName: 'BudStack',
+      lastName: 'Admin',
+      isActive: true,
+      role: 'SUPER_ADMIN',
+    },
+  });
+  console.log('Super admin IO created:', superAdminIO.email);
+
   // Create HealingBuds Tenant Admin
   console.log('Creating HealingBuds tenant admin...');
 
   const tenantAdminPassword = await bcrypt.hash('admin123', 10);
 
-  const tenantAdmin = await prisma.user.upsert({
+  const tenantAdmin = await prisma.users.upsert({
     where: { email: 'admin@healingbuds.pt' },
     update: {},
     create: {
       email: 'admin@healingbuds.pt',
       password: tenantAdminPassword,
       name: 'HealingBuds Admin',
+      firstName: 'HealingBuds',
+      lastName: 'Admin',
+      isActive: true,
       role: 'TENANT_ADMIN',
       tenantId: healingBudsTenant.id,
     },
@@ -128,13 +149,23 @@ export async function seedCore() {
 
   const testUserPassword = await bcrypt.hash('test123', 10);
 
-  const testUser = await prisma.user.upsert({
+  const testUser = await prisma.users.upsert({
     where: { email: 'test@healingbuds.pt' },
     update: {},
     create: {
       email: 'test@healingbuds.pt',
       password: testUserPassword,
       name: 'Test Patient',
+      firstName: 'Test',
+      lastName: 'Patient',
+      phone: '+351 91 234 5678',
+      address: {
+        line1: '123 Test Street',
+        city: 'Lisbon',
+        postalCode: '1000-001',
+        country: 'Portugal'
+      },
+      isActive: true,
       role: 'PATIENT',
       tenantId: healingBudsTenant.id,
     },
@@ -262,7 +293,7 @@ export async function seedCore() {
   ];
 
   for (const product of products) {
-    await prisma.product.upsert({
+    await prisma.products.upsert({
       where: {
         slug_tenantId: {
           slug: product.slug,
@@ -282,7 +313,7 @@ export async function seedCore() {
   console.log('Database seeded successfully!');
   console.log('\n=== Login Credentials ===');
   console.log('Super Admin:');
-  console.log('  Email: admin@budstack.to');
+  console.log('  Email: admin@budstack.to / admin@budstack.io');
   console.log('  Password: admin123');
   console.log('\nTenant Admin (HealingBuds):');
   console.log('  Email: admin@healingbuds.pt');
