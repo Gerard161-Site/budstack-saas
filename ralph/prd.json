@@ -491,7 +491,7 @@
         "Test with screen reader (VoiceOver on Mac or NVDA on Windows)"
       ],
       "priority": 26,
-      "passes": false,
+      "passes": true,
       "notes": "UI STORY: Invoke frontend-design skill first. Add aria attributes to all interactive components."
     },
     {
