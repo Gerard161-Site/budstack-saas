@@ -19,11 +19,9 @@ import {
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
 
-// Dynamic import for Plotly to avoid SSR issues (typed as any to avoid @types/react version conflicts)
-const Plot: React.ComponentType<any> = dynamic(
-  () => import('react-plotly.js').then((mod) => mod.default),
-  { ssr: false }
-)
+// Dynamic import for Plotly to avoid SSR issues
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const Plot = dynamic(() => import('react-plotly.js') as any, { ssr: false }) as any
 
 interface StoreAnalyticsProps {
   className?: string
