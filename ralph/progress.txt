@@ -1236,3 +1236,36 @@ Started: Fri  9 Jan 2026 16:34:28 WET
   - Print documents should use A4 portrait format (`@page { size: A4 portrait; margin: 0.5cm; }`)
   - Stacking order: header (dark gradient), info bar (light background), body (white), footer (light background)
 ---
+
+## 2026-01-09 22:05 - US-029
+
+- **What was implemented**: Customer Notes Field (Orders)
+- **Files created**:
+  - `nextjs_space/app/api/tenant-admin/orders/[id]/admin-notes/route.ts` - API endpoint for updating admin notes
+  - `nextjs_space/prisma/migrations/20260109_add_admin_notes/migration.sql` - Database migration
+- **Files modified**:
+  - `nextjs_space/prisma/schema.prisma` - Added `adminNotes` field to orders model
+  - `nextjs_space/app/tenant-admin/orders/page.tsx` - Added admin notes textarea with debounced auto-save
+  - `nextjs_space/app/tenant-admin/orders/orders-table.tsx` - Updated Order interface to include adminNotes
+  - `nextjs_space/app/api/tenant-admin/orders/route.ts` - Updated to return adminNotes in order data
+
+- **Features implemented**:
+  - Admin Notes textarea in order detail modal with amber-themed styling
+  - Debounced auto-save (1 second after user stops typing)
+  - "Saved" indicator with checkmark icon that appears after successful save
+  - Helper text: "Internal notes (not visible to customers)"
+  - Auto-save status text: "Changes are saved automatically after 1 second of no typing"
+  - Field pre-populates when order is selected
+  - FileText icon for visual identification
+  - Textarea is disabled during save operation
+  - Uses Prisma migration to add `adminNotes` TEXT field to orders table
+  - API endpoint validates authentication and tenant ownership before allowing updates
+
+- **Learnings for future iterations**:
+  - When adding new fields to Prisma models, always create a migration file and run `prisma migrate deploy` followed by `prisma generate`
+  - For debounced auto-save, use `useRef` to store timeout reference and clear it on component unmount
+  - Use `any` type for Prisma query results when transforming field names (e.g., `order_items` to `items`)
+  - The admin notes field uses an amber color scheme to distinguish it from regular content (amber-50/30 background, amber-200 border)
+  - When creating API endpoints that modify data, always validate tenant ownership to prevent unauthorized access
+  - The "Saved" indicator uses `animate-in fade-in` for smooth appearance
+---
