@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { SearchInput, StatusFilter, EmptyState } from '@/components/admin/shared';
+import { SearchInput, StatusFilter, EmptyState, Pagination } from '@/components/admin/shared';
 import type { StatusFilterOption } from '@/components/admin/shared';
 import { useTableState } from '@/lib/admin/url-state';
 import { getTenantUrl } from '@/lib/tenant-utils';
@@ -47,77 +47,50 @@ interface Tenant {
 }
 
 interface TenantsTableProps {
-  /** Array of tenant data from server */
+  /** Array of tenant data from server (paginated and filtered) */
   tenants: Tenant[];
+  /** Total count of filtered tenants (for pagination) */
+  totalCount: number;
+  /** Count of active tenants (with search applied) */
+  activeCount: number;
+  /** Count of inactive tenants (with search applied) */
+  inactiveCount: number;
 }
 
 /**
- * TenantsTable - Client component for displaying tenants with search and filter functionality.
+ * TenantsTable - Client component for displaying tenants with search, filter, and pagination.
  *
  * Features:
+ * - Server-side pagination with URL state (?page=, ?pageSize=)
  * - Debounced search across businessName, subdomain, customDomain, nftTokenId
  * - Status filter (All, Active, Inactive) with counts
  * - Case-insensitive filtering
- * - URL state persistence (?search=, ?status=)
+ * - URL state persistence (?search=, ?status=, ?page=, ?pageSize=)
  * - Empty state for no results
  */
-export function TenantsTable({ tenants }: TenantsTableProps) {
-  const [{ search, filters }, { setSearch, setFilter }] = useTableState<TenantFilters>({
+export function TenantsTable({ tenants, totalCount, activeCount, inactiveCount }: TenantsTableProps) {
+  const [{ search, filters, page, pageSize }, { setSearch, setFilter, setPage, setPageSize }] = useTableState<TenantFilters>({
     defaultFilters: { status: 'all' },
+    defaultPageSize: 20,
   });
 
   const statusFilter = filters.status || 'all';
 
-  // Calculate counts for filter options (based on search results only)
-  const searchFilteredTenants = useMemo(() => {
-    if (!search.trim()) {
-      return tenants;
-    }
-
-    const searchLower = search.toLowerCase().trim();
-
-    return tenants.filter((tenant) => {
-      const searchableFields = [
-        tenant.businessName,
-        tenant.subdomain,
-        tenant.customDomain,
-        tenant.nftTokenId,
-      ];
-
-      return searchableFields.some(
-        (field) => field && field.toLowerCase().includes(searchLower)
-      );
-    });
-  }, [tenants, search]);
-
-  // Calculate counts for status filter options
-  const activeCount = searchFilteredTenants.filter((t) => t.isActive).length;
-  const inactiveCount = searchFilteredTenants.filter((t) => !t.isActive).length;
-
-  // Status filter options with counts
+  // Status filter options with server-provided counts
   const statusOptions: StatusFilterOption<TenantStatusFilter>[] = useMemo(
     () => [
-      { value: 'all', label: 'All Tenants', count: searchFilteredTenants.length },
+      { value: 'all', label: 'All Tenants', count: activeCount + inactiveCount },
       { value: 'active', label: 'Active Only', count: activeCount },
       { value: 'inactive', label: 'Inactive Only', count: inactiveCount },
     ],
-    [searchFilteredTenants.length, activeCount, inactiveCount]
+    [activeCount, inactiveCount]
   );
 
-  // Apply status filter on top of search filter (AND logic)
-  const filteredTenants = useMemo(() => {
-    if (statusFilter === 'all') {
-      return searchFilteredTenants;
-    }
-    return searchFilteredTenants.filter((tenant) =>
-      statusFilter === 'active' ? tenant.isActive : !tenant.isActive
-    );
-  }, [searchFilteredTenants, statusFilter]);
-
+  // Server-side filtering is now applied - tenants array is already filtered
   const hasSearchQuery = search.trim().length > 0;
   const hasStatusFilter = statusFilter !== 'all';
   const hasFilters = hasSearchQuery || hasStatusFilter;
-  const noResults = hasFilters && filteredTenants.length === 0;
+  const noResults = totalCount === 0 && hasFilters;
 
   // Build description for empty state
   const emptyDescription = useMemo(() => {
@@ -135,6 +108,9 @@ export function TenantsTable({ tenants }: TenantsTableProps) {
     return 'No tenants found.';
   }, [hasSearchQuery, hasStatusFilter, search, statusFilter]);
 
+  // Total count for display (all tenants matching search, regardless of status filter)
+  const totalSearchCount = activeCount + inactiveCount;
+
   // Clear filters handler
   const handleClearFilters = () => {
     setSearch('');
@@ -148,8 +124,8 @@ export function TenantsTable({ tenants }: TenantsTableProps) {
           <CardTitle className="flex items-center gap-3">
             <span>
               {hasFilters
-                ? `Results (${filteredTenants.length})`
-                : `All Tenants (${tenants.length})`}
+                ? `Results (${totalCount})`
+                : `All Tenants (${totalSearchCount})`}
             </span>
             <Badge variant="outline" className="text-sm font-normal">
               {activeCount} Active
@@ -213,7 +189,7 @@ export function TenantsTable({ tenants }: TenantsTableProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredTenants.length === 0 ? (
+                {tenants.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={9} className="h-32">
                       <EmptyState
@@ -225,7 +201,7 @@ export function TenantsTable({ tenants }: TenantsTableProps) {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredTenants.map((tenant) => {
+                  tenants.map((tenant) => {
                     const tenantUrl = getTenantUrl(tenant);
                     return (
                       <TableRow
@@ -297,6 +273,22 @@ export function TenantsTable({ tenants }: TenantsTableProps) {
                 )}
               </TableBody>
             </Table>
+          </div>
+        )}
+
+        {/* Pagination Controls */}
+        {tenants.length > 0 && (
+          <div className="border-t border-slate-200 bg-slate-50/50">
+            <Pagination
+              page={page}
+              pageSize={pageSize}
+              totalItems={totalCount}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+              pageSizeOptions={[10, 20, 50, 100]}
+              showPageSizeSelector
+              showFirstLast
+            />
           </div>
         )}
       </CardContent>
