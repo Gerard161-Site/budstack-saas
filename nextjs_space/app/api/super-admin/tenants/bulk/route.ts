@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 /**
  * POST /api/super-admin/tenants/bulk
@@ -23,6 +24,12 @@ export async function POST(request: NextRequest) {
         { error: 'Unauthorized' },
         { status: 401 }
       );
+    }
+
+    // Rate limiting
+    const rateLimitResult = checkRateLimit(session.user.id);
+    if (!rateLimitResult.success) {
+      return rateLimitResult.response;
     }
 
     const body = await request.json();
