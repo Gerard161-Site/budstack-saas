@@ -292,7 +292,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 15,
-      "passes": false,
+      "passes": true,
       "notes": "UI STORY: Invoke frontend-design skill first. Create SortableTableHeader component."
     },
     {
@@ -311,7 +311,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 16,
-      "passes": false,
+      "passes": true,
       "notes": "UI STORY: Invoke frontend-design skill first. Use shared BulkActionBar component."
     },
     {
@@ -326,7 +326,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 17,
-      "passes": false,
+      "passes": true,
       "notes": "UI STORY: Invoke frontend-design skill first. Reuse BulkActionBar from US-012."
     },
     {
@@ -341,7 +341,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 18,
-      "passes": false,
+      "passes": true,
       "notes": "UI STORY: Invoke frontend-design skill first. Reuse BulkActionBar from US-012."
     },
     {
@@ -361,7 +361,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 19,
-      "passes": false,
+      "passes": true,
       "notes": "UI STORY: Invoke frontend-design skill first. Create Breadcrumbs component."
     },
     {
@@ -380,7 +380,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 20,
-      "passes": false,
+      "passes": true,
       "notes": "UI STORY: Invoke frontend-design skill first. Use shared EmptyState component."
     },
     {
@@ -397,7 +397,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 21,
-      "passes": false,
+      "passes": true,
       "notes": "UI STORY: Invoke frontend-design skill first. Create QuickActionsWidget component."
     },
     {
@@ -417,7 +417,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 22,
-      "passes": false,
+      "passes": true,
       "notes": "UI STORY: Invoke frontend-design skill first. Use Plotly.js for charts with dynamic import for code splitting."
     },
     {
@@ -437,7 +437,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 23,
-      "passes": false,
+      "passes": true,
       "notes": "UI STORY: Invoke frontend-design skill first. Use Plotly.js for charts, shadcn Card for widgets."
     },
     {

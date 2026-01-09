@@ -9,6 +9,7 @@ import { ShoppingBag, Package, Palette, Settings, ExternalLink, BarChart3, Shiel
 import { prisma } from '@/lib/db';
 import { getTenantUrl } from '@/lib/tenant';
 import { QuickActionsWidget } from '@/components/admin/QuickActionsWidget';
+import StoreAnalytics from '@/components/admin/analytics/StoreAnalytics';
 
 export default async function TenantAdminDashboard() {
   const session = await getServerSession(authOptions);
@@ -132,6 +133,11 @@ export default async function TenantAdminDashboard() {
       {/* Quick Actions Widget */}
       <div className="mb-8">
         <QuickActionsWidget />
+      </div>
+
+      {/* Store Analytics */}
+      <div className="mb-8">
+        <StoreAnalytics />
       </div>
 
       {/* Store Info */}

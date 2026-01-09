@@ -18,6 +18,9 @@ Started: Fri  9 Jan 2026 16:34:28 WET
 - Client-safe utilities: Use `lib/tenant-utils.ts` for tenant functions needed in client components (NOT `lib/tenant.ts` which uses next/headers)
 - Server-side pagination: When paginating, move ALL filtering to server (Prisma where clause) - client-side filtering fails when only one page is loaded
 - Prisma type imports: Use `import { Prisma } from '@prisma/client'` for type-safe where clauses (e.g., `Prisma.tenantsWhereInput`)
+- Sortable table columns: Use `SortableTableHeader` from shared components, validate sort columns on server with VALID_SORT_COLUMNS constant
+- Bulk actions pattern: Use `BulkActionBar` from shared, `Set<string>` for selection state, confirmation dialogs for destructive actions
+- CSV export: Use client-side `Blob` + `URL.createObjectURL` for downloads, no server endpoint needed
 
 ---
 
@@ -393,4 +396,356 @@ Started: Fri  9 Jan 2026 16:34:28 WET
   - TypeScript type annotations may be needed for Prisma groupBy results when iterating (e.g., `item: { category: string | null; _count: { id: number } }`)
   - Next.js 15+ uses `searchParams: Promise<...>` - must await searchParams in server components
 
+---
+
+## 2026-01-09 18:30 - US-011
+
+- **What was implemented**: Sortable Table Columns
+- **Files created**:
+  - `nextjs_space/components/admin/shared/SortableTableHeader.tsx` - Reusable sortable header component with TypeScript props interface
+- **Files modified**:
+  - `nextjs_space/components/admin/shared/index.ts` - Added export for SortableTableHeader
+  - `nextjs_space/app/super-admin/tenants/page.tsx` - Added server-side sorting with Prisma orderBy
+  - `nextjs_space/app/super-admin/tenants/tenants-table.tsx` - Replaced TableHead with SortableTableHeader for sortable columns
+  - `nextjs_space/app/tenant-admin/products/page.tsx` - Added server-side sorting with Prisma orderBy
+  - `nextjs_space/app/tenant-admin/products/products-table.tsx` - Replaced TableHead with SortableTableHeader for sortable columns
+  - `nextjs_space/app/api/tenant-admin/orders/route.ts` - Added sortBy/sortOrder query params and Prisma orderBy
+  - `nextjs_space/app/tenant-admin/orders/page.tsx` - Added sort params to API URL builder
+  - `nextjs_space/app/tenant-admin/orders/orders-table.tsx` - Replaced TableHead with SortableTableHeader for sortable columns
+  - `nextjs_space/app/tenant-admin/customers/page.tsx` - Added server-side sorting with Prisma orderBy
+  - `nextjs_space/app/tenant-admin/customers/customers-table.tsx` - Replaced TableHead with SortableTableHeader for sortable columns
+
+- **Features implemented**:
+  - SortableTableHeader component with three-state sorting cycle (asc -> desc -> null)
+  - Sort indicator icons: ArrowUp (asc), ArrowDown (desc), ArrowUpDown (sortable but not active)
+  - Smooth hover states with icon appearing on hover for unsorted columns
+  - ARIA labels and aria-sort attributes for accessibility
+  - URL params: ?sortBy=column&sortOrder=asc|desc
+  - Server-side sorting via Prisma orderBy clause
+  - Sort persists with search/filter/pagination through useTableState hook
+  - Sortable columns on all admin tables:
+    - Tenants: businessName, nftTokenId, subdomain, isActive, createdAt
+    - Products: name, category, thcContent, cbdContent, price, stock
+    - Orders: orderNumber, status, total, createdAt
+    - Customers: name, email, createdAt
+
+- **Learnings for future iterations**:
+  - The SortableTableHeader uses forwardRef pattern like other shared components
+  - Sort indicator icons use `animate-in fade-in zoom-in-50` for smooth appearance
+  - The `sortable` prop allows mixing sortable and non-sortable columns in the same table
+  - The URL state hook already had setSort functionality - just needed to use it
+  - For client-side API fetching pages (like orders), add sort params to the API URL builder
+  - Validate sort columns on the server side using a VALID_SORT_COLUMNS constant
+
+---
+
+## 2026-01-09 19:15 - US-012
+
+- **What was implemented**: Bulk Actions - Tenants
+- **Files created**:
+  - `nextjs_space/app/api/super-admin/tenants/bulk/route.ts` - API endpoint for bulk activate/deactivate actions
+- **Files modified**:
+  - `nextjs_space/app/super-admin/tenants/tenants-table.tsx` - Added checkbox selection, BulkActionBar, confirmation dialogs, CSV export
+
+- **Features implemented**:
+  - Checkbox in table header to select/deselect all tenants on current page
+  - Individual row checkboxes with proper ARIA labels ("Select {tenantName}")
+  - Indeterminate state checkbox when some (but not all) are selected
+  - Selected row highlighting with bg-slate-100/70
+  - BulkActionBar appears when 1+ tenants selected showing count
+  - Bulk actions: Activate, Deactivate, Export to CSV, Cancel (X button)
+  - Confirmation dialog with affected tenant names before activate/deactivate
+  - Shows up to 5 tenant names with "+X more" badge for larger selections
+  - Processing spinner state during API call
+  - Success toast notifications after bulk actions
+  - CSV export downloads selected tenants with all table columns
+  - Selection clears after action completes
+  - router.refresh() to update table after status changes
+  - Audit log entries created for each affected tenant (TENANT_BULK_ACTIVATED/DEACTIVATED)
+
+- **Learnings for future iterations**:
+  - Use Set<string> for selection state - efficient for add/delete/has operations
+  - For indeterminate checkbox state, spread `data-state: 'checked'` as props since Radix Checkbox doesn't have native indeterminate
+  - The BulkActionBar component is very flexible - just pass actions array with onClick handlers
+  - CSV export can be done client-side using Blob and URL.createObjectURL - no server endpoint needed
+  - The existing toast.success/error from sonner.tsx works great for feedback
+  - For confirmation dialogs, store the action type in state (null = closed, 'activate'/'deactivate' = open)
+  - When bulk updating, use Prisma updateMany for efficiency and create audit logs with createMany
+
+---
+
+## 2026-01-09 20:00 - US-013
+
+- **What was implemented**: Bulk Actions - Products
+- **Files created**:
+  - `nextjs_space/app/api/tenant-admin/products/bulk/route.ts` - API endpoint for bulk product actions
+- **Files modified**:
+  - `nextjs_space/app/tenant-admin/products/products-table.tsx` - Added bulk selection, BulkActionBar, confirmation dialogs
+
+- **Features implemented**:
+  - Checkbox in table header to select/deselect all products on current page
+  - Individual row checkboxes with proper ARIA labels ("Select {productName}")
+  - Indeterminate state checkbox when some (but not all) are selected
+  - Selected row highlighting with emerald-50 background
+  - BulkActionBar appears when 1+ products selected showing count
+  - Bulk actions: Set In Stock, Set Out of Stock, Export to CSV, Delete
+  - Confirmation dialog for all actions with affected product names shown
+  - Delete confirmation has warning text in red: "This cannot be undone."
+  - Processing spinner state during API call
+  - Success toast notifications after bulk actions
+  - CSV export downloads selected products with all table columns
+  - Selection clears after action completes
+  - router.refresh() to update table after stock/delete changes
+  - API endpoint supports three actions: 'set-in-stock', 'set-out-of-stock', 'delete'
+  - Audit log entries created for each affected product (PRODUCT_BULK_SET_IN_STOCK, PRODUCT_BULK_SET_OUT_OF_STOCK, PRODUCT_BULK_DELETED)
+  - Tenant isolation: API verifies products belong to user's tenant before modification
+
+- **Learnings for future iterations**:
+  - Followed same pattern as US-012 (Bulk Actions - Tenants) for consistency
+  - Product bulk actions use emerald color scheme to match products page theme (vs slate for tenants)
+  - Delete action requires special handling - uses deleteMany instead of updateMany
+  - For stock updates, setting stock to 1 for "in stock" and 0 for "out of stock" (simple binary toggle)
+  - The existing BulkActionBar component handles destructive variant styling automatically
+  - CSV export includes all product fields: Name, Category, THC%, CBD%, Price, Stock, Status, Created
+
+---
+
+## 2026-01-09 20:30 - US-014
+
+- **What was implemented**: Bulk Actions - Orders
+- **Files created**:
+  - `nextjs_space/app/api/tenant-admin/orders/bulk/route.ts` - API endpoint for bulk order status updates
+- **Files modified**:
+  - `nextjs_space/app/tenant-admin/orders/orders-table.tsx` - Added bulk selection, BulkActionBar, and confirmation dialogs
+
+- **Features implemented**:
+  - Checkbox in table header to select/deselect all orders on current page
+  - Individual row checkboxes with proper ARIA labels ("Select order {orderNumber}")
+  - Indeterminate state checkbox when some (but not all) are selected
+  - Selected row highlighting with purple-50/70 background
+  - BulkActionBar appears when 1+ orders selected showing count
+  - Bulk actions: Mark as Processing, Mark as Completed, Export to CSV
+  - Note: Bulk cancel is NOT allowed (requires individual confirmation per acceptance criteria)
+  - Confirmation dialog showing count like "Update 7 orders to Processing?"
+  - Shows up to 5 order numbers with "+X more" badge for larger selections
+  - Processing spinner state during API call
+  - Success toast notifications after bulk actions
+  - CSV export downloads selected orders with all table columns
+  - Selection clears after action completes
+  - router.refresh() to update table after status changes
+  - API endpoint creates audit log entries for each affected order (ORDER_BULK_MARK_PROCESSING, ORDER_BULK_MARK_COMPLETED)
+  - Tenant isolation: API verifies orders belong to user's tenant before modification
+
+- **Learnings for future iterations**:
+  - Followed same pattern as US-012 (Bulk Actions - Tenants) and US-013 (Bulk Actions - Products) for consistency
+  - Orders bulk actions use purple color scheme to match orders page gradient theme
+  - The confirmation dialog omits delete option since bulk cancel is not allowed per acceptance criteria
+  - API returns count of affected orders for accurate success messages
+  - Use Set<string> for selection state - efficient for add/delete/has operations
+
+---
+
+## 2026-01-09 21:00 - US-015
+
+- **What was implemented**: Breadcrumb Navigation
+- **Files created**:
+  - `nextjs_space/components/admin/shared/Breadcrumbs.tsx` - Reusable breadcrumb navigation component with TypeScript interface
+- **Files modified**:
+  - `nextjs_space/components/admin/shared/index.ts` - Added export for Breadcrumbs component and types
+  - Super Admin pages (7 files): tenants/page.tsx, tenants/[id]/page.tsx, onboarding/page.tsx, templates/page.tsx, analytics/page.tsx, settings/page.tsx, platform-settings/page.tsx
+  - Tenant Admin pages (11 files): products/page.tsx, orders/page.tsx, customers/page.tsx, customers/[id]/page.tsx, branding/page.tsx, settings/page.tsx, analytics/page.tsx, templates/page.tsx, audit-logs/page.tsx, webhooks/page.tsx, the-wire/page.tsx
+
+- **Features implemented**:
+  - Breadcrumbs component with TypeScript interface (BreadcrumbItem, BreadcrumbsProps)
+  - Format: "Dashboard > Tenants > Healing Buds Store"
+  - ChevronRight separators between items
+  - Clickable links for parent pages (gray-600), plain text for current page (gray-900, font-medium)
+  - Proper accessibility: ARIA nav label, aria-current="page" on last item
+  - Truncation for long labels (max-width: 200px)
+  - Hover underline effect on clickable breadcrumbs
+  - Focus-visible ring for keyboard navigation
+  - Optional showHomeIcon prop for home icon display
+  - JSDoc documentation with usage examples
+  - Removed unused "Back to X" buttons replaced by breadcrumbs
+
+- **Learnings for future iterations**:
+  - Breadcrumbs follow the same component pattern as other shared components (forwardRef, cn(), TypeScript interface)
+  - Detail pages (tenant/[id], customer/[id]) show the entity name as the last breadcrumb segment
+  - Dashboard pages don't need breadcrumbs since they're the root level
+  - When replacing "Back to X" buttons with breadcrumbs, also remove unused Link/Button imports
+  - The Breadcrumbs component uses flex with gap-1 and flex-wrap for responsive layout
+
+---
+
+## 2026-01-09 21:45 - US-016
+
+- **What was implemented**: Improved Empty States
+- **Files modified**:
+  - `nextjs_space/components/admin/shared/EmptyState.tsx` - Enhanced with theme variants, decorative backgrounds, link-based actions, and secondary action support
+  - `nextjs_space/components/admin/shared/index.ts` - Added EmptyStateAction type export
+  - `nextjs_space/app/tenant-admin/products/products-table.tsx` - Updated empty state with "Sync from Dr Green Admin" CTA
+  - `nextjs_space/app/tenant-admin/orders/orders-table.tsx` - Updated empty state with ShoppingCart icon and purple theme
+  - `nextjs_space/app/tenant-admin/customers/customers-table.tsx` - Updated empty state with "Copy Store URL" CTA
+  - `nextjs_space/app/super-admin/tenants/tenants-table.tsx` - Updated empty state with "Review Applications" link
+
+- **Features implemented**:
+  - EmptyState enhanced with theme variants: neutral, emerald, cyan, purple, slate, amber
+  - Decorative background circles with blur effects (showDecoration prop)
+  - Link-based actions support (href prop on EmptyStateAction)
+  - Secondary action support for two CTAs
+  - Products: "No products yet" with emerald theme and "Sync from Dr Green Admin" button
+  - Orders: "No orders yet" with purple theme and ShoppingCart icon
+  - Customers: "No customers yet" with cyan theme and "Copy Store URL" button
+  - Tenants: "No tenants yet" with slate theme and "Review Applications" link
+  - Search/filter: Consistent muted variant with "Clear filters" action
+
+- **Learnings for future iterations**:
+  - EmptyState component now supports both onClick handlers and href links via EmptyStateAction interface
+  - Theme variants allow contextual coloring matching page color schemes (emerald for products, cyan for customers, etc.)
+  - showDecoration prop adds visual interest with blurred background circles
+  - Export EmptyStateAction interface separately for reusability in consuming components
+  - renderAction helper pattern works well for conditional link vs button rendering
+
+---
+## 2026-01-09 23:45 - US-020
+
+- **What was implemented**: Quick Actions Widget
+- **Files created**:
+  - `nextjs_space/components/admin/QuickActionsWidget.tsx` - Command center style widget with 2x3 grid of action buttons
+- **Files modified**:
+  - `nextjs_space/app/tenant-admin/page.tsx` - Integrated QuickActionsWidget below stats grid
+
+- **Features implemented**:
+  - Card titled "Quick Actions" with distinctive "Command Center" aesthetic
+  - 2x3 grid layout with 6 action buttons: Add Product, View Orders, Manage Customers, View Analytics, Branding, Settings
+  - Each button features:
+    - Lucide React icon in gradient container with metallic depth effects
+    - Theme-specific colors: emerald (products), purple (orders), cyan (customers), amber (analytics), rose (branding), slate (settings)
+    - Satisfying hover interactions: scale (1.02), translate up (-1px), rotation (3deg), shadow elevation
+    - Ring shadows and inner highlights for tactile appearance
+    - Gradient text labels with bg-clip-text for refined typography
+    - Subtle shine effect on hover with gradient overlay transition
+  - Positioned prominently on tenant dashboard below stats grid, above store info section
+  - Fully responsive: 2 columns on mobile, 3 columns on desktop (md breakpoint)
+  - TypeScript interfaces exported: QuickAction, QuickActionsWidgetProps
+  - Staggered entrance animations using animation-delay (50ms per item)
+  - Proper accessibility: focus-visible ring, keyboard navigation support
+  - All buttons link to their respective admin pages
+  - Typecheck passes via `npm run build`
+
+- **Learnings for future iterations**:
+  - The "Command Center" aesthetic creates a distinctive, memorable design that breaks from typical admin dashboard patterns
+  - Combining multiple micro-interactions (scale, translate, rotate, shadow) creates a satisfying, tactile feel
+  - Theme color mappings in a const object allow easy color management across multiple properties (border, shadow, icon, label)
+  - Using forwardRef pattern maintains consistency with shadcn/ui component architecture
+  - The QuickActionsWidget accepts optional custom actions array for flexibility in other contexts
+  - Gradient backgrounds on icons with inner highlights (from-white/20) create depth without complex CSS
+  - Positioning the widget below stats but above detailed info creates good visual hierarchy on the dashboard
+---
+
+
+## 2026-01-09 17:00 - US-018
+
+- **What was implemented**: Super Admin Dashboard - Platform Analytics
+- **Files created**:
+  - `nextjs_space/components/admin/analytics/PlatformAnalytics.tsx` - Client component with Plotly.js charts and analytics widgets
+- **Files modified**:
+  - `nextjs_space/components/admin/panels/OverviewPanel.tsx` - Added PlatformAnalytics component below existing stats
+  - `nextjs_space/app/layout.tsx` - Added JetBrains Mono font for monospaced numerics
+  - `nextjs_space/tailwind.config.ts` - Added fontFamily config for JetBrains Mono
+
+- **Features implemented**:
+  - **Quick Metrics Cards (3)**: MRR ($127.5k), Churn Rate (2.8%), Avg Users per Tenant (3.2)
+    - Color-coded by metric type (cyan, amber, emerald)
+    - Monospaced numbers with JetBrains Mono font
+    - Staggered entrance animations (0ms, 100ms, 200ms delays)
+  - **Tenant Signups Chart**: Line chart showing daily signups over last 90 days
+    - Plotly.js with smooth spline interpolation
+    - Cyan gradient fill under the line
+    - Responsive height (280px fixed in card)
+  - **Platform Revenue Chart**: Bar chart showing monthly revenue for last 12 months
+    - Current month highlighted in cyan, previous months in gray
+    - Y-axis with $ prefix, X-axis rotated labels
+  - **Active vs Inactive Tenants Chart**: Donut pie chart showing tenant distribution
+    - Active: cyan, Inactive: gray
+    - Donut hole (0.4) for modern look
+  - **Needs Attention Card**: Shows pending onboarding (3), failed payments (1), support tickets (5)
+    - Each item has icon, label, and count badge
+    - Color-coded by severity (cyan, red, amber)
+  - **Loading Skeletons**: Animated pulse skeletons for all components during data fetch
+  - **Mission Control Aesthetic**: Dark slate theme with sharp cyan accents, monospaced fonts, terminal-inspired design
+  - **Code Splitting**: Dynamic import of Plotly.js using Next.js dynamic() for performance
+
+- **Learnings for future iterations**:
+  - Plotly.js requires `react-plotly.js` wrapper and must be dynamically imported with `{ ssr: false }` to avoid SSR issues
+  - Google Fonts (JetBrains Mono) can be added via next/font/google - don't forget to add to Tailwind config fontFamily
+  - Mock data generators are useful for development - replace with actual API calls in production
+  - Plotly layout uses `paper_bgcolor: 'rgba(0,0,0,0)'` for transparent backgrounds to match card styling
+  - Staggered animations via `style={{ animationDelay }}` with `animationFillMode: 'backwards'` prevent flicker
+  - Chart containers need fixed height (h-[280px]) for Plotly useResizeHandler to work properly
+  - The "Command Center" aesthetic (slate + cyan + monospace) creates strong visual differentiation from tenant admin
+  - Font variables from layout.tsx are accessible in Tailwind via `font-mono` class after config update
+---
+
+## 2026-01-09 - US-019
+
+- **What was implemented**: Tenant Dashboard - Store Analytics
+- **Files created**:
+  - `nextjs_space/components/admin/analytics/StoreAnalytics.tsx` - Living Garden Dashboard aesthetic with organic emerald/cyan theme
+- **Files modified**:
+  - `nextjs_space/app/tenant-admin/page.tsx` - Integrated StoreAnalytics component below Quick Actions Widget
+
+- **Features implemented**:
+  - **Revenue Metrics Cards (3)**: Today's Revenue, This Week, This Month
+    - Emerald gradient backgrounds with leaf decorative accents
+    - Trend indicators showing percentage change with period comparison
+    - Hover effects with scale and shadow transitions
+    - Staggered entrance animations (0ms, 100ms, 200ms delays)
+  - **Sales Trend Chart**: Line chart showing daily sales over last 30 days
+    - Plotly.js with smooth spline interpolation
+    - Emerald gradient fill under the line
+    - Responsive height (280px fixed in card)
+  - **Top 5 Products Chart**: Horizontal bar chart showing best-selling products by revenue
+    - Color gradient from emerald to blue across bars
+    - Custom rounded corners on bars
+    - Y-axis with product names, X-axis with $ prefix
+  - **Order Status Distribution Chart**: Donut pie chart showing order breakdown
+    - Center annotation showing total orders count
+    - Color-coded by status (emerald, cyan, amber, slate)
+    - 50% hole for modern donut style
+  - **Recent Activity Widget**: Last 5 orders with status badges and customer names
+    - Purple theme with hover effects
+    - Status badges with color-coded backgrounds
+    - Time ago formatting (e.g., "15m ago")
+    - Link to view all orders
+  - **Recent Customers Widget**: Last 5 customer signups with avatars
+    - Cyan theme with hover effects
+    - Avatar with initials in gradient circle
+    - Email display with truncation
+    - Link to view all customers
+  - **Pending Consultations Card**: Shows count with CTA link
+    - Amber/orange gradient theme
+    - Large display of pending count (7)
+    - Button linking to /tenant-admin/consultations
+  - **Loading Skeletons**: Animated pulse skeletons for all components during data fetch
+  - **Mock Data Generators**: Functions for sales trend, top products, order status, recent orders/customers
+  - **Living Garden Aesthetic**: 
+    - Organic curved containers with leaf-inspired accents
+    - Emerald-to-lime gradients suggesting growth
+    - Backdrop blur effects on cards
+    - Sparkles icon with pulsing blur effect in header
+    - Generous spacing and hover elevation transitions
+    - Tactile depth with layered shadows
+
+- **Learnings for future iterations**:
+  - The "Living Garden Dashboard" aesthetic creates a distinctive, organic feel that aligns with cannabis/wellness context
+  - Plotly.js requires dynamic import with `{ ssr: false }` to avoid SSR issues
+  - TypeScript type casting needed for `Object.values()` results: `as number[]`
+  - Plotly annotation text must be strings, not numbers - use `String()` to convert
+  - Staggered animations via `style={{ animationDelay }}` create smooth sequential reveals
+  - Chart containers need fixed height (h-[280px]) for Plotly useResizeHandler to work properly
+  - The emerald/cyan color palette creates visual continuity with tenant admin theme
+  - Combining multiple micro-interactions (scale, translate, shadow) creates satisfying hover states
+  - Mock data generators with realistic variance make the dashboard feel alive during development
+  - Layout: Revenue cards (3-col) → Charts (2-col grid) → Activity widgets (2-col) creates good visual hierarchy
 ---
