@@ -49,27 +49,43 @@ export interface AdminSidebarProps {
 
 /**
  * Theme-specific style configurations
+ * Super Admin: Dark slate/zinc palette for authoritative, platform-level feel
+ * Tenant Admin: Vibrant cyan/blue palette for energetic store management
  */
 const themeStyles = {
   'super-admin': {
-    gradient: 'from-cyan-600 via-blue-600 to-indigo-700',
-    activeItem: 'bg-cyan-500/30 border-l-4 border-cyan-300',
-    activeIcon: 'text-cyan-100',
-    hoverBg: 'hover:bg-white/10',
-    avatarGradient: 'from-cyan-400 to-blue-500',
-    badgeBg: 'bg-white/20',
-    logoAccent: 'text-indigo-600',
-    logoBg: 'bg-white',
+    // Dark, authoritative gradient - slate to zinc for depth
+    gradient: 'from-slate-800 via-slate-900 to-zinc-900',
+    // Subtle slate active states with left border accent
+    activeItem: 'bg-slate-700/50 border-l-4 border-slate-400',
+    activeIcon: 'text-slate-200',
+    hoverBg: 'hover:bg-slate-700/30',
+    // Muted, professional avatar gradient
+    avatarGradient: 'from-slate-400 to-slate-600',
+    // Bold badge styling for SUPER ADMIN distinction
+    badgeBg: 'bg-slate-700/60 border border-slate-500/50',
+    badgeText: 'text-slate-200 font-bold tracking-wide uppercase text-xs',
+    // Slate-toned logo
+    logoAccent: 'text-slate-800',
+    logoBg: 'bg-slate-400',
+    // Border and divider colors
+    borderColor: 'border-slate-700/50',
+    // Button styling
+    buttonBg: 'bg-slate-700/50 hover:bg-slate-600/50',
   },
   'tenant-admin': {
+    // Vibrant, energetic gradient
     gradient: 'from-cyan-600 via-blue-600 to-indigo-700',
     activeItem: 'bg-cyan-500/30 border-l-4 border-cyan-300',
     activeIcon: 'text-cyan-100',
     hoverBg: 'hover:bg-white/10',
     avatarGradient: 'from-cyan-400 to-blue-500',
     badgeBg: 'bg-white/20',
+    badgeText: 'text-white/90 font-medium',
     logoAccent: 'text-indigo-600',
     logoBg: 'bg-white',
+    borderColor: 'border-white/10',
+    buttonBg: 'bg-white/10 hover:bg-white/20',
   },
 } as const;
 
@@ -187,8 +203,9 @@ export function AdminSidebar({
         {!collapsed && headerBadge && (
           <div className="px-6 pb-4">
             <div className={cn(
-              'rounded-lg px-3 py-1.5 text-sm font-medium backdrop-blur-sm',
-              styles.badgeBg
+              'rounded-lg px-3 py-1.5 backdrop-blur-sm',
+              styles.badgeBg,
+              styles.badgeText
             )}>
               {headerBadge}
             </div>
@@ -237,7 +254,7 @@ export function AdminSidebar({
         </nav>
 
         {/* User Profile */}
-        <div className="p-4 border-t border-white/10">
+        <div className={cn('p-4 border-t', styles.borderColor)}>
           {!collapsed ? (
             <div className="space-y-3">
               <div className="flex items-center gap-3">
@@ -256,7 +273,10 @@ export function AdminSidebar({
               </div>
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-sm font-medium"
+                className={cn(
+                  'w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm font-medium',
+                  styles.buttonBg
+                )}
               >
                 <LogOut className="h-4 w-4" />
                 Logout
@@ -278,7 +298,7 @@ export function AdminSidebar({
       </div>
 
       {/* Mobile hamburger button - rendered outside sidebar for layout contexts */}
-      <MobileMenuButton onOpen={() => setMobileOpen(true)} isOpen={mobileOpen} />
+      <MobileMenuButton onOpen={() => setMobileOpen(true)} isOpen={mobileOpen} theme={theme} />
     </>
   );
 }
@@ -291,19 +311,32 @@ interface MobileMenuButtonProps {
   onOpen: () => void;
   /** Current open state of the mobile sidebar */
   isOpen: boolean;
+  /** Theme to match the sidebar styling */
+  theme: AdminTheme;
 }
+
+/**
+ * Mobile menu button gradient styles by theme
+ */
+const mobileButtonStyles = {
+  'super-admin': 'from-slate-700 to-slate-900',
+  'tenant-admin': 'from-cyan-600 to-indigo-700',
+} as const;
 
 /**
  * Hamburger button for opening the sidebar on mobile devices.
  * Only visible on screens smaller than md breakpoint.
  */
-function MobileMenuButton({ onOpen, isOpen }: MobileMenuButtonProps) {
+function MobileMenuButton({ onOpen, isOpen, theme }: MobileMenuButtonProps) {
   if (isOpen) return null;
 
   return (
     <button
       onClick={onOpen}
-      className="fixed top-4 left-4 z-30 p-2 bg-gradient-to-br from-cyan-600 to-indigo-700 text-white rounded-lg shadow-lg md:hidden"
+      className={cn(
+        'fixed top-4 left-4 z-30 p-2 bg-gradient-to-br text-white rounded-lg shadow-lg md:hidden',
+        mobileButtonStyles[theme]
+      )}
       aria-label="Open navigation menu"
     >
       <svg
