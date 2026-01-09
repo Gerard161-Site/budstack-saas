@@ -471,7 +471,7 @@
         "Test keyboard navigation: Tab, Shift+Tab, Enter, Escape"
       ],
       "priority": 25,
-      "passes": false,
+      "passes": true,
       "notes": "UI STORY: Invoke frontend-design skill first. Update Tailwind config and component styles."
     },
     {
