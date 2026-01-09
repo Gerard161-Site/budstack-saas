@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Building2, TrendingUp, UserPlus, Users } from 'lucide-react';
 import { PlatformAnalytics } from '@/components/admin/analytics/PlatformAnalytics';
+import { ActivityTimeline, generateMockEvents } from '@/components/admin/ActivityTimeline';
 
 interface OverviewPanelProps {
     totalTenants: number;
@@ -107,6 +108,13 @@ export function OverviewPanel({
                         </div>
                     </CardContent>
                 </Card>
+
+                {/* Recent Activity Timeline */}
+                <ActivityTimeline
+                    events={generateMockEvents(20)}
+                    maxVisible={20}
+                    showViewAll={true}
+                />
 
                 {/* Platform Analytics Section */}
                 <PlatformAnalytics className="mt-8" />
