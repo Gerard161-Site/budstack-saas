@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { format, parseISO } from 'date-fns';
 import {
   Package,
@@ -13,10 +14,12 @@ import {
   Calendar,
   AlertCircle,
   Loader2,
+  Download,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Table,
   TableBody,
@@ -26,14 +29,23 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { SearchInput, StatusFilter, EmptyState, Pagination, SortableTableHeader } from '@/components/admin/shared';
-import type { StatusFilterOption } from '@/components/admin/shared';
+import { SearchInput, StatusFilter, EmptyState, Pagination, SortableTableHeader, BulkActionBar } from '@/components/admin/shared';
+import type { StatusFilterOption, BulkAction } from '@/components/admin/shared';
 import { useTableState } from '@/lib/admin/url-state';
+import { toast } from '@/components/ui/sonner';
 import { cn } from '@/lib/utils';
 
 /** Order status types */
@@ -49,6 +61,9 @@ type OrderFilters = {
   dateFrom: string;
   dateTo: string;
 } & Record<string, string>;
+
+/** Type for bulk action confirmation dialog */
+type BulkActionType = 'mark-processing' | 'mark-completed' | null;
 
 /**
  * Order item data shape
@@ -112,6 +127,7 @@ export function OrdersTable({
   statusCounts,
   onViewOrder,
 }: OrdersTableProps) {
+  const router = useRouter();
   const [{ search, filters, page, pageSize, sort }, { setSearch, setFilter, setPage, setPageSize, setSort }] = useTableState<OrderFilters>({
     defaultFilters: {
       status: 'all',
@@ -126,6 +142,13 @@ export function OrdersTable({
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [customDateFrom, setCustomDateFrom] = useState<Date | undefined>();
   const [customDateTo, setCustomDateTo] = useState<Date | undefined>();
+
+  // Selection state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  // Confirmation dialog state
+  const [confirmAction, setConfirmAction] = useState<BulkActionType>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const statusFilter = filters.status || 'all';
   const dateRangeFilter = filters.dateRange || 'all';
@@ -263,7 +286,181 @@ export function OrdersTable({
     return 'No orders found.';
   }, [hasSearchQuery, hasStatusFilter, hasDateFilter, search, statusFilter]);
 
+  // Selection handlers
+  const isAllSelected =
+    orders.length > 0 && orders.every((o) => selectedIds.has(o.id));
+  const isSomeSelected =
+    orders.some((o) => selectedIds.has(o.id)) && !isAllSelected;
+
+  const handleSelectAll = useCallback(() => {
+    if (isAllSelected) {
+      // Deselect all on current page
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        orders.forEach((o) => next.delete(o.id));
+        return next;
+      });
+    } else {
+      // Select all on current page
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        orders.forEach((o) => next.add(o.id));
+        return next;
+      });
+    }
+  }, [isAllSelected, orders]);
+
+  const handleSelectOne = useCallback((id: string, checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) {
+        next.add(id);
+      } else {
+        next.delete(id);
+      }
+      return next;
+    });
+  }, []);
+
+  const clearSelection = useCallback(() => {
+    setSelectedIds(new Set());
+  }, []);
+
+  // Bulk action handlers
+  const handleMarkProcessing = useCallback(() => {
+    setConfirmAction('mark-processing');
+  }, []);
+
+  const handleMarkCompleted = useCallback(() => {
+    setConfirmAction('mark-completed');
+  }, []);
+
+  const handleExportCSV = useCallback(() => {
+    // Get selected orders data
+    const selectedOrders = orders.filter((o) => selectedIds.has(o.id));
+    if (selectedOrders.length === 0) return;
+
+    // Build CSV content
+    const headers = [
+      'Order Number',
+      'Customer Name',
+      'Customer Email',
+      'Status',
+      'Items',
+      'Total',
+      'Date',
+    ];
+    const rows = selectedOrders.map((o) => [
+      `"${o.orderNumber}"`,
+      `"${(o.user?.name || 'Guest').replace(/"/g, '""')}"`,
+      `"${(o.user?.email || 'N/A').replace(/"/g, '""')}"`,
+      o.status,
+      o.items.length.toString(),
+      o.total.toFixed(2),
+      format(new Date(o.createdAt), 'yyyy-MM-dd'),
+    ]);
+
+    const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join(
+      '\n'
+    );
+
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `orders-export-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast.success(`Exported ${selectedOrders.length} orders to CSV`);
+    clearSelection();
+  }, [orders, selectedIds, clearSelection]);
+
+  const handleConfirmAction = useCallback(async () => {
+    if (!confirmAction || selectedIds.size === 0) return;
+
+    setIsProcessing(true);
+
+    try {
+      const response = await fetch('/api/tenant-admin/orders/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: confirmAction,
+          orderIds: Array.from(selectedIds),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to perform action');
+      }
+
+      // Display appropriate success message
+      const actionMessages: Record<string, string> = {
+        'mark-processing': 'marked as Processing',
+        'mark-completed': 'marked as Completed',
+      };
+
+      toast.success(
+        `${data.count} order${data.count === 1 ? '' : 's'} ${actionMessages[confirmAction]} successfully`
+      );
+
+      // Clear selection and refresh
+      clearSelection();
+      router.refresh();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : 'An error occurred'
+      );
+    } finally {
+      setIsProcessing(false);
+      setConfirmAction(null);
+    }
+  }, [confirmAction, selectedIds, clearSelection, router]);
+
+  // Bulk actions configuration (no Cancel action for bulk operations)
+  const bulkActions: BulkAction[] = useMemo(
+    () => [
+      {
+        id: 'mark-processing',
+        label: 'Mark Processing',
+        icon: Truck,
+        onClick: handleMarkProcessing,
+        variant: 'default',
+      },
+      {
+        id: 'mark-completed',
+        label: 'Mark Completed',
+        icon: CheckCircle2,
+        onClick: handleMarkCompleted,
+        variant: 'outline',
+      },
+      {
+        id: 'export',
+        label: 'Export CSV',
+        icon: Download,
+        onClick: handleExportCSV,
+        variant: 'outline',
+      },
+    ],
+    [handleMarkProcessing, handleMarkCompleted, handleExportCSV]
+  );
+
+  // Get selected order numbers for confirmation dialog
+  const selectedOrderNumbers = useMemo(() => {
+    return orders
+      .filter((o) => selectedIds.has(o.id))
+      .map((o) => `#${o.orderNumber.slice(-8).toUpperCase()}`)
+      .slice(0, 5);
+  }, [orders, selectedIds]);
+
   return (
+    <>
     <Card className="shadow-lg border-slate-200">
       <CardHeader className="border-b bg-gradient-to-r from-purple-50 to-pink-50">
         <div className="flex flex-col gap-4">
@@ -497,6 +694,23 @@ export function OrdersTable({
             <Table>
               <TableHeader>
                 <TableRow className="bg-slate-50/50">
+                  {/* Select All Checkbox */}
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={isAllSelected}
+                      onCheckedChange={handleSelectAll}
+                      aria-label={
+                        isAllSelected
+                          ? 'Deselect all orders'
+                          : 'Select all orders'
+                      }
+                      className={cn(
+                        'border-purple-400 data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600',
+                        isSomeSelected && 'data-[state=checked]:bg-purple-400'
+                      )}
+                      {...(isSomeSelected && { 'data-state': 'checked' })}
+                    />
+                  </TableHead>
                   <SortableTableHeader
                     columnKey="orderNumber"
                     label="Order ID"
@@ -528,11 +742,27 @@ export function OrdersTable({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {orders.map((order) => (
+                {orders.map((order) => {
+                  const isSelected = selectedIds.has(order.id);
+                  return (
                   <TableRow
                     key={order.id}
-                    className="hover:bg-slate-50 transition-colors"
+                    className={cn(
+                      'hover:bg-slate-50 transition-colors',
+                      isSelected && 'bg-purple-50/70'
+                    )}
                   >
+                    {/* Row Checkbox */}
+                    <TableCell className="w-12">
+                      <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={(checked) =>
+                          handleSelectOne(order.id, checked === true)
+                        }
+                        aria-label={`Select order ${order.orderNumber.slice(-8).toUpperCase()}`}
+                        className="border-purple-400 data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
+                      />
+                    </TableCell>
                     <TableCell className="font-medium text-slate-900">
                       #{order.orderNumber.slice(-8).toUpperCase()}
                     </TableCell>
@@ -573,7 +803,8 @@ export function OrdersTable({
                       </Button>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
@@ -596,5 +827,129 @@ export function OrdersTable({
         )}
       </CardContent>
     </Card>
+
+    {/* Bulk Action Bar */}
+    <BulkActionBar
+      selectedCount={selectedIds.size}
+      itemLabel="orders"
+      actions={bulkActions}
+      onClearSelection={clearSelection}
+    />
+
+    {/* Confirmation Dialog */}
+    <Dialog
+      open={confirmAction !== null}
+      onOpenChange={(open) => !open && setConfirmAction(null)}
+    >
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            {confirmAction === 'mark-processing' ? (
+              <>
+                <Truck className="h-5 w-5 text-blue-500" />
+                <span>Mark as Processing</span>
+              </>
+            ) : (
+              <>
+                <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                <span>Mark as Completed</span>
+              </>
+            )}
+          </DialogTitle>
+          <DialogDescription className="pt-2">
+            {confirmAction === 'mark-processing' ? (
+              <span>
+                Update <strong>{selectedIds.size}</strong> order
+                {selectedIds.size === 1 ? '' : 's'} to Processing?
+              </span>
+            ) : (
+              <span>
+                Update <strong>{selectedIds.size}</strong> order
+                {selectedIds.size === 1 ? '' : 's'} to Completed?
+              </span>
+            )}
+          </DialogDescription>
+        </DialogHeader>
+
+        {/* Show order numbers */}
+        {selectedOrderNumbers.length > 0 && (
+          <div className="py-2">
+            <p className="text-xs text-muted-foreground mb-2">
+              Affected orders:
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {selectedOrderNumbers.map((orderNum) => (
+                <Badge
+                  key={orderNum}
+                  variant="secondary"
+                  className="text-xs font-normal"
+                >
+                  {orderNum}
+                </Badge>
+              ))}
+              {selectedIds.size > 5 && (
+                <Badge variant="outline" className="text-xs font-normal">
+                  +{selectedIds.size - 5} more
+                </Badge>
+              )}
+            </div>
+          </div>
+        )}
+
+        <DialogFooter className="gap-2 sm:gap-0">
+          <Button
+            variant="outline"
+            onClick={() => setConfirmAction(null)}
+            disabled={isProcessing}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="default"
+            onClick={handleConfirmAction}
+            disabled={isProcessing}
+            className={cn(
+              confirmAction === 'mark-processing' &&
+                'bg-blue-600 hover:bg-blue-700',
+              confirmAction === 'mark-completed' &&
+                'bg-emerald-600 hover:bg-emerald-700'
+            )}
+          >
+            {isProcessing ? (
+              <>
+                <span className="animate-spin mr-2">
+                  <svg
+                    className="h-4 w-4"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                </span>
+                Processing...
+              </>
+            ) : confirmAction === 'mark-processing' ? (
+              'Mark Processing'
+            ) : (
+              'Mark Completed'
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
