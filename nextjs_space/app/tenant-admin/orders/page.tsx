@@ -3,13 +3,12 @@
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
-import { Eye, Package, Truck, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { Package, Truck, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -25,6 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from '@/components/ui/sonner';
+import { OrdersTable } from './orders-table';
 
 interface OrderItem {
   id: string;
@@ -214,71 +214,8 @@ export default function TenantOrdersPage() {
         </Card>
       </div>
 
-      {/* Orders Table */}
-      <Card className="shadow-lg border-slate-200">
-        <CardHeader className="border-b bg-gradient-to-r from-purple-50 to-pink-50">
-          <CardTitle className="text-2xl font-bold text-slate-900">All Orders ({orders.length})</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-6">
-          {orders.length === 0 ? (
-            <div className="text-center py-12">
-              <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500">No orders yet</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Order ID</TableHead>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Items</TableHead>
-                    <TableHead>Total</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {orders.map((order) => (
-                    <TableRow key={order.id}>
-                      <TableCell className="font-medium">
-                        #{order.orderNumber.slice(-8).toUpperCase()}
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{order.user?.name || 'Guest'}</p>
-                          <p className="text-sm text-gray-500">{order.user?.email || 'N/A'}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={`${getStatusColor(order.status)} text-white gap-1`}>
-                          {getStatusIcon(order.status)}
-                          {order.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{order.items.length}</TableCell>
-                      <TableCell>€{order.total.toFixed(2)}</TableCell>
-                      <TableCell>{format(new Date(order.createdAt), 'MMM d, yyyy')}</TableCell>
-                      <TableCell>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setSelectedOrder(order)}
-                          className="gap-2"
-                        >
-                          <Eye className="w-4 h-4" />
-                          View
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Orders Table with Search and Filters */}
+      <OrdersTable orders={orders} onViewOrder={setSelectedOrder} />
 
       {/* Order Detail Modal */}
       <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
