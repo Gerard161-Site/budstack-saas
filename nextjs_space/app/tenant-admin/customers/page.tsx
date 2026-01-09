@@ -3,10 +3,9 @@ import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import Link from 'next/link';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users } from 'lucide-react';
+import { CustomersTable } from './customers-table';
 
 export default async function CustomersListPage() {
     const session = await getServerSession(authOptions);
@@ -30,7 +29,7 @@ export default async function CustomersListPage() {
         },
     });
 
-    // Get recent customers
+    // Get all customers (not just recent) for search functionality
     const customers = await prisma.users.findMany({
         where: {
             role: 'PATIENT',
@@ -40,6 +39,7 @@ export default async function CustomersListPage() {
             id: true,
             email: true,
             name: true,
+            phone: true,
             createdAt: true,
             _count: {
                 select: {
@@ -48,7 +48,6 @@ export default async function CustomersListPage() {
             },
         },
         orderBy: { createdAt: 'desc' },
-        take: 10,
     });
 
     return (
@@ -104,55 +103,8 @@ export default async function CustomersListPage() {
                 </Card>
             </div>
 
-            {/* Customers Table */}
-            <Card className="shadow-lg border-slate-200">
-                <CardHeader className="border-b bg-gradient-to-r from-cyan-50 to-blue-50">
-                    <CardTitle className="text-2xl font-bold text-slate-900">All Customers</CardTitle>
-                    <CardDescription className="text-slate-600">Manage your customer base</CardDescription>
-                </CardHeader>
-                <CardContent className="pt-6">
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead>
-                                <tr className="border-b border-slate-200">
-                                    <th className="text-left py-3 px-4 font-semibold text-slate-700">Name</th>
-                                    <th className="text-left py-3 px-4 font-semibold text-slate-700">Email</th>
-                                    <th className="text-left py-3 px-4 font-semibold text-slate-700">Orders</th>
-                                    <th className="text-left py-3 px-4 font-semibold text-slate-700">Joined</th>
-                                    <th className="text-left py-3 px-4 font-semibold text-slate-700">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {customers.map((customer: any) => (
-                                    <tr key={customer.id} className="border-b border-slate-200 hover:bg-slate-50">
-                                        <td className="py-3 px-4 text-slate-900">{customer.name || 'N/A'}</td>
-                                        <td className="py-3 px-4 text-slate-700">{customer.email}</td>
-                                        <td className="py-3 px-4 text-slate-700">{customer._count.orders}</td>
-                                        <td className="py-3 px-4 text-slate-700">{new Date(customer.createdAt).toLocaleDateString()}</td>
-                                        <td className="py-3 px-4">
-                                            <Link href={`/tenant-admin/customers/${customer.id}`}>
-                                                <Button
-                                                    size="sm"
-                                                    className="border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-medium shadow-sm hover:shadow transition-all"
-                                                >
-                                                    View Details
-                                                </Button>
-                                            </Link>
-                                        </td>
-                                    </tr>
-                                ))}
-                                {customers.length === 0 && (
-                                    <tr>
-                                        <td colSpan={5} className="py-12 text-center text-slate-500">
-                                            No customers yet
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </CardContent>
-            </Card>
+            {/* Customers Table with Search */}
+            <CustomersTable customers={customers} />
         </div>
     );
 }
