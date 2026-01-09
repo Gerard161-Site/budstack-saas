@@ -13,7 +13,25 @@ import {
   Trash2,
   AlertTriangle,
   RefreshCw,
+  GripVertical,
 } from 'lucide-react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -74,6 +92,7 @@ interface Product {
   cbdContent: number | null;
   price: number;
   stock: number;
+  displayOrder: number;
   createdAt: Date;
 }
 
@@ -88,6 +107,122 @@ interface ProductsTableProps {
   outOfStockCount: number;
   /** Category counts map (with search applied) */
   categoryCounts: Record<string, number>;
+}
+
+/**
+ * SortableProductRow - Draggable table row component
+ */
+interface SortableProductRowProps {
+  product: Product;
+  isSelected: boolean;
+  onSelectOne: (id: string, checked: boolean) => void;
+  getStrainBadgeClasses: (name: string) => string;
+  getStrainLabel: (name: string) => string;
+}
+
+function SortableProductRow({
+  product,
+  isSelected,
+  onSelectOne,
+  getStrainBadgeClasses,
+  getStrainLabel,
+}: SortableProductRowProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: product.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <TableRow
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        'hover:bg-slate-50 transition-colors',
+        isSelected && 'bg-emerald-50/70',
+        isDragging && 'relative z-50 shadow-lg'
+      )}
+    >
+      {/* Drag Handle */}
+      <TableCell className="w-12 cursor-grab active:cursor-grabbing" {...attributes} {...listeners}>
+        <GripVertical className="h-5 w-5 text-slate-400 hover:text-slate-600 transition-colors" />
+      </TableCell>
+
+      {/* Row Checkbox */}
+      <TableCell className="w-12">
+        <Checkbox
+          checked={isSelected}
+          onCheckedChange={(checked) => onSelectOne(product.id, checked === true)}
+          aria-label={`Select ${product.name}`}
+          className="border-emerald-400 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
+        />
+      </TableCell>
+
+      <TableCell className="font-medium text-slate-900">
+        <div className="flex items-center gap-2">
+          <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center">
+            <Leaf className="h-4 w-4 text-emerald-600" />
+          </div>
+          <span className="truncate max-w-[200px]">{product.name}</span>
+        </div>
+      </TableCell>
+
+      <TableCell className="text-slate-600 capitalize">
+        {product.category || <span className="text-slate-400">—</span>}
+      </TableCell>
+
+      <TableCell>
+        <Badge className={getStrainBadgeClasses(product.name)}>
+          {getStrainLabel(product.name)}
+        </Badge>
+      </TableCell>
+
+      <TableCell className="text-center text-slate-700 font-mono text-sm">
+        {product.thcContent != null ? `${product.thcContent}%` : '—'}
+      </TableCell>
+
+      <TableCell className="text-center text-slate-700 font-mono text-sm">
+        {product.cbdContent != null ? `${product.cbdContent}%` : '—'}
+      </TableCell>
+
+      <TableCell className="text-right text-slate-700 font-medium">
+        €{typeof product.price === 'number' ? product.price.toFixed(2) : product.price}
+      </TableCell>
+
+      <TableCell className="text-center">
+        <span className={`inline-flex items-center justify-center min-w-[2rem] h-8 px-2 rounded-full text-sm font-medium ${
+          product.stock > 0
+            ? 'bg-emerald-100 text-emerald-800'
+            : 'bg-slate-100 text-slate-700'
+        }`}>
+          {product.stock}
+        </span>
+      </TableCell>
+
+      <TableCell>
+        <Badge
+          className={cn(
+            'font-medium',
+            product.stock > 0
+              ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+              : 'bg-slate-200 text-slate-800 hover:bg-slate-300'
+          )}
+          aria-label={`Status: ${product.stock > 0 ? 'In Stock' : 'Out of Stock'}`}
+        >
+          {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
+        </Badge>
+      </TableCell>
+    </TableRow>
+  );
 }
 
 /**
@@ -121,6 +256,23 @@ export function ProductsTable({
   // Confirmation dialog state
   const [confirmAction, setConfirmAction] = useState<BulkActionType>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Drag-and-drop state - local ordering of products
+  const [orderedProducts, setOrderedProducts] = useState<Product[]>(products);
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
+
+  // Update ordered products when products prop changes
+  useMemo(() => {
+    setOrderedProducts(products);
+  }, [products]);
+
+  // DnD sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const categoryFilter = filters.category || 'all';
   const stockFilter = filters.stock || 'all';
@@ -235,6 +387,55 @@ export function ProductsTable({
   const handleDelete = useCallback(() => {
     setConfirmAction('delete');
   }, []);
+
+  // Drag end handler
+  const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const oldIndex = orderedProducts.findIndex((p) => p.id === active.id);
+    const newIndex = orderedProducts.findIndex((p) => p.id === over.id);
+
+    if (oldIndex === -1 || newIndex === -1) {
+      return;
+    }
+
+    // Update local state immediately for smooth UX
+    const newOrder = arrayMove(orderedProducts, oldIndex, newIndex);
+    setOrderedProducts(newOrder);
+
+    // Persist to server
+    setIsSavingOrder(true);
+    try {
+      const orderUpdates = newOrder.map((product, index) => ({
+        id: product.id,
+        displayOrder: index,
+      }));
+
+      const response = await fetch('/api/tenant-admin/products/reorder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ products: orderUpdates }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update product order');
+      }
+
+      toast.success('Product order updated successfully');
+      router.refresh();
+    } catch (error) {
+      console.error('Error updating product order:', error);
+      toast.error('Failed to update product order');
+      // Revert to original order on error
+      setOrderedProducts(products);
+    } finally {
+      setIsSavingOrder(false);
+    }
+  }, [orderedProducts, products, router]);
 
   // Export ALL filtered products (the main export button)
   const handleExportAll = useCallback(async () => {
@@ -526,26 +727,33 @@ export function ProductsTable({
           />
         ) : (
           <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-slate-50/50">
-                  {/* Select All Checkbox */}
-                  <TableHead className="w-12">
-                    <Checkbox
-                      checked={isAllSelected}
-                      onCheckedChange={handleSelectAll}
-                      aria-label={
-                        isAllSelected
-                          ? 'Deselect all products'
-                          : 'Select all products'
-                      }
-                      className={cn(
-                        'border-emerald-400 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600',
-                        isSomeSelected && 'data-[state=checked]:bg-emerald-400'
-                      )}
-                      {...(isSomeSelected && { 'data-state': 'checked' })}
-                    />
-                  </TableHead>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-slate-50/50">
+                    {/* Drag Handle Column */}
+                    <TableHead className="w-12" />
+                    {/* Select All Checkbox */}
+                    <TableHead className="w-12">
+                      <Checkbox
+                        checked={isAllSelected}
+                        onCheckedChange={handleSelectAll}
+                        aria-label={
+                          isAllSelected
+                            ? 'Deselect all products'
+                            : 'Select all products'
+                        }
+                        className={cn(
+                          'border-emerald-400 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600',
+                          isSomeSelected && 'data-[state=checked]:bg-emerald-400'
+                        )}
+                        {...(isSomeSelected && { 'data-state': 'checked' })}
+                      />
+                    </TableHead>
                   <SortableTableHeader
                     columnKey="name"
                     label="Name"
@@ -590,78 +798,25 @@ export function ProductsTable({
                   <TableHead className="font-semibold text-slate-700">Status</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
-                {products.map((product) => {
-                  const isSelected = selectedIds.has(product.id);
-                  return (
-                  <TableRow
-                    key={product.id}
-                    className={cn(
-                      'hover:bg-slate-50 transition-colors',
-                      isSelected && 'bg-emerald-50/70'
-                    )}
-                  >
-                    {/* Row Checkbox */}
-                    <TableCell className="w-12">
-                      <Checkbox
-                        checked={isSelected}
-                        onCheckedChange={(checked) =>
-                          handleSelectOne(product.id, checked === true)
-                        }
-                        aria-label={`Select ${product.name}`}
-                        className="border-emerald-400 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600"
-                      />
-                    </TableCell>
-                    <TableCell className="font-medium text-slate-900">
-                      <div className="flex items-center gap-2">
-                        <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center">
-                          <Leaf className="h-4 w-4 text-emerald-600" />
-                        </div>
-                        <span className="truncate max-w-[200px]">{product.name}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-slate-600 capitalize">
-                      {product.category || <span className="text-slate-400">—</span>}
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getStrainBadgeClasses(product.name)}>
-                        {getStrainLabel(product.name)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-center text-slate-700 font-mono text-sm">
-                      {product.thcContent != null ? `${product.thcContent}%` : '—'}
-                    </TableCell>
-                    <TableCell className="text-center text-slate-700 font-mono text-sm">
-                      {product.cbdContent != null ? `${product.cbdContent}%` : '—'}
-                    </TableCell>
-                    <TableCell className="text-right text-slate-700 font-medium">
-                      €{typeof product.price === 'number' ? product.price.toFixed(2) : product.price}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <span className={`inline-flex items-center justify-center min-w-[2rem] h-8 px-2 rounded-full text-sm font-medium ${
-                        product.stock > 0
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : 'bg-slate-100 text-slate-700'
-                      }`}>
-                        {product.stock}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      {product.stock > 0 ? (
-                        <Badge className="bg-emerald-600 hover:bg-emerald-700 text-white">
-                          In Stock
-                        </Badge>
-                      ) : (
-                        <Badge className="bg-amber-100 text-amber-800 border-amber-200">
-                          Out of Stock
-                        </Badge>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                  );
-                })}
-              </TableBody>
+              <SortableContext
+                items={orderedProducts.map((p) => p.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <TableBody>
+                  {orderedProducts.map((product) => (
+                    <SortableProductRow
+                      key={product.id}
+                      product={product}
+                      isSelected={selectedIds.has(product.id)}
+                      onSelectOne={handleSelectOne}
+                      getStrainBadgeClasses={getStrainBadgeClasses}
+                      getStrainLabel={getStrainLabel}
+                    />
+                  ))}
+                </TableBody>
+              </SortableContext>
             </Table>
+          </DndContext>
           </div>
         )}
 

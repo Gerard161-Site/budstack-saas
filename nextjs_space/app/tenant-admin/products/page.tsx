@@ -91,10 +91,10 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   // Calculate skip for pagination
   const skip = (page - 1) * pageSize;
 
-  // Build orderBy clause - default to createdAt desc if no sort specified
+  // Build orderBy clause - default to displayOrder asc if no sort specified
   const orderBy: Prisma.productsOrderByWithRelationInput = sortBy
     ? { [sortBy]: sortOrder }
-    : { createdAt: 'desc' };
+    : { displayOrder: 'asc' };
 
   // Get filtered count and paginated products in parallel
   // Also get counts for filter badges
