@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo, useState, useCallback } from 'react';
-import { format, subDays, startOfDay, endOfDay, isWithinInterval, parseISO } from 'date-fns';
+import { useMemo, useState } from 'react';
+import { format, parseISO } from 'date-fns';
 import {
   Package,
   Search,
@@ -31,7 +31,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { SearchInput, StatusFilter, EmptyState } from '@/components/admin/shared';
+import { SearchInput, StatusFilter, EmptyState, Pagination } from '@/components/admin/shared';
 import type { StatusFilterOption } from '@/components/admin/shared';
 import { useTableState } from '@/lib/admin/url-state';
 import { cn } from '@/lib/utils';
@@ -79,32 +79,47 @@ interface Order {
 }
 
 interface OrdersTableProps {
-  /** Array of order data from server */
+  /** Array of order data from server (paginated and filtered) */
   orders: Order[];
+  /** Total count of filtered orders (for pagination) */
+  totalCount: number;
+  /** Status counts from server (with search/date filters applied) */
+  statusCounts: {
+    PENDING: number;
+    PROCESSING: number;
+    COMPLETED: number;
+    CANCELLED: number;
+  };
   /** Callback when order is selected for viewing */
   onViewOrder: (order: Order) => void;
 }
 
 /**
- * OrdersTable - Client component for displaying orders with search and filter functionality.
+ * OrdersTable - Client component for displaying orders with search, filter, and pagination.
  *
  * Features:
+ * - Server-side pagination with URL state (?page=, ?pageSize=)
  * - Debounced search across orderNumber, customer name, customer email
  * - Status filter (Pending, Processing, Completed, Cancelled)
  * - Date range picker with presets (Last 7/30/90 days, Custom)
  * - Quick filter chips for "Needs Attention" and "In Progress"
- * - Case-insensitive filtering with AND logic
- * - URL state persistence (?search=, ?status=, ?dateRange=, ?dateFrom=, ?dateTo=)
+ * - URL state persistence (?search=, ?status=, ?dateRange=, ?dateFrom=, ?dateTo=, ?page=, ?pageSize=)
  * - Empty state for no results
  */
-export function OrdersTable({ orders, onViewOrder }: OrdersTableProps) {
-  const [{ search, filters }, { setSearch, setFilter }] = useTableState<OrderFilters>({
+export function OrdersTable({
+  orders,
+  totalCount,
+  statusCounts,
+  onViewOrder,
+}: OrdersTableProps) {
+  const [{ search, filters, page, pageSize }, { setSearch, setFilter, setPage, setPageSize }] = useTableState<OrderFilters>({
     defaultFilters: {
       status: 'all',
       dateRange: 'all',
       dateFrom: '',
       dateTo: '',
     },
+    defaultPageSize: 20,
   });
 
   // Calendar popover state
@@ -117,115 +132,20 @@ export function OrdersTable({ orders, onViewOrder }: OrdersTableProps) {
   const dateFromFilter = filters.dateFrom || '';
   const dateToFilter = filters.dateTo || '';
 
-  // Get date range from preset or custom dates
-  const getDateRange = useCallback((): { from: Date | null; to: Date | null } => {
-    const today = new Date();
+  // Total orders matching search/date filter (regardless of status filter)
+  const totalSearchCount = statusCounts.PENDING + statusCounts.PROCESSING + statusCounts.COMPLETED + statusCounts.CANCELLED;
 
-    switch (dateRangeFilter) {
-      case '7days':
-        return { from: startOfDay(subDays(today, 7)), to: endOfDay(today) };
-      case '30days':
-        return { from: startOfDay(subDays(today, 30)), to: endOfDay(today) };
-      case '90days':
-        return { from: startOfDay(subDays(today, 90)), to: endOfDay(today) };
-      case 'custom':
-        return {
-          from: dateFromFilter ? startOfDay(parseISO(dateFromFilter)) : null,
-          to: dateToFilter ? endOfDay(parseISO(dateToFilter)) : null,
-        };
-      default:
-        return { from: null, to: null };
-    }
-  }, [dateRangeFilter, dateFromFilter, dateToFilter]);
-
-  // Apply search filter
-  const searchFilteredOrders = useMemo(() => {
-    if (!search.trim()) {
-      return orders;
-    }
-
-    const searchLower = search.toLowerCase().trim();
-
-    return orders.filter((order) => {
-      const searchableFields = [
-        order.orderNumber,
-        order.user?.name,
-        order.user?.email,
-      ];
-
-      return searchableFields.some(
-        (field) => field && field.toLowerCase().includes(searchLower)
-      );
-    });
-  }, [orders, search]);
-
-  // Calculate status counts (based on search-filtered results)
-  const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = {
-      all: searchFilteredOrders.length,
-      PENDING: 0,
-      PROCESSING: 0,
-      COMPLETED: 0,
-      CANCELLED: 0,
-    };
-
-    searchFilteredOrders.forEach((order) => {
-      if (counts[order.status] !== undefined) {
-        counts[order.status]++;
-      }
-    });
-
-    return counts;
-  }, [searchFilteredOrders]);
-
-  // Status filter options with counts
+  // Status filter options with server-provided counts
   const statusOptions: StatusFilterOption<OrderStatus>[] = useMemo(
     () => [
-      { value: 'all', label: 'All Orders', count: statusCounts.all },
+      { value: 'all', label: 'All Orders', count: totalSearchCount },
       { value: 'PENDING', label: 'Pending', count: statusCounts.PENDING },
       { value: 'PROCESSING', label: 'Processing', count: statusCounts.PROCESSING },
       { value: 'COMPLETED', label: 'Completed', count: statusCounts.COMPLETED },
       { value: 'CANCELLED', label: 'Cancelled', count: statusCounts.CANCELLED },
     ],
-    [statusCounts]
+    [totalSearchCount, statusCounts]
   );
-
-  // Apply all filters with AND logic
-  const filteredOrders = useMemo(() => {
-    let result = searchFilteredOrders;
-
-    // Apply status filter
-    if (statusFilter !== 'all') {
-      result = result.filter((order) => order.status === statusFilter);
-    }
-
-    // Apply date range filter
-    const dateRange = getDateRange();
-    if (dateRange.from || dateRange.to) {
-      result = result.filter((order) => {
-        const orderDate = new Date(order.createdAt);
-
-        if (dateRange.from && dateRange.to) {
-          return isWithinInterval(orderDate, {
-            start: dateRange.from,
-            end: dateRange.to,
-          });
-        }
-
-        if (dateRange.from) {
-          return orderDate >= dateRange.from;
-        }
-
-        if (dateRange.to) {
-          return orderDate <= dateRange.to;
-        }
-
-        return true;
-      });
-    }
-
-    return result;
-  }, [searchFilteredOrders, statusFilter, getDateRange]);
 
   // Quick filter handlers
   const handleQuickFilter = (status: OrderStatus) => {
@@ -323,7 +243,7 @@ export function OrdersTable({ orders, onViewOrder }: OrdersTableProps) {
   const hasStatusFilter = statusFilter !== 'all';
   const hasDateFilter = dateRangeFilter !== 'all';
   const hasFilters = hasSearchQuery || hasStatusFilter || hasDateFilter;
-  const noResults = hasFilters && filteredOrders.length === 0;
+  const noResults = totalCount === 0 && hasFilters;
 
   // Build description for empty state
   const emptyDescription = useMemo(() => {
@@ -341,7 +261,7 @@ export function OrdersTable({ orders, onViewOrder }: OrdersTableProps) {
       return `No orders found with the selected filters.`;
     }
     return 'No orders found.';
-  }, [hasSearchQuery, hasStatusFilter, hasDateFilter, search, statusFilter, getDateRangeLabel]);
+  }, [hasSearchQuery, hasStatusFilter, hasDateFilter, search, statusFilter]);
 
   return (
     <Card className="shadow-lg border-slate-200">
@@ -352,8 +272,8 @@ export function OrdersTable({ orders, onViewOrder }: OrdersTableProps) {
             <CardTitle className="flex items-center gap-3">
               <span className="text-2xl font-bold text-slate-900">
                 {hasFilters
-                  ? `Results (${filteredOrders.length})`
-                  : `All Orders (${orders.length})`}
+                  ? `Results (${totalCount})`
+                  : `All Orders (${totalSearchCount})`}
               </span>
             </CardTitle>
 
@@ -564,7 +484,7 @@ export function OrdersTable({ orders, onViewOrder }: OrdersTableProps) {
             }}
             className="my-8"
           />
-        ) : filteredOrders.length === 0 ? (
+        ) : orders.length === 0 && !hasFilters ? (
           <EmptyState
             icon={Package}
             heading="No orders yet"
@@ -587,7 +507,7 @@ export function OrdersTable({ orders, onViewOrder }: OrdersTableProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredOrders.map((order) => (
+                {orders.map((order) => (
                   <TableRow
                     key={order.id}
                     className="hover:bg-slate-50 transition-colors"
@@ -635,6 +555,22 @@ export function OrdersTable({ orders, onViewOrder }: OrdersTableProps) {
                 ))}
               </TableBody>
             </Table>
+          </div>
+        )}
+
+        {/* Pagination Controls */}
+        {orders.length > 0 && (
+          <div className="border-t border-slate-200 bg-slate-50/50">
+            <Pagination
+              page={page}
+              pageSize={pageSize}
+              totalItems={totalCount}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+              pageSizeOptions={[10, 20, 50, 100]}
+              showPageSizeSelector
+              showFirstLast
+            />
           </div>
         )}
       </CardContent>

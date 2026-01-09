@@ -1,12 +1,20 @@
-
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { prisma } from '@/lib/db';
+import { Prisma } from '@prisma/client';
 import { ProductsTable } from './products-table';
 
-export default async function ProductsPage() {
+/** Default pagination settings */
+const DEFAULT_PAGE_SIZE = 20;
+const VALID_PAGE_SIZES = [10, 20, 50, 100];
+
+interface ProductsPageProps {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}
+
+export default async function ProductsPage({ searchParams }: ProductsPageProps) {
   const session = await getServerSession(authOptions);
 
   if (!session || (session.user.role !== 'TENANT_ADMIN' && session.user.role !== 'SUPER_ADMIN')) {
@@ -15,22 +23,120 @@ export default async function ProductsPage() {
 
   const user = await prisma.users.findUnique({
     where: { id: session.user.id },
-    include: {
-      tenant: {
-        include: {
-          products: {
-            orderBy: { createdAt: 'desc' },
-          },
-        },
-      },
-    },
+    select: { tenantId: true },
   });
 
-  if (!user?.tenant) {
+  if (!user?.tenantId) {
     redirect('/tenant-admin');
   }
 
-  const products = user.tenant.products;
+  const tenantId = user.tenantId;
+
+  // Await searchParams (Next.js 15+ async searchParams)
+  const params = await searchParams;
+
+  // Parse pagination params from URL
+  const pageParam = typeof params.page === 'string' ? parseInt(params.page, 10) : 1;
+  const page = Number.isNaN(pageParam) || pageParam < 1 ? 1 : pageParam;
+
+  const pageSizeParam = typeof params.pageSize === 'string' ? parseInt(params.pageSize, 10) : DEFAULT_PAGE_SIZE;
+  const pageSize = VALID_PAGE_SIZES.includes(pageSizeParam) ? pageSizeParam : DEFAULT_PAGE_SIZE;
+
+  // Parse search and filter params from URL
+  const search = typeof params.search === 'string' ? params.search.trim() : '';
+  const categoryFilter = typeof params.category === 'string' ? params.category : 'all';
+  const stockFilter = typeof params.stock === 'string' ? params.stock : 'all';
+
+  // Build Prisma where clause for server-side filtering
+  const whereClause: Prisma.productsWhereInput = {
+    tenantId,
+  };
+
+  // Apply search filter (case-insensitive across multiple fields)
+  if (search) {
+    whereClause.OR = [
+      { name: { contains: search, mode: 'insensitive' } },
+      { category: { contains: search, mode: 'insensitive' } },
+      { slug: { contains: search, mode: 'insensitive' } },
+    ];
+  }
+
+  // Apply category filter
+  if (categoryFilter !== 'all') {
+    whereClause.category = { equals: categoryFilter, mode: 'insensitive' };
+  }
+
+  // Apply stock filter
+  if (stockFilter === 'in-stock') {
+    whereClause.stock = { gt: 0 };
+  } else if (stockFilter === 'out-of-stock') {
+    whereClause.stock = { equals: 0 };
+  }
+
+  // Calculate skip for pagination
+  const skip = (page - 1) * pageSize;
+
+  // Get filtered count and paginated products in parallel
+  // Also get counts for filter badges
+  const [filteredCount, products, inStockCount, outOfStockCount, categoryCounts] = await Promise.all([
+    prisma.products.count({ where: whereClause }),
+    prisma.products.findMany({
+      where: whereClause,
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: pageSize,
+    }),
+    // Count in-stock products (with search applied if present)
+    prisma.products.count({
+      where: {
+        tenantId,
+        ...(search ? {
+          OR: [
+            { name: { contains: search, mode: 'insensitive' } },
+            { category: { contains: search, mode: 'insensitive' } },
+            { slug: { contains: search, mode: 'insensitive' } },
+          ],
+        } : {}),
+        stock: { gt: 0 },
+      },
+    }),
+    // Count out-of-stock products (with search applied if present)
+    prisma.products.count({
+      where: {
+        tenantId,
+        ...(search ? {
+          OR: [
+            { name: { contains: search, mode: 'insensitive' } },
+            { category: { contains: search, mode: 'insensitive' } },
+            { slug: { contains: search, mode: 'insensitive' } },
+          ],
+        } : {}),
+        stock: { equals: 0 },
+      },
+    }),
+    // Get category counts for filter badges
+    prisma.products.groupBy({
+      by: ['category'],
+      where: {
+        tenantId,
+        ...(search ? {
+          OR: [
+            { name: { contains: search, mode: 'insensitive' } },
+            { category: { contains: search, mode: 'insensitive' } },
+            { slug: { contains: search, mode: 'insensitive' } },
+          ],
+        } : {}),
+      },
+      _count: { id: true },
+    }),
+  ]);
+
+  // Transform category counts into a map
+  const categoryCountsMap: Record<string, number> = {};
+  categoryCounts.forEach((item: { category: string | null; _count: { id: number } }) => {
+    const cat = item.category?.toLowerCase() || 'uncategorized';
+    categoryCountsMap[cat] = item._count.id;
+  });
 
   return (
     <div className="p-8">
@@ -46,7 +152,13 @@ export default async function ProductsPage() {
         </div>
       </div>
 
-      <ProductsTable products={products} />
+      <ProductsTable
+        products={products}
+        totalCount={filteredCount}
+        inStockCount={inStockCount}
+        outOfStockCount={outOfStockCount}
+        categoryCounts={categoryCountsMap}
+      />
     </div>
   );
 }

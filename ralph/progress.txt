@@ -16,6 +16,8 @@ Started: Fri  9 Jan 2026 16:34:28 WET
 - Sidebar wrappers: `SuperAdminSidebar` and `TenantAdminSidebar` encapsulate menu items and are used in layout.tsx files
 - Toast notifications: Import `toast` from `@/components/ui/sonner` (NOT directly from 'sonner') for consistent styling
 - Client-safe utilities: Use `lib/tenant-utils.ts` for tenant functions needed in client components (NOT `lib/tenant.ts` which uses next/headers)
+- Server-side pagination: When paginating, move ALL filtering to server (Prisma where clause) - client-side filtering fails when only one page is loaded
+- Prisma type imports: Use `import { Prisma } from '@prisma/client'` for type-safe where clauses (e.g., `Prisma.tenantsWhereInput`)
 
 ---
 
@@ -242,5 +244,153 @@ Started: Fri  9 Jan 2026 16:34:28 WET
   - Super admin pages require auth - test pages may redirect to login
   - No ESLint config exists in the project, but TypeScript checking is sufficient
   - The dev-browser skill is not available - use curl or manual browser testing
+
+---
+
+## 2026-01-09 22:00 - US-006
+
+- **What was implemented**: Search and Filter Products
+- **Files created**:
+  - `nextjs_space/app/tenant-admin/products/products-table.tsx` - Client component with search and multi-filter functionality
+- **Files modified**:
+  - `nextjs_space/app/tenant-admin/products/page.tsx` - Refactored to use ProductsTable component
+
+- **Features implemented**:
+  - Search input with placeholder "Search products..."
+  - Debounced search (300ms) across name, category, slug fields
+  - Category filter dropdown (All, Flower, Edibles, Concentrates, Pre-Rolls, Topicals, Accessories)
+  - Strain type filter dropdown (All, Sativa, Indica, Hybrid) - uses hash-based inference from product name
+  - Stock status filter dropdown (All, In Stock, Out of Stock)
+  - Filters combine with search using AND logic
+  - URL state persistence via useTableState hook (?search=, ?category=, ?strain=, ?stock=)
+  - Dynamic count badges on filter options showing current filtered totals
+  - Empty state with "Clear filters" action when no results match
+  - Strain-specific badge colors (Sativa=amber, Indica=purple, Hybrid=emerald)
+  - Responsive layout with filters wrapping on smaller screens
+
+- **Learnings for future iterations**:
+  - The ProductsTable follows the same pattern as TenantsTable: server page fetches data, passes to client component for filtering
+  - Strain type doesn't exist in the products schema - used hash-based inference as a demo placeholder
+  - When implementing multiple filters, calculate counts based on search-filtered results (not full data) so counts update dynamically
+  - StatusFilter component from shared library works well for multiple filter types - just pass different generic type
+
+---
+
+## 2026-01-09 22:30 - US-007
+
+- **What was implemented**: Search and Filter Orders
+- **Files created**:
+  - `nextjs_space/app/tenant-admin/orders/orders-table.tsx` - Client component with search, status filter, date range picker, and quick filter chips
+- **Files modified**:
+  - `nextjs_space/app/tenant-admin/orders/page.tsx` - Refactored to use OrdersTable component
+
+- **Features implemented**:
+  - Search input with placeholder "Search orders..." searching orderNumber, customer name, customer email
+  - Debounced search (300ms) using SearchInput from shared components
+  - Status filter dropdown (All, Pending, Processing, Completed, Cancelled) with live counts
+  - Date range picker with presets (All time, Last 7 days, Last 30 days, Last 90 days)
+  - Custom date range using dual Calendar pickers
+  - Quick filter chips: "Needs Attention" (PENDING) and "In Progress" (PROCESSING)
+  - All filters combine with search using AND logic
+  - URL state persistence via useTableState hook (?search=, ?status=, ?dateRange=, ?dateFrom=, ?dateTo=)
+  - Empty state with "Clear filters" action when no results match
+  - Uses existing shadcn/ui Calendar and Popover components
+
+- **Learnings for future iterations**:
+  - The OrdersTable follows the same pattern as ProductsTable and TenantsTable - server page fetches data, client table handles filtering
+  - date-fns functions (subDays, startOfDay, endOfDay, isWithinInterval, parseISO) are useful for date range filtering
+  - Quick filter chips act as toggle buttons - clicking an active chip clears it back to "all"
+  - The Calendar component uses react-day-picker under the hood and supports `disabled` prop for date constraints
+  - Custom date ranges require storing both dateFrom and dateTo in URL params separately from the preset
+
+---
+
+## 2026-01-09 23:00 - US-008
+
+- **What was implemented**: Search Customers
+- **Files created**:
+  - `nextjs_space/app/tenant-admin/customers/customers-table.tsx` - Client component with search functionality
+- **Files modified**:
+  - `nextjs_space/app/tenant-admin/customers/page.tsx` - Refactored to use CustomersTable component, added phone field to query
+
+- **Features implemented**:
+  - Search input with placeholder "Search customers..."
+  - Debounced search (300ms) using SearchInput from shared components
+  - Case-insensitive search across name, email, phone fields
+  - Clear button (X) appears when search has text
+  - Empty state: "No customers found matching '[query]'" with clear search action
+  - Empty state for zero customers: "No customers yet. Share your store URL to get started"
+  - URL state persistence via useTableState hook (?search=value)
+  - Customer avatar with initials derived from name
+  - Email links open mailto: handler
+  - Phone number displayed under customer name when available
+
+- **Learnings for future iterations**:
+  - The CustomersTable follows the same pattern as other tables (TenantsTable, ProductsTable, OrdersTable)
+  - For simpler tables with only search (no additional filters), useTableState hook works without defaultFilters
+  - Avatar initials function handles edge cases: null names return "?", single names use first 2 chars
+  - Added phone field to Prisma query to enable search across all contact fields
+
+---
+
+## 2026-01-09 23:30 - US-009
+
+- **What was implemented**: Server-side Pagination for Tenants Table
+- **Files modified**:
+  - `nextjs_space/app/super-admin/tenants/page.tsx` - Added server-side search/status filtering with Prisma where clause, parallel count queries for filter badges
+  - `nextjs_space/app/super-admin/tenants/tenants-table.tsx` - Updated to receive server-computed counts, removed client-side filtering logic
+
+- **Features implemented**:
+  - Server-side pagination with Prisma `skip`/`take` parameters
+  - URL params: `?page=2&pageSize=20` for pagination state
+  - Server-side search filtering with case-insensitive `contains` on: businessName, subdomain, customDomain, nftTokenId
+  - Server-side status filtering: active/inactive using `isActive` field
+  - Page size selector: 10, 20, 50, 100 (default: 20)
+  - Pagination controls at table bottom showing "Showing 1-20 of X results"
+  - Previous/Next buttons disabled at boundaries
+  - First/Last page navigation buttons
+  - Parallel Prisma queries for: filtered count, paginated tenants, active count, inactive count
+  - Filter badge counts computed server-side for accurate numbers across all data
+  - Maintains search/filter/sort state when changing pages
+
+- **Learnings for future iterations**:
+  - When implementing server-side pagination, move ALL filtering to the server - client-side filtering doesn't work when only a page of data is loaded
+  - Use parallel `Promise.all` for count queries to minimize database round-trips
+  - Pass server-computed counts (activeCount, inactiveCount) as props to avoid recalculating in client
+  - The Prisma `where` clause can combine `OR` (for search across fields) with direct field conditions (for status filter)
+  - Import `Prisma` type from `@prisma/client` for `Prisma.tenantsWhereInput` type safety
+  - The shared Pagination component handles all UI logic - just pass page, pageSize, totalItems and callbacks
+
+---
+
+## 2026-01-09 17:55 - US-010
+
+- **What was implemented**: Server-side Pagination for Products, Orders, Customers
+- **Files modified**:
+  - `nextjs_space/app/tenant-admin/products/page.tsx` - Added server-side pagination, search, and filter params from URL
+  - `nextjs_space/app/tenant-admin/products/products-table.tsx` - Updated to use server-provided counts, added Pagination component
+  - `nextjs_space/app/api/tenant-admin/orders/route.ts` - Added pagination, search, status, and date range query params with server-side filtering
+  - `nextjs_space/app/tenant-admin/orders/page.tsx` - Updated to pass pagination params to API, use response counts
+  - `nextjs_space/app/tenant-admin/orders/orders-table.tsx` - Updated to use server-provided counts, added Pagination component
+  - `nextjs_space/app/tenant-admin/customers/page.tsx` - Added server-side pagination and search params from URL
+  - `nextjs_space/app/tenant-admin/customers/customers-table.tsx` - Updated to use server-provided totalCount, added Pagination component
+
+- **Features implemented**:
+  - Server-side pagination with Prisma `skip`/`take` for Products and Customers
+  - API-based pagination for Orders (maintains client-side fetch pattern but with pagination params)
+  - Consistent URL params: `?page=`, `?pageSize=`, `?search=`, filter params
+  - Default page size: 20, options: 10/20/50/100
+  - Pagination controls showing "Showing X-Y of Z results"
+  - Server-side count queries for filter badges (category counts, stock counts, status counts)
+  - Products: Server-side filtering for category and stock status with counts
+  - Orders: API returns statusCounts object for filter badge counts
+  - Customers: Simple search with server-side filtering
+
+- **Learnings for future iterations**:
+  - Orders page uses client-side API fetching pattern - add pagination params to API rather than converting to server component
+  - For API routes with search filtering on related models, use the Prisma relation name (e.g., `users` not `user` for orders->users)
+  - The existing order status values in code (PENDING, PROCESSING, COMPLETED, CANCELLED) may differ from schema enum values - keep consistent with existing UI
+  - TypeScript type annotations may be needed for Prisma groupBy results when iterating (e.g., `item: { category: string | null; _count: { id: number } }`)
+  - Next.js 15+ uses `searchParams: Promise<...>` - must await searchParams in server components
 
 ---

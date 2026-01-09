@@ -12,19 +12,17 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { SearchInput, StatusFilter, EmptyState } from '@/components/admin/shared';
+import { SearchInput, StatusFilter, EmptyState, Pagination } from '@/components/admin/shared';
 import type { StatusFilterOption } from '@/components/admin/shared';
 import { useTableState } from '@/lib/admin/url-state';
 
 /** Filter types for product table */
 type CategoryFilter = 'all' | 'flower' | 'edibles' | 'concentrates' | 'pre-rolls' | 'topicals' | 'accessories';
-type StrainFilter = 'all' | 'sativa' | 'indica' | 'hybrid';
 type StockFilter = 'all' | 'in-stock' | 'out-of-stock';
 
 /** Typed filters for product table - uses Record index signature for URL state compatibility */
 type ProductFilters = {
   category: CategoryFilter;
-  strain: StrainFilter;
   stock: StockFilter;
 } & Record<string, string>;
 
@@ -44,90 +42,52 @@ interface Product {
 }
 
 interface ProductsTableProps {
-  /** Array of product data from server */
+  /** Array of product data from server (paginated and filtered) */
   products: Product[];
+  /** Total count of filtered products (for pagination) */
+  totalCount: number;
+  /** Count of in-stock products (with search applied) */
+  inStockCount: number;
+  /** Count of out-of-stock products (with search applied) */
+  outOfStockCount: number;
+  /** Category counts map (with search applied) */
+  categoryCounts: Record<string, number>;
 }
 
 /**
- * ProductsTable - Client component for displaying products with search and filter functionality.
+ * ProductsTable - Client component for displaying products with search, filter, and pagination.
  *
  * Features:
+ * - Server-side pagination with URL state (?page=, ?pageSize=)
  * - Debounced search across name, category, slug fields
  * - Category filter (Flower, Edibles, Concentrates, Pre-Rolls, Topicals, Accessories)
- * - Strain type filter (Sativa, Indica, Hybrid)
  * - Stock status filter (In Stock, Out of Stock)
  * - Case-insensitive filtering
- * - URL state persistence (?search=, ?category=, ?strain=, ?stock=)
+ * - URL state persistence (?search=, ?category=, ?stock=, ?page=, ?pageSize=)
  * - Empty state for no results
  */
-export function ProductsTable({ products }: ProductsTableProps) {
-  const [{ search, filters }, { setSearch, setFilter }] = useTableState<ProductFilters>({
-    defaultFilters: { category: 'all', strain: 'all', stock: 'all' },
+export function ProductsTable({
+  products,
+  totalCount,
+  inStockCount,
+  outOfStockCount,
+  categoryCounts,
+}: ProductsTableProps) {
+  const [{ search, filters, page, pageSize }, { setSearch, setFilter, setPage, setPageSize }] = useTableState<ProductFilters>({
+    defaultFilters: { category: 'all', stock: 'all' },
+    defaultPageSize: 20,
   });
 
   const categoryFilter = filters.category || 'all';
-  const strainFilter = filters.strain || 'all';
   const stockFilter = filters.stock || 'all';
 
-  // Apply search filter first
-  const searchFilteredProducts = useMemo(() => {
-    if (!search.trim()) {
-      return products;
-    }
+  // Total products matching search (regardless of category/stock filter)
+  const totalSearchCount = inStockCount + outOfStockCount;
 
-    const searchLower = search.toLowerCase().trim();
-
-    return products.filter((product) => {
-      const searchableFields = [
-        product.name,
-        product.category,
-        product.slug,
-      ];
-
-      return searchableFields.some(
-        (field) => field && field.toLowerCase().includes(searchLower)
-      );
-    });
-  }, [products, search]);
-
-  // Calculate counts for filter options (based on search results only)
-  const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: searchFilteredProducts.length };
-    searchFilteredProducts.forEach((p) => {
-      const cat = p.category?.toLowerCase() || '';
-      counts[cat] = (counts[cat] || 0) + 1;
-    });
-    return counts;
-  }, [searchFilteredProducts]);
-
-  const strainCounts = useMemo(() => {
-    // Note: We're inferring strain from category name patterns for now
-    // In a real implementation, this would come from a strain field
-    const counts: Record<string, number> = { all: searchFilteredProducts.length };
-    searchFilteredProducts.forEach((p) => {
-      // For demo purposes, randomly assign strains based on product name hash
-      const nameHash = p.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-      const strainTypes = ['sativa', 'indica', 'hybrid'];
-      const strain = strainTypes[nameHash % 3];
-      counts[strain] = (counts[strain] || 0) + 1;
-    });
-    return counts;
-  }, [searchFilteredProducts]);
-
-  const stockCounts = useMemo(() => {
-    const inStock = searchFilteredProducts.filter((p) => p.stock > 0).length;
-    const outOfStock = searchFilteredProducts.filter((p) => p.stock === 0).length;
-    return {
-      all: searchFilteredProducts.length,
-      'in-stock': inStock,
-      'out-of-stock': outOfStock,
-    };
-  }, [searchFilteredProducts]);
-
-  // Category filter options with counts
+  // Category filter options with server-provided counts
   const categoryOptions: StatusFilterOption<CategoryFilter>[] = useMemo(
     () => [
-      { value: 'all', label: 'All Categories', count: categoryCounts.all },
+      { value: 'all', label: 'All Categories', count: totalSearchCount },
       { value: 'flower', label: 'Flower', count: categoryCounts.flower || 0 },
       { value: 'edibles', label: 'Edibles', count: categoryCounts.edibles || 0 },
       { value: 'concentrates', label: 'Concentrates', count: categoryCounts.concentrates || 0 },
@@ -135,73 +95,29 @@ export function ProductsTable({ products }: ProductsTableProps) {
       { value: 'topicals', label: 'Topicals', count: categoryCounts.topicals || 0 },
       { value: 'accessories', label: 'Accessories', count: categoryCounts.accessories || 0 },
     ],
-    [categoryCounts]
+    [totalSearchCount, categoryCounts]
   );
 
-  // Strain filter options with counts
-  const strainOptions: StatusFilterOption<StrainFilter>[] = useMemo(
-    () => [
-      { value: 'all', label: 'All Strains', count: strainCounts.all },
-      { value: 'sativa', label: 'Sativa', count: strainCounts.sativa || 0 },
-      { value: 'indica', label: 'Indica', count: strainCounts.indica || 0 },
-      { value: 'hybrid', label: 'Hybrid', count: strainCounts.hybrid || 0 },
-    ],
-    [strainCounts]
-  );
-
-  // Stock filter options with counts
+  // Stock filter options with server-provided counts
   const stockOptions: StatusFilterOption<StockFilter>[] = useMemo(
     () => [
-      { value: 'all', label: 'All Stock', count: stockCounts.all },
-      { value: 'in-stock', label: 'In Stock', count: stockCounts['in-stock'] },
-      { value: 'out-of-stock', label: 'Out of Stock', count: stockCounts['out-of-stock'] },
+      { value: 'all', label: 'All Stock', count: totalSearchCount },
+      { value: 'in-stock', label: 'In Stock', count: inStockCount },
+      { value: 'out-of-stock', label: 'Out of Stock', count: outOfStockCount },
     ],
-    [stockCounts]
+    [totalSearchCount, inStockCount, outOfStockCount]
   );
-
-  // Apply all filters with AND logic
-  const filteredProducts = useMemo(() => {
-    let result = searchFilteredProducts;
-
-    // Apply category filter
-    if (categoryFilter !== 'all') {
-      result = result.filter(
-        (product) => product.category?.toLowerCase() === categoryFilter
-      );
-    }
-
-    // Apply strain filter (using same hash logic as counts for consistency)
-    if (strainFilter !== 'all') {
-      result = result.filter((product) => {
-        const nameHash = product.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-        const strainTypes = ['sativa', 'indica', 'hybrid'];
-        const productStrain = strainTypes[nameHash % 3];
-        return productStrain === strainFilter;
-      });
-    }
-
-    // Apply stock filter
-    if (stockFilter !== 'all') {
-      result = result.filter((product) =>
-        stockFilter === 'in-stock' ? product.stock > 0 : product.stock === 0
-      );
-    }
-
-    return result;
-  }, [searchFilteredProducts, categoryFilter, strainFilter, stockFilter]);
 
   const hasSearchQuery = search.trim().length > 0;
   const hasCategoryFilter = categoryFilter !== 'all';
-  const hasStrainFilter = strainFilter !== 'all';
   const hasStockFilter = stockFilter !== 'all';
-  const hasFilters = hasSearchQuery || hasCategoryFilter || hasStrainFilter || hasStockFilter;
-  const noResults = hasFilters && filteredProducts.length === 0;
+  const hasFilters = hasSearchQuery || hasCategoryFilter || hasStockFilter;
+  const noResults = totalCount === 0 && hasFilters;
 
   // Build description for empty state
   const emptyDescription = useMemo(() => {
     const activeFilters: string[] = [];
     if (hasCategoryFilter) activeFilters.push(categoryFilter);
-    if (hasStrainFilter) activeFilters.push(strainFilter);
     if (hasStockFilter) activeFilters.push(stockFilter === 'in-stock' ? 'in stock' : 'out of stock');
 
     if (hasSearchQuery && activeFilters.length > 0) {
@@ -214,17 +130,16 @@ export function ProductsTable({ products }: ProductsTableProps) {
       return `No products found with the selected filters.`;
     }
     return 'No products found.';
-  }, [hasSearchQuery, hasCategoryFilter, hasStrainFilter, hasStockFilter, search, categoryFilter, strainFilter, stockFilter]);
+  }, [hasSearchQuery, hasCategoryFilter, hasStockFilter, search, categoryFilter, stockFilter]);
 
   // Clear filters handler
   const handleClearFilters = () => {
     setSearch('');
     setFilter('category', 'all');
-    setFilter('strain', 'all');
     setFilter('stock', 'all');
   };
 
-  // Get strain badge color
+  // Get strain badge color (using hash for demo since strain isn't in schema)
   const getStrainBadgeClasses = (productName: string) => {
     const nameHash = productName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     const strainIndex = nameHash % 3;
@@ -253,11 +168,11 @@ export function ProductsTable({ products }: ProductsTableProps) {
           <CardTitle className="flex items-center gap-3">
             <span className="text-2xl font-bold text-slate-900">
               {hasFilters
-                ? `Results (${filteredProducts.length})`
-                : `All Products (${products.length})`}
+                ? `Results (${totalCount})`
+                : `All Products (${totalSearchCount})`}
             </span>
             <Badge variant="outline" className="text-sm font-normal">
-              {stockCounts['in-stock']} In Stock
+              {inStockCount} In Stock
             </Badge>
           </CardTitle>
 
@@ -285,17 +200,6 @@ export function ProductsTable({ products }: ProductsTableProps) {
                 placeholder="All Categories"
                 showIcon={false}
                 className="w-[150px]"
-              />
-
-              {/* Strain Filter */}
-              <StatusFilter<StrainFilter>
-                value={strainFilter}
-                onChange={(value) => setFilter('strain', value)}
-                options={strainOptions}
-                aria-label="Filter by strain type"
-                placeholder="All Strains"
-                showIcon={false}
-                className="w-[130px]"
               />
 
               {/* Stock Filter */}
@@ -328,7 +232,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
             }}
             className="my-8"
           />
-        ) : filteredProducts.length === 0 ? (
+        ) : products.length === 0 && !hasFilters ? (
           <EmptyState
             icon={Package}
             heading="No products yet"
@@ -352,7 +256,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredProducts.map((product) => (
+                {products.map((product) => (
                   <TableRow
                     key={product.id}
                     className="hover:bg-slate-50 transition-colors"
@@ -406,6 +310,22 @@ export function ProductsTable({ products }: ProductsTableProps) {
                 ))}
               </TableBody>
             </Table>
+          </div>
+        )}
+
+        {/* Pagination Controls */}
+        {products.length > 0 && (
+          <div className="border-t border-slate-200 bg-slate-50/50">
+            <Pagination
+              page={page}
+              pageSize={pageSize}
+              totalItems={totalCount}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+              pageSizeOptions={[10, 20, 50, 100]}
+              showPageSizeSelector
+              showFirstLast
+            />
           </div>
         )}
       </CardContent>

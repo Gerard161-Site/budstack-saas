@@ -1,8 +1,8 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -48,12 +48,37 @@ interface Order {
   };
 }
 
+interface OrdersResponse {
+  orders: Order[];
+  totalCount: number;
+  statusCounts: {
+    PENDING: number;
+    PROCESSING: number;
+    COMPLETED: number;
+    CANCELLED: number;
+  };
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalPages: number;
+  };
+}
+
 export default function TenantOrdersPage() {
   const sessionResult = useSession();
   const session = sessionResult?.data;
   const status = sessionResult?.status;
   const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [orders, setOrders] = useState<Order[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [statusCounts, setStatusCounts] = useState({
+    PENDING: 0,
+    PROCESSING: 0,
+    COMPLETED: 0,
+    CANCELLED: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
@@ -67,18 +92,44 @@ export default function TenantOrdersPage() {
     }
   }, [status, session, router]);
 
-  useEffect(() => {
-    if (session?.user?.id) {
-      fetchOrders();
-    }
-  }, [session]);
+  // Build API URL with query params
+  const buildApiUrl = useCallback(() => {
+    const params = new URLSearchParams();
 
-  const fetchOrders = async () => {
+    // Pagination params
+    const page = searchParams.get('page') || '1';
+    const pageSize = searchParams.get('pageSize') || '20';
+    params.set('page', page);
+    params.set('pageSize', pageSize);
+
+    // Search and filter params
+    const search = searchParams.get('search');
+    const statusFilter = searchParams.get('status');
+    const dateFrom = searchParams.get('dateFrom');
+    const dateTo = searchParams.get('dateTo');
+
+    if (search) params.set('search', search);
+    if (statusFilter && statusFilter !== 'all') params.set('status', statusFilter);
+    if (dateFrom) params.set('dateFrom', dateFrom);
+    if (dateTo) params.set('dateTo', dateTo);
+
+    return `/api/tenant-admin/orders?${params.toString()}`;
+  }, [searchParams]);
+
+  const fetchOrders = useCallback(async () => {
     try {
-      const response = await fetch('/api/tenant-admin/orders');
+      setLoading(true);
+      const response = await fetch(buildApiUrl());
       if (response.ok) {
-        const data = await response.json();
+        const data: OrdersResponse = await response.json();
         setOrders(data.orders || []);
+        setTotalCount(data.totalCount || 0);
+        setStatusCounts(data.statusCounts || {
+          PENDING: 0,
+          PROCESSING: 0,
+          COMPLETED: 0,
+          CANCELLED: 0,
+        });
       }
     } catch (error) {
       console.error('Error fetching orders:', error);
@@ -86,7 +137,13 @@ export default function TenantOrdersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [buildApiUrl]);
+
+  useEffect(() => {
+    if (session?.user?.id) {
+      fetchOrders();
+    }
+  }, [session, fetchOrders]);
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     setUpdatingStatus(true);
@@ -160,6 +217,9 @@ export default function TenantOrdersPage() {
     return null;
   }
 
+  // Calculate total orders for stats (sum of all status counts)
+  const totalOrders = statusCounts.PENDING + statusCounts.PROCESSING + statusCounts.COMPLETED + statusCounts.CANCELLED;
+
   return (
     <div className="p-8">
       {/* Header */}
@@ -176,7 +236,7 @@ export default function TenantOrdersPage() {
             <CardTitle className="text-sm font-medium text-slate-50">Total Orders</CardTitle>
           </CardHeader>
           <CardContent className="relative z-10">
-            <div className="text-3xl font-bold">{orders.length}</div>
+            <div className="text-3xl font-bold">{totalOrders}</div>
           </CardContent>
         </Card>
         <Card className="border-none shadow-lg bg-gradient-to-br from-amber-500 to-orange-500 text-white overflow-hidden relative group hover:shadow-xl transition-shadow duration-300">
@@ -186,7 +246,7 @@ export default function TenantOrdersPage() {
           </CardHeader>
           <CardContent className="relative z-10">
             <div className="text-3xl font-bold">
-              {orders.filter(o => o.status === 'PENDING').length}
+              {statusCounts.PENDING}
             </div>
           </CardContent>
         </Card>
@@ -197,7 +257,7 @@ export default function TenantOrdersPage() {
           </CardHeader>
           <CardContent className="relative z-10">
             <div className="text-3xl font-bold">
-              {orders.filter(o => o.status === 'PROCESSING').length}
+              {statusCounts.PROCESSING}
             </div>
           </CardContent>
         </Card>
@@ -208,14 +268,19 @@ export default function TenantOrdersPage() {
           </CardHeader>
           <CardContent className="relative z-10">
             <div className="text-3xl font-bold">
-              {orders.filter(o => o.status === 'COMPLETED').length}
+              {statusCounts.COMPLETED}
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Orders Table with Search and Filters */}
-      <OrdersTable orders={orders} onViewOrder={setSelectedOrder} />
+      {/* Orders Table with Search, Filters, and Pagination */}
+      <OrdersTable
+        orders={orders}
+        totalCount={totalCount}
+        statusCounts={statusCounts}
+        onViewOrder={setSelectedOrder}
+      />
 
       {/* Order Detail Modal */}
       <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>

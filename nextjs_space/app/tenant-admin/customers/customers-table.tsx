@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { SearchInput, EmptyState } from '@/components/admin/shared';
+import { SearchInput, EmptyState, Pagination } from '@/components/admin/shared';
 import { useTableState } from '@/lib/admin/url-state';
 
 /**
@@ -33,46 +33,29 @@ export interface Customer {
 }
 
 interface CustomersTableProps {
-  /** Array of customer data from server */
+  /** Array of customer data from server (paginated and filtered) */
   customers: Customer[];
+  /** Total count of filtered customers (for pagination) */
+  totalCount: number;
 }
 
 /**
- * CustomersTable - Client component for displaying customers with search functionality.
+ * CustomersTable - Client component for displaying customers with search and pagination.
  *
  * Features:
- * - Debounced search across name (firstName/lastName), email, phone
+ * - Server-side pagination with URL state (?page=, ?pageSize=)
+ * - Debounced search across name, email, phone
  * - Case-insensitive filtering
- * - URL state persistence (?search=value)
+ * - URL state persistence (?search=, ?page=, ?pageSize=)
  * - Empty state for no results with clear action
  */
-export function CustomersTable({ customers }: CustomersTableProps) {
-  const [{ search }, { setSearch }] = useTableState();
-
-  // Filter customers based on search query
-  const filteredCustomers = useMemo(() => {
-    if (!search.trim()) {
-      return customers;
-    }
-
-    const searchLower = search.toLowerCase().trim();
-
-    return customers.filter((customer) => {
-      // Search across name, email, phone
-      const searchableFields = [
-        customer.name,
-        customer.email,
-        customer.phone,
-      ];
-
-      return searchableFields.some(
-        (field) => field && field.toLowerCase().includes(searchLower)
-      );
-    });
-  }, [customers, search]);
+export function CustomersTable({ customers, totalCount }: CustomersTableProps) {
+  const [{ search, page, pageSize }, { setSearch, setPage, setPageSize }] = useTableState({
+    defaultPageSize: 20,
+  });
 
   const hasSearchQuery = search.trim().length > 0;
-  const noResults = hasSearchQuery && filteredCustomers.length === 0;
+  const noResults = totalCount === 0 && hasSearchQuery;
 
   // Build description for empty state
   const emptyDescription = useMemo(() => {
@@ -104,11 +87,11 @@ export function CustomersTable({ customers }: CustomersTableProps) {
           <CardTitle className="flex items-center gap-3 text-2xl font-bold text-slate-900">
             <span>
               {hasSearchQuery
-                ? `Results (${filteredCustomers.length})`
-                : `All Customers (${customers.length})`}
+                ? `Results (${totalCount})`
+                : `All Customers (${totalCount})`}
             </span>
             <Badge variant="outline" className="text-sm font-normal bg-white/60">
-              {customers.length} Total
+              {totalCount} Total
             </Badge>
           </CardTitle>
 
@@ -140,7 +123,7 @@ export function CustomersTable({ customers }: CustomersTableProps) {
             }}
             className="my-8"
           />
-        ) : filteredCustomers.length === 0 ? (
+        ) : customers.length === 0 && !hasSearchQuery ? (
           <EmptyState
             icon={Users}
             heading="No customers yet"
@@ -176,7 +159,7 @@ export function CustomersTable({ customers }: CustomersTableProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredCustomers.map((customer) => (
+                {customers.map((customer) => (
                   <TableRow
                     key={customer.id}
                     className="hover:bg-slate-50 transition-colors group"
@@ -231,6 +214,22 @@ export function CustomersTable({ customers }: CustomersTableProps) {
                 ))}
               </TableBody>
             </Table>
+          </div>
+        )}
+
+        {/* Pagination Controls */}
+        {customers.length > 0 && (
+          <div className="border-t border-slate-200 bg-slate-50/50">
+            <Pagination
+              page={page}
+              pageSize={pageSize}
+              totalItems={totalCount}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+              pageSizeOptions={[10, 20, 50, 100]}
+              showPageSizeSelector
+              showFirstLast
+            />
           </div>
         )}
       </CardContent>
