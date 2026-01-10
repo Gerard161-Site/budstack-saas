@@ -139,7 +139,7 @@ export async function GET(req: NextRequest) {
     const topProducts = await prisma.order_items.groupBy({
       by: ['productId'],
       where: {
-        order: {
+        orders: {
           tenantId,
           createdAt: { gte: startDate },
         },

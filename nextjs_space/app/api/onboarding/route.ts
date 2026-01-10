@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { sendEmail, emailTemplates } from '@/lib/email';
+import crypto from 'crypto';
 
 const TEMPLATE_PRESETS = {
   modern: {
@@ -105,12 +106,14 @@ export async function POST(req: NextRequest) {
     // Create tenant with actual template relation
     const tenant = await prisma.tenants.create({
       data: {
+        id: crypto.randomUUID(),
         businessName,
         subdomain,
         nftTokenId,
         countryCode: countryCode || 'PT',
         isActive: false, // Requires super admin approval
         templateId: dbTemplate.id, // Assign actual database template
+        updatedAt: new Date(),
         settings: {
           contactInfo,
           templatePreset: templateId || 'modern', // Store preset for colors
@@ -121,22 +124,26 @@ export async function POST(req: NextRequest) {
     // Create tenant branding with template colors
     await prisma.tenant_branding.create({
       data: {
+        id: crypto.randomUUID(),
         tenantId: tenant.id,
         primaryColor: template.primaryColor,
         secondaryColor: template.secondaryColor,
         accentColor: template.accentColor,
         fontFamily: template.fontFamily,
+        updatedAt: new Date(),
       },
     });
 
     // Create tenant admin user
     await prisma.users.create({
       data: {
+        id: crypto.randomUUID(),
         email,
         password: hashedPassword,
         name: businessName,
         role: 'TENANT_ADMIN',
         tenantId: tenant.id,
+        updatedAt: new Date(),
       },
     });
 
