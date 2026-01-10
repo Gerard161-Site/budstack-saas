@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { InfoIcon } from 'lucide-react';
+import { InfoIcon, Mail, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 
 interface SettingsFormProps {
     config: {
@@ -29,6 +29,9 @@ interface SettingsFormProps {
 export default function SettingsForm({ config }: SettingsFormProps) {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
+    const [isTestingSmtp, setIsTestingSmtp] = useState(false);
+    const [testEmail, setTestEmail] = useState('');
+    const [smtpTestResult, setSmtpTestResult] = useState<{ success: boolean; message: string } | null>(null);
     const [formData, setFormData] = useState({
         drGreenApiUrl: config.drGreenApiUrl || '',
         awsBucketName: config.awsBucketName || '',
@@ -61,6 +64,39 @@ export default function SettingsForm({ config }: SettingsFormProps) {
             console.error(error);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleTestSmtp = async () => {
+        if (!testEmail) {
+            toast.error('Please enter a test email address');
+            return;
+        }
+
+        setIsTestingSmtp(true);
+        setSmtpTestResult(null);
+
+        try {
+            const res = await fetch('/api/super-admin/test-smtp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ testEmail }),
+            });
+
+            const data = await res.json();
+
+            if (data.success) {
+                setSmtpTestResult({ success: true, message: data.message });
+                toast.success('Test email sent successfully!');
+            } else {
+                setSmtpTestResult({ success: false, message: data.error });
+                toast.error(data.error);
+            }
+        } catch (error: any) {
+            setSmtpTestResult({ success: false, message: error.message });
+            toast.error('Failed to test SMTP connection');
+        } finally {
+            setIsTestingSmtp(false);
         }
     };
 
@@ -188,6 +224,57 @@ export default function SettingsForm({ config }: SettingsFormProps) {
                             placeholder="noreply@budstack.io"
                         />
                     </div>
+
+                    {/* Test SMTP Section */}
+                    {config.emailServer && (
+                        <div className="mt-6 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                            <div className="flex items-center gap-2 mb-3">
+                                <Mail className="w-5 h-5 text-purple-600" />
+                                <span className="font-medium text-purple-900">Test SMTP Configuration</span>
+                            </div>
+                            <div className="flex gap-2">
+                                <Input
+                                    type="email"
+                                    value={testEmail}
+                                    onChange={(e) => setTestEmail(e.target.value)}
+                                    placeholder="Enter your email to receive test"
+                                    className="flex-1"
+                                />
+                                <Button
+                                    type="button"
+                                    onClick={handleTestSmtp}
+                                    disabled={isTestingSmtp || !testEmail}
+                                    variant="outline"
+                                    className="border-purple-300 text-purple-700 hover:bg-purple-100"
+                                >
+                                    {isTestingSmtp ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                            Testing...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Mail className="w-4 h-4 mr-2" />
+                                            Send Test
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
+                            {smtpTestResult && (
+                                <div className={`mt-3 p-3 rounded-md flex items-start gap-2 ${smtpTestResult.success
+                                        ? 'bg-green-100 text-green-800'
+                                        : 'bg-red-100 text-red-800'
+                                    }`}>
+                                    {smtpTestResult.success ? (
+                                        <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                                    ) : (
+                                        <XCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                                    )}
+                                    <span className="text-sm">{smtpTestResult.message}</span>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </CardContent>
             </Card>
 
@@ -227,3 +314,4 @@ export default function SettingsForm({ config }: SettingsFormProps) {
         </form>
     );
 }
+

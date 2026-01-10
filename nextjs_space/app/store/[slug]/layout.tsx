@@ -2,12 +2,14 @@
 import { Navigation } from '@/components/navigation';
 import { Footer } from '@/components/footer';
 import { TenantThemeProvider } from '@/components/tenant-theme-provider';
+import { CookieConsent } from '@/components/cookie-consent';
 import { getCurrentTenant } from '@/lib/tenant';
 import { getFileUrl } from '@/lib/s3';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/db';
 // Import template registry
 import { TEMPLATE_NAVIGATION, TEMPLATE_FOOTER } from '@/lib/template-registry';
+
 
 export default async function TenantStoreLayout({
   children,
@@ -163,6 +165,7 @@ export default async function TenantStoreLayout({
         {renderNavigation()}
         <main>{children}</main>
         {renderFooter()}
+        <CookieConsent tenant={tenantWithTemplate} />
       </div>
     </TenantThemeProvider>
   );

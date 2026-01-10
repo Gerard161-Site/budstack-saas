@@ -9,6 +9,7 @@ interface SendEmailOptions {
     html: string;
     templateName: string;
     metadata?: Record<string, any>;
+    variables?: Record<string, any>; // Data for dynamic rendering
     from?: string; // Optional override
 }
 
@@ -17,7 +18,7 @@ export class MailerService {
      * Enqueues an email for delivery.
      */
     static async send(options: SendEmailOptions) {
-        const { tenantId, to, subject, html, templateName, metadata, from } = options;
+        const { tenantId, to, subject, html, templateName, metadata, variables, from } = options;
 
         // Persist intent to log immediately (optional, or rely on worker to create first log)
         // For now, we'll let the worker handle the heavy lifting, but we could create a "QUEUED" log here.
@@ -30,6 +31,7 @@ export class MailerService {
             html,
             templateName,
             metadata,
+            variables,
             from
         });
 
@@ -37,7 +39,7 @@ export class MailerService {
 
         // Create initial log entry
         try {
-            await db.emailLog.create({
+            await db.email_logs.create({
                 data: {
                     tenantId,
                     recipient: Array.isArray(to) ? to.join(',') : to,
@@ -52,3 +54,4 @@ export class MailerService {
         }
     }
 }
+

@@ -22,12 +22,50 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { customDomain, drGreenApiUrl, drGreenApiKey, drGreenSecretKey } = body;
+    const {
+      customDomain,
+      drGreenApiUrl,
+      drGreenApiKey,
+      drGreenSecretKey,
+      // SMTP fields
+      smtpHost,
+      smtpPort,
+      smtpUser,
+      smtpPassword,
+      smtpFromEmail,
+      smtpFromName
+    } = body;
 
     const dataToUpdate: any = {
       customDomain: customDomain || null,
       drGreenApiUrl: drGreenApiUrl || null,
       drGreenApiKey: drGreenApiKey || null,
+    };
+
+    // Update settings JSON for SMTP
+    const currentSettings = (user.tenants.settings as any) || {};
+    const smtpSettings = {
+      ...currentSettings.smtp, // keep existing (e.g. if partial update)
+      host: smtpHost,
+      port: parseInt(smtpPort || '587'),
+      user: smtpUser,
+      fromEmail: smtpFromEmail,
+      fromName: smtpFromName,
+    };
+
+    // Handle Password Encryption
+    if (smtpPassword && smtpPassword.trim() !== '') {
+      try {
+        smtpSettings.password = encrypt(smtpPassword);
+      } catch (e) {
+        console.error('SMTP Password Encryption failed:', e);
+      }
+    }
+
+    // Merge into settings
+    dataToUpdate.settings = {
+      ...currentSettings,
+      smtp: smtpSettings
     };
 
     // Only update secret key if a new one is provided (non-empty)

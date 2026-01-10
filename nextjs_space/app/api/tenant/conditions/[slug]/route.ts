@@ -22,7 +22,8 @@ export async function GET(
             return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
         }
 
-        const condition = await prisma.conditions.findUnique({
+        // First, try to find condition for the current tenant
+        let condition = await prisma.conditions.findUnique({
             where: {
                 tenantId_slug: {
                     tenantId: tenant.id,
@@ -30,6 +31,25 @@ export async function GET(
                 },
             },
         });
+
+        // If not found and this isn't already the master tenant, fallback to healingbuds
+        if (!condition) {
+            const masterTenant = await prisma.tenants.findUnique({
+                where: { subdomain: 'healingbuds' },
+                select: { id: true },
+            });
+
+            if (masterTenant && masterTenant.id !== tenant.id) {
+                condition = await prisma.conditions.findUnique({
+                    where: {
+                        tenantId_slug: {
+                            tenantId: masterTenant.id,
+                            slug: params.slug,
+                        },
+                    },
+                });
+            }
+        }
 
         if (!condition) {
             return NextResponse.json({ error: 'Condition not found' }, { status: 404 });

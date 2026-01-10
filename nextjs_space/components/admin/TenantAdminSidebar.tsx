@@ -12,6 +12,8 @@ import {
   Shield,
   Webhook,
   Newspaper,
+  Cookie,
+  Mail,
 } from 'lucide-react';
 import { AdminSidebar, type AdminMenuItem } from './AdminSidebar';
 
@@ -25,11 +27,13 @@ const tenantAdminMenuItems: AdminMenuItem[] = [
   { id: 'customers', label: 'Customers', icon: Users, href: '/tenant-admin/customers' },
   { id: 'analytics', label: 'Analytics', icon: BarChart3, href: '/tenant-admin/analytics' },
   { id: 'branding', label: 'Branding', icon: Palette, href: '/tenant-admin/branding' },
-  { id: 'templates', label: 'Templates', icon: Layout, href: '/tenant-admin/templates' },
+  { id: 'templates', label: 'Store Templates', icon: Layout, href: '/tenant-admin/templates' },
+  { id: 'emails', label: 'Email Templates', icon: Mail, href: '/tenant-admin/emails' },
   { id: 'the-wire', label: 'The Wire', icon: Newspaper, href: '/tenant-admin/the-wire' },
   { id: 'webhooks', label: 'Webhooks', icon: Webhook, href: '/tenant-admin/webhooks' },
   { id: 'audit-logs', label: 'Audit Logs', icon: Shield, href: '/tenant-admin/audit-logs' },
   { id: 'settings', label: 'Settings', icon: Settings, href: '/tenant-admin/settings' },
+  { id: 'cookie-settings', label: 'Cookie Settings', icon: Cookie, href: '/tenant-admin/cookie-settings' },
 ];
 
 interface TenantAdminSidebarProps {

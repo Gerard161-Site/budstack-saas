@@ -130,6 +130,46 @@ services:
           memory: 1G
 
   # ============================================
+  # Email Worker (Background Process)
+  # ============================================
+  worker:
+    build:
+      context: ./nextjs_space
+      dockerfile: Dockerfile
+      args:
+        NODE_ENV: production
+    container_name: budstack_worker
+    restart: unless-stopped
+    command: npx tsx scripts/email-worker.ts
+    environment:
+      # Database
+      DATABASE_URL: postgresql://${POSTGRES_USER:-budstack}:${POSTGRES_PASSWORD}@pgbouncer:5432/${POSTGRES_DB:-budstack_db}?pgbouncer=true
+      
+      # NextAuth (For encryption keys)
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      
+      # Platform S3/Email (For fallback)
+      AWS_BUCKET_NAME: ${AWS_BUCKET_NAME}
+      AWS_REGION: ${AWS_REGION:-eu-west-1}
+      EMAIL_SERVER: ${EMAIL_SERVER}
+      EMAIL_FROM: ${EMAIL_FROM}
+      
+      # Redis
+      REDIS_URL: redis://redis:6379
+      
+      # Node
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      pgbouncer:
+        condition: service_started
+    networks:
+      - budstack_network
+
+  # ============================================
   # NGINX Load Balancer (Optional - for production)
   # ============================================
   # nginx:

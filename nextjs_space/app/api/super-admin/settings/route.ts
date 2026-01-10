@@ -111,8 +111,8 @@ export async function POST(req: NextRequest) {
         // Upsert the config
         await prisma.platform_config.upsert({
             where: { id: 'config' },
-            create: { id: 'config', ...dataToUpdate },
-            update: dataToUpdate,
+            create: { id: 'config', ...dataToUpdate, updatedAt: new Date() },
+            update: { ...dataToUpdate, updatedAt: new Date() },
         });
 
         console.log('Platform config updated successfully');

@@ -75,6 +75,7 @@ COPY --from=builder /app/node_modules/@prisma ./app/node_modules/@prisma
 
 # Copy scripts for seeding and maintenance
 COPY --from=builder /app/scripts ./scripts
+COPY --from=builder /app/lib ./lib
 
 # Copy all node_modules for maintenance tasks (seeding, etc)
 COPY --from=builder /app/node_modules ./node_modules

@@ -38,13 +38,26 @@ Implement a robust, multi-tenant email delivery system driven by "Bring Your Own
 - [ ] Detail view: Show full SMTP response/error message.
 - [ ] Filter by status and date.
 
-### US-004: Basic Branding Customization
-**Description:** As a Tenant Admin, I want my emails to look like my brand (Logo, Colors).
+### US-005: Template Management (Super Admin)
+**Description:** As a Super Admin, I want to view, edit, and create email templates using a visual editor so I can maintain high-quality system notifications.
 
 **Acceptance Criteria:**
-- [ ] Settings page to define: `Primary Color`, `Logo URL`, `Footer Text`.
-- [ ] React Email templates dynamically consume these variables.
-- [ ] Layout structure (Header/Body/Footer) is locked system-wide.
+- [ ] List View: Show all system templates (Welcome, Reset Password, etc.).
+- [ ] Editor: Visual interface to edit subject, body content (HTML/React), and preview.
+- [ ] Variables: Show available variables for each template type (e.g., `{{name}}`, `{{link}}`).
+- [ ] **Technical Note:** Build `EmailTemplateList` and `EmailEditor` as **Shared Components** to be reused for Tenant Admins in Phase 2.
+
+### US-006: Event Mapping
+**Description:** As a System Admin, I want to map specific system events to specific templates so I can control which email sends when.
+
+**Acceptance Criteria:**
+- [ ] Mapping UI: "On Event [User Signup] -> Send Template [Welcome Email v1]".
+- [ ] storage: `email_events` table mapping `eventType` to `templateId`.
+
+### Phase 2 Preparation (Tenant Reuse)
+**Strategic Goal:** All components built for Super Admin email management must be designed for multi-tenancy from day one.
+- **Shared Components:** The `EmailEditor` and `TemplateList` must accept a `tenantId` prop (optional). If provided, it filters/scoping to that tenant. If null, it acts as Super Admin.
+- **Security:** Ensure API routes check permissions. Super Admin can edit ALL. Tenant Admin can only edit THEIR templates (where `template.tenantId == user.tenantId`).
 
 ## 4. Functional Requirements
 
