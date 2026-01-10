@@ -24,12 +24,12 @@ export default async function TheWirePage() {
         include: { tenants: true },
     });
 
-    if (!user?.tenant) {
+    if (!user?.tenants) {
         redirect('/tenant-admin');
     }
 
     const posts = await prisma.posts.findMany({
-        where: { tenantId: user.tenant.id },
+        where: { tenantId: user.tenants.id },
         orderBy: { createdAt: 'desc' },
         include: { users: true },
     });
