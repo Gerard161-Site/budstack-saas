@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Edit, Trash2, ExternalLink } from 'lucide-react';
+import { Edit, Trash2, Eye, EyeOff } from 'lucide-react';
 import { toast } from '@/components/ui/sonner';
 
 interface Post {
@@ -30,6 +30,24 @@ export default function PostsList({ initialPosts }: { initialPosts: any[] }) {
     const router = useRouter();
     const [posts, setPosts] = useState(initialPosts);
     const [isDeleting, setIsDeleting] = useState<string | null>(null);
+
+    const handleTogglePublish = async (id: string, currentStatus: boolean) => {
+        try {
+            const res = await fetch(`/api/tenant-admin/posts/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ published: !currentStatus }),
+            });
+
+            if (!res.ok) throw new Error('Failed to update');
+
+            setPosts(posts.map(p => p.id === id ? { ...p, published: !currentStatus } : p));
+            toast.success(currentStatus ? 'Article unpublished' : 'Article published');
+            router.refresh();
+        } catch (error) {
+            toast.error('Failed to update article');
+        }
+    };
 
     const handleDelete = async (id: string) => {
         if (!confirm('Are you sure you want to delete this article?')) return;
@@ -94,21 +112,33 @@ export default function PostsList({ initialPosts }: { initialPosts: any[] }) {
                             <TableCell>
                                 {format(new Date(post.createdAt), 'MMM d, yyyy')}
                             </TableCell>
-                            <TableCell className="text-right space-x-2">
-                                <Link href={`/tenant-admin/the-wire/${post.id}`} passHref>
-                                    <Button variant="ghost" size="icon">
-                                        <Edit className="h-4 w-4" />
+                            <TableCell className="text-right">
+                                <div className="flex items-center justify-end gap-1">
+                                    <Link href={`/tenant-admin/the-wire/${post.id}`} passHref>
+                                        <Button variant="ghost" size="icon" title="Edit article">
+                                            <Edit className="h-4 w-4" />
+                                        </Button>
+                                    </Link>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => handleTogglePublish(post.id, post.published)}
+                                        title={post.published ? 'Unpublish article' : 'Publish article'}
+                                        className={post.published ? 'text-amber-600 hover:text-amber-700' : 'text-green-600 hover:text-green-700'}
+                                    >
+                                        {post.published ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                     </Button>
-                                </Link>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleDelete(post.id)}
-                                    disabled={isDeleting === post.id}
-                                    className="text-destructive hover:text-destructive/90"
-                                >
-                                    <Trash2 className="h-4 w-4" />
-                                </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => handleDelete(post.id)}
+                                        disabled={isDeleting === post.id}
+                                        className="text-destructive hover:text-destructive/90"
+                                        title="Delete article"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </div>
                             </TableCell>
                         </TableRow>
                     ))}
