@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Get or create platform settings
-    let settings = await prisma.platformSettings.findUnique({
+    let settings = await prisma.platform_settings.findUnique({
       where: { id: 'platform' },
     });
 
@@ -81,14 +81,14 @@ export async function POST(req: NextRequest) {
     if (faviconUrl) updateData.faviconUrl = faviconUrl;
 
     if (!settings) {
-      settings = await prisma.platformSettings.create({
+      settings = await prisma.platform_settings.create({
         data: {
           id: 'platform',
           ...updateData,
         },
       });
     } else {
-      settings = await prisma.platformSettings.update({
+      settings = await prisma.platform_settings.update({
         where: { id: 'platform' },
         data: updateData,
       });
@@ -109,13 +109,13 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    const settings = await prisma.platformSettings.findUnique({
+    const settings = await prisma.platform_settings.findUnique({
       where: { id: 'platform' },
     });
 
     if (!settings) {
       // Create default settings if not exists
-      const newSettings = await prisma.platformSettings.create({
+      const newSettings = await prisma.platform_settings.create({
         data: { id: 'platform' },
       });
       return NextResponse.json({ settings: newSettings });

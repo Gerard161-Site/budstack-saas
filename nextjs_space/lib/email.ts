@@ -14,9 +14,10 @@ export interface EmailOptions {
   tenantId: string; // Made required for new system
   templateName: string;
   metadata?: any;
+  variables?: any;
 }
 
-export async function sendEmail({ to, subject, html, from, tenantId, templateName, metadata }: EmailOptions) {
+export async function sendEmail({ to, subject, html, from, tenantId, templateName, metadata, variables }: EmailOptions) {
   if (!tenantId) {
     console.warn('[sendEmail] Missing tenantId, using "SYSTEM" fallback but this may fail if no default config');
     tenantId = 'SYSTEM';
@@ -29,6 +30,7 @@ export async function sendEmail({ to, subject, html, from, tenantId, templateNam
     html,
     templateName,
     metadata,
+    variables,
     from
   });
 }

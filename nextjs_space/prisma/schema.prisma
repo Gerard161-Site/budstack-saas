@@ -26,6 +26,69 @@ model audit_logs {
   @@index([userId, createdAt])
 }
 
+model email_logs {
+  id            String   @id @default(uuid())
+  tenantId      String
+  recipient     String
+  subject       String
+  templateName  String
+  status        EmailStatus @default(QUEUED)
+  smtpResponse  String?
+  errorMessage  String?
+  metadata      String?
+  sentAt        DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  tenants       tenants  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, createdAt])
+  @@index([status])
+}
+
+model email_templates {
+  id          String   @id @default(uuid())
+  name        String
+  subject     String
+  contentHtml String   @db.Text
+  contentJson Json?    // For the visual editor state
+  description String?
+  category    String   @default("transactional") // transactional, marketing, etc.
+  isSystem    Boolean  @default(false)           // If true, cannot be deleted (e.g. system defaults)
+  isActive    Boolean  @default(true)
+  tenantId    String?  // Null = System Template (Available to all), ID = Tenant Specific replacement
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  tenants     tenants? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  mappings    email_event_mappings[]
+
+  @@index([tenantId])
+  @@index([category])
+}
+
+model email_event_mappings {
+  id          String   @id @default(uuid())
+  eventType   String   // e.g. "USER_SIGNUP", "PASSWORD_RESET"
+  tenantId    String?  // Null = System Default Mapping
+  templateId  String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  template    email_templates @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  tenants     tenants?        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([eventType, tenantId]) // Only one active mapping per event per tenant (or system)
+}
+
+enum EmailStatus {
+  QUEUED
+  SENT
+  FAILED
+}
+
 model conditions {
   id              String   @id
   slug            String
@@ -349,6 +412,9 @@ model tenants {
   consultations                                                     consultations[]
   drgreen_carts                                                     drgreen_carts[]
   drgreen_webhook_logs                                              drgreen_webhook_logs[]
+  email_logs                                                        email_logs[]
+  email_templates                                                   email_templates[]
+  email_event_mappings                                              email_event_mappings[]
   orders                                                            orders[]
   posts                                                             posts[]
   products                                                          products[]

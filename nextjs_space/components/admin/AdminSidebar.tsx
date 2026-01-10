@@ -363,7 +363,7 @@ function MobileMenuButton({ onOpen, isOpen, theme }: MobileMenuButtonProps) {
     <button
       onClick={onOpen}
       className={cn(
-        'fixed top-4 left-4 z-30 p-2 bg-gradient-to-br text-white rounded-lg shadow-lg md:hidden',
+        'fixed top-4 left-4 z-50 p-2 bg-gradient-to-br text-white rounded-lg shadow-lg md:hidden',
         mobileButtonStyles[theme]
       )}
       aria-label="Open navigation menu"
