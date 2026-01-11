@@ -122,7 +122,7 @@ export default async function CustomersListPage({ searchParams }: CustomersPageP
   ]);
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       {/* Breadcrumbs */}
       <Breadcrumbs
         items={[
@@ -133,13 +133,13 @@ export default async function CustomersListPage({ searchParams }: CustomersPageP
       />
 
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Customer Management</h1>
-        <p className="text-slate-600 mt-2">Manage your customer base</p>
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">Customer Management</h1>
+        <p className="text-sm sm:text-base text-slate-600 mt-1 sm:mt-2">Manage your customer base</p>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
         <Card className="border-none shadow-lg bg-gradient-to-br from-cyan-500 to-blue-500 text-white overflow-hidden relative group hover:shadow-xl transition-shadow duration-300">
           <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform duration-300" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">

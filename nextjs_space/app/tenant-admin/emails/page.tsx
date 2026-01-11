@@ -10,14 +10,14 @@ import Link from 'next/link';
 
 export default function TenantEmailsPage() {
     return (
-        <div className="p-8 space-y-6">
-            <div className="flex justify-between items-center">
+        <div className="p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Email Management</h1>
-                    <p className="text-muted-foreground mt-2">Create templates and map them to system events.</p>
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Email Management</h1>
+                    <p className="text-sm sm:text-base text-muted-foreground mt-1 sm:mt-2">Create templates and map them to system events.</p>
                 </div>
-                <Link href="/tenant-admin/emails/new">
-                    <Button>
+                <Link href="/tenant-admin/emails/new" className="w-full sm:w-auto">
+                    <Button className="w-full sm:w-auto">
                         <Plus className="mr-2 h-4 w-4" /> Create Template
                     </Button>
                 </Link>

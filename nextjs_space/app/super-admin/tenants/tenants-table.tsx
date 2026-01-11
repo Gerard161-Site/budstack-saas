@@ -492,12 +492,14 @@ export function TenantsTable({
                       label="NFT Token ID"
                       sortState={sort}
                       onSort={setSort}
+                      className="hidden lg:table-cell"
                     />
                     <SortableTableHeader
                       columnKey="subdomain"
                       label="Store URL"
                       sortState={sort}
                       onSort={setSort}
+                      className="hidden md:table-cell"
                     />
                     <SortableTableHeader
                       columnKey="isActive"
@@ -505,13 +507,13 @@ export function TenantsTable({
                       sortState={sort}
                       onSort={setSort}
                     />
-                    <TableHead className="font-semibold text-center">
+                    <TableHead className="font-semibold text-center hidden lg:table-cell">
                       Users
                     </TableHead>
-                    <TableHead className="font-semibold text-center">
+                    <TableHead className="font-semibold text-center hidden lg:table-cell">
                       Products
                     </TableHead>
-                    <TableHead className="font-semibold text-center">
+                    <TableHead className="font-semibold text-center hidden lg:table-cell">
                       Orders
                     </TableHead>
                     <SortableTableHeader
@@ -519,6 +521,7 @@ export function TenantsTable({
                       label="Created"
                       sortState={sort}
                       onSort={setSort}
+                      className="hidden sm:table-cell"
                     />
                     <TableHead className="font-semibold">Actions</TableHead>
                   </TableRow>
@@ -566,14 +569,25 @@ export function TenantsTable({
                             />
                           </TableCell>
                           <TableCell className="font-medium text-slate-900">
-                            {tenant.businessName}
+                            <div className="min-w-0">
+                              <span className="block truncate">{tenant.businessName}</span>
+                              {/* Show subdomain on mobile where Store URL column is hidden */}
+                              <a
+                                href={tenantUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block text-xs text-cyan-600 mt-0.5 md:hidden hover:underline truncate"
+                              >
+                                {tenant.subdomain}.budstack.io
+                              </a>
+                            </div>
                           </TableCell>
-                          <TableCell className="text-slate-600 font-mono text-sm">
+                          <TableCell className="text-slate-600 font-mono text-sm hidden lg:table-cell">
                             {tenant.nftTokenId || (
                               <span className="text-slate-400">N/A</span>
                             )}
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="hidden md:table-cell">
                             <a
                               href={tenantUrl}
                               target="_blank"
@@ -604,22 +618,22 @@ export function TenantsTable({
                               </Badge>
                             )}
                           </TableCell>
-                          <TableCell className="text-center">
+                          <TableCell className="text-center hidden lg:table-cell">
                             <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-800 text-sm font-medium">
                               {tenant._count.users}
                             </span>
                           </TableCell>
-                          <TableCell className="text-center">
+                          <TableCell className="text-center hidden lg:table-cell">
                             <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-purple-100 text-purple-800 text-sm font-medium">
                               {tenant._count.products}
                             </span>
                           </TableCell>
-                          <TableCell className="text-center">
+                          <TableCell className="text-center hidden lg:table-cell">
                             <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-amber-100 text-amber-800 text-sm font-medium">
                               {tenant._count.orders}
                             </span>
                           </TableCell>
-                          <TableCell className="text-slate-600 text-sm">
+                          <TableCell className="text-slate-600 text-sm hidden sm:table-cell">
                             {format(new Date(tenant.createdAt), 'MMM d, yyyy')}
                           </TableCell>
                           <TableCell>
@@ -746,7 +760,7 @@ export function TenantsTable({
               disabled={isProcessing}
               className={cn(
                 confirmAction === 'activate' &&
-                  'bg-emerald-600 hover:bg-emerald-700'
+                'bg-emerald-600 hover:bg-emerald-700'
               )}
             >
               {isProcessing ? (

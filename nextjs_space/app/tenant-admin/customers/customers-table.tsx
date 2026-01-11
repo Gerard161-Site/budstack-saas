@@ -203,8 +203,9 @@ export function CustomersTable({ customers, totalCount }: CustomersTableProps) {
                     label="Email"
                     sortState={sort}
                     onSort={setSort}
+                    className="hidden md:table-cell"
                   />
-                  <TableHead className="font-semibold text-center">
+                  <TableHead className="font-semibold text-center hidden sm:table-cell">
                     <span className="flex items-center justify-center gap-1.5">
                       <ShoppingBag className="h-3.5 w-3.5 text-slate-400" />
                       Orders
@@ -215,6 +216,7 @@ export function CustomersTable({ customers, totalCount }: CustomersTableProps) {
                     label="Joined"
                     sortState={sort}
                     onSort={setSort}
+                    className="hidden sm:table-cell"
                   />
                   <TableHead className="font-semibold">Actions</TableHead>
                 </TableRow>
@@ -235,8 +237,15 @@ export function CustomersTable({ customers, totalCount }: CustomersTableProps) {
                           <p className="font-medium text-slate-900 truncate">
                             {customer.name || 'N/A'}
                           </p>
+                          {/* Show email on mobile */}
+                          <a
+                            href={`mailto:${customer.email}`}
+                            className="text-xs text-slate-500 hover:text-cyan-600 md:hidden truncate block"
+                          >
+                            {customer.email}
+                          </a>
                           {customer.phone && (
-                            <p className="text-xs text-slate-500 flex items-center gap-1">
+                            <p className="text-xs text-slate-500 flex items-center gap-1 hidden md:flex">
                               <Phone className="h-3 w-3" />
                               {customer.phone}
                             </p>
@@ -244,7 +253,7 @@ export function CustomersTable({ customers, totalCount }: CustomersTableProps) {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="text-slate-600">
+                    <TableCell className="text-slate-600 hidden md:table-cell">
                       <a
                         href={`mailto:${customer.email}`}
                         className="hover:text-cyan-600 hover:underline transition-colors"
@@ -252,12 +261,12 @@ export function CustomersTable({ customers, totalCount }: CustomersTableProps) {
                         {customer.email}
                       </a>
                     </TableCell>
-                    <TableCell className="text-center">
+                    <TableCell className="text-center hidden sm:table-cell">
                       <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-amber-100 text-amber-700 text-sm font-medium">
                         {customer._count.orders}
                       </span>
                     </TableCell>
-                    <TableCell className="text-slate-600 text-sm">
+                    <TableCell className="text-slate-600 text-sm hidden sm:table-cell">
                       {format(new Date(customer.createdAt), 'MMM d, yyyy')}
                     </TableCell>
                     <TableCell>

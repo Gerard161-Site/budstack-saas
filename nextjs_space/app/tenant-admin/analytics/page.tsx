@@ -413,7 +413,7 @@ export default function TenantAnalyticsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50/30 via-white to-cyan-50/30 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50/30 via-white to-cyan-50/30 p-4 sm:p-6 lg:p-8">
       {/* Breadcrumbs */}
       <Breadcrumbs
         items={[
@@ -424,26 +424,26 @@ export default function TenantAnalyticsPage() {
       />
 
       {/* Header with Living Garden aesthetic */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
+      <div className="mb-6 sm:mb-8">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <div className="flex items-center gap-3 mb-2">
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-br from-emerald-400 to-cyan-500 rounded-full blur-md opacity-60 animate-pulse" />
-                <Sparkles className="relative h-8 w-8 text-emerald-600" />
+                <Sparkles className="relative h-6 w-6 sm:h-8 sm:w-8 text-emerald-600" />
               </div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-emerald-700 via-emerald-600 to-cyan-600 bg-clip-text text-transparent">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-emerald-700 via-emerald-600 to-cyan-600 bg-clip-text text-transparent">
                 Store Analytics
               </h1>
             </div>
-            <p className="text-slate-600 mt-2 ml-11">Your garden of insights and performance metrics</p>
+            <p className="text-sm sm:text-base text-slate-600 mt-1 sm:mt-2 ml-9 sm:ml-11">Your garden of insights and performance metrics</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 overflow-x-auto pb-2 lg:pb-0">
             <Button
               variant={timeRange === '7d' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setTimeRange('7d')}
-              className={timeRange === '7d' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700' : 'border-emerald-300 text-emerald-700 hover:bg-emerald-50'}
+              className={cn("flex-shrink-0", timeRange === '7d' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700' : 'border-emerald-300 text-emerald-700 hover:bg-emerald-50')}
             >
               7 Days
             </Button>
@@ -451,7 +451,7 @@ export default function TenantAnalyticsPage() {
               variant={timeRange === '30d' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setTimeRange('30d')}
-              className={timeRange === '30d' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700' : 'border-emerald-300 text-emerald-700 hover:bg-emerald-50'}
+              className={cn("flex-shrink-0", timeRange === '30d' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700' : 'border-emerald-300 text-emerald-700 hover:bg-emerald-50')}
             >
               30 Days
             </Button>
@@ -459,7 +459,7 @@ export default function TenantAnalyticsPage() {
               variant={timeRange === '90d' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setTimeRange('90d')}
-              className={timeRange === '90d' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700' : 'border-emerald-300 text-emerald-700 hover:bg-emerald-50'}
+              className={cn("flex-shrink-0", timeRange === '90d' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700' : 'border-emerald-300 text-emerald-700 hover:bg-emerald-50')}
             >
               90 Days
             </Button>
@@ -467,14 +467,14 @@ export default function TenantAnalyticsPage() {
         </div>
       </div>
 
-      <div className="space-y-8">
+      <div className="space-y-6 sm:space-y-8">
         {/* Section 1: Key Business Metrics */}
         <section>
-          <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
-            <div className="w-1 h-6 bg-gradient-to-b from-emerald-500 to-cyan-500 rounded-full" />
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-4 sm:mb-6 flex items-center gap-2">
+            <div className="w-1 h-5 sm:h-6 bg-gradient-to-b from-emerald-500 to-cyan-500 rounded-full" />
             Key Business Metrics
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
             <Card className="border-none shadow-lg bg-gradient-to-br from-emerald-500 to-teal-500 text-white overflow-hidden relative group hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform duration-300" />
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">

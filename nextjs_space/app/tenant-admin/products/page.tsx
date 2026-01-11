@@ -159,7 +159,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   });
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       {/* Breadcrumbs */}
       <Breadcrumbs
         items={[
@@ -169,13 +169,13 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
         className="mb-4"
       />
 
-      <div className="mb-8">
-        <div className="flex justify-between items-center">
+      <div className="mb-6 sm:mb-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Product Management</h1>
-            <p className="text-slate-600 mt-2">Manage your product catalog</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">Product Management</h1>
+            <p className="text-sm sm:text-base text-slate-600 mt-1 sm:mt-2">Manage your product catalog</p>
           </div>
-          <Button className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-medium shadow-md hover:shadow-lg transition-all">
+          <Button className="w-full sm:w-auto bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-medium shadow-md hover:shadow-lg transition-all">
             Sync from Dr Green Admin
           </Button>
         </div>
