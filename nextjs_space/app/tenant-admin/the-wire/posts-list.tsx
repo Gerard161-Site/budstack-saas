@@ -83,14 +83,14 @@ export default function PostsList({ initialPosts }: { initialPosts: any[] }) {
     }
 
     return (
-        <div className="border rounded-md">
+        <div className="border rounded-md overflow-x-auto">
             <Table>
                 <TableHeader>
                     <TableRow>
                         <TableHead>Title</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead>Author</TableHead>
-                        <TableHead>Date</TableHead>
+                        <TableHead className="hidden sm:table-cell">Author</TableHead>
+                        <TableHead className="hidden sm:table-cell">Date</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -98,9 +98,15 @@ export default function PostsList({ initialPosts }: { initialPosts: any[] }) {
                     {posts.map((post) => (
                         <TableRow key={post.id}>
                             <TableCell className="font-medium">
-                                {post.title}
-                                <div className="text-xs text-muted-foreground truncate max-w-[200px]">
-                                    /{post.slug}
+                                <div className="min-w-0">
+                                    <span className="block truncate max-w-[150px] sm:max-w-[250px]">{post.title}</span>
+                                    <div className="text-xs text-muted-foreground truncate max-w-[150px] sm:max-w-[200px]">
+                                        /{post.slug}
+                                    </div>
+                                    {/* Show author/date on mobile */}
+                                    <div className="sm:hidden text-xs text-muted-foreground mt-1">
+                                        {post.author?.name || 'Unknown'} • {format(new Date(post.createdAt), 'MMM d')}
+                                    </div>
                                 </div>
                             </TableCell>
                             <TableCell>
@@ -108,8 +114,8 @@ export default function PostsList({ initialPosts }: { initialPosts: any[] }) {
                                     {post.published ? 'Published' : 'Draft'}
                                 </Badge>
                             </TableCell>
-                            <TableCell>{post.author?.name || 'Unknown'}</TableCell>
-                            <TableCell>
+                            <TableCell className="hidden sm:table-cell">{post.author?.name || 'Unknown'}</TableCell>
+                            <TableCell className="hidden sm:table-cell">
                                 {format(new Date(post.createdAt), 'MMM d, yyyy')}
                             </TableCell>
                             <TableCell className="text-right">

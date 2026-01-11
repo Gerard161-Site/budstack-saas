@@ -152,13 +152,13 @@ function SortableProductRow({
         isDragging && 'relative z-50 shadow-lg'
       )}
     >
-      {/* Drag Handle */}
-      <TableCell className="w-12 cursor-grab active:cursor-grabbing" {...attributes} {...listeners}>
+      {/* Drag Handle - hidden on mobile */}
+      <TableCell className="w-12 cursor-grab active:cursor-grabbing hidden md:table-cell" {...attributes} {...listeners}>
         <GripVertical className="h-5 w-5 text-slate-400 hover:text-slate-600 transition-colors" />
       </TableCell>
 
-      {/* Row Checkbox */}
-      <TableCell className="w-12">
+      {/* Row Checkbox - hidden on mobile */}
+      <TableCell className="w-12 hidden sm:table-cell">
         <Checkbox
           checked={isSelected}
           onCheckedChange={(checked) => onSelectOne(product.id, checked === true)}
@@ -169,41 +169,46 @@ function SortableProductRow({
 
       <TableCell className="font-medium text-slate-900">
         <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center">
+          <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center flex-shrink-0">
             <Leaf className="h-4 w-4 text-emerald-600" />
           </div>
-          <span className="truncate max-w-[200px]">{product.name}</span>
+          <div className="min-w-0">
+            <span className="block truncate max-w-[150px] sm:max-w-[200px]">{product.name}</span>
+            {/* Show category and price on mobile */}
+            <span className="block text-xs text-slate-500 md:hidden">
+              {product.category || 'Uncategorized'} • €{typeof product.price === 'number' ? product.price.toFixed(2) : product.price}
+            </span>
+          </div>
         </div>
       </TableCell>
 
-      <TableCell className="text-slate-600 capitalize">
+      <TableCell className="text-slate-600 capitalize hidden md:table-cell">
         {product.category || <span className="text-slate-400">—</span>}
       </TableCell>
 
-      <TableCell>
+      <TableCell className="hidden lg:table-cell">
         <Badge className={getStrainBadgeClasses(product.name)}>
           {getStrainLabel(product.name)}
         </Badge>
       </TableCell>
 
-      <TableCell className="text-center text-slate-700 font-mono text-sm">
+      <TableCell className="text-center text-slate-700 font-mono text-sm hidden lg:table-cell">
         {product.thcContent != null ? `${product.thcContent}%` : '—'}
       </TableCell>
 
-      <TableCell className="text-center text-slate-700 font-mono text-sm">
+      <TableCell className="text-center text-slate-700 font-mono text-sm hidden lg:table-cell">
         {product.cbdContent != null ? `${product.cbdContent}%` : '—'}
       </TableCell>
 
-      <TableCell className="text-right text-slate-700 font-medium">
+      <TableCell className="text-right text-slate-700 font-medium hidden sm:table-cell">
         €{typeof product.price === 'number' ? product.price.toFixed(2) : product.price}
       </TableCell>
 
-      <TableCell className="text-center">
-        <span className={`inline-flex items-center justify-center min-w-[2rem] h-8 px-2 rounded-full text-sm font-medium ${
-          product.stock > 0
-            ? 'bg-emerald-100 text-emerald-800'
-            : 'bg-slate-100 text-slate-700'
-        }`}>
+      <TableCell className="text-center hidden sm:table-cell">
+        <span className={`inline-flex items-center justify-center min-w-[2rem] h-8 px-2 rounded-full text-sm font-medium ${product.stock > 0
+          ? 'bg-emerald-100 text-emerald-800'
+          : 'bg-slate-100 text-slate-700'
+          }`}>
           {product.stock}
         </span>
       </TableCell>
@@ -632,347 +637,351 @@ export function ProductsTable({
 
   return (
     <>
-    <Card className="shadow-lg border-slate-200">
-      <CardHeader className="border-b bg-gradient-to-r from-emerald-50 to-teal-50">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-          <CardTitle className="flex items-center gap-3">
-            <span className="text-2xl font-bold text-slate-900">
-              {hasFilters
-                ? `Results (${totalCount})`
-                : `All Products (${totalSearchCount})`}
-            </span>
-            <Badge variant="outline" className="text-sm font-normal">
-              {inStockCount} In Stock
-            </Badge>
-          </CardTitle>
+      <Card className="shadow-lg border-slate-200">
+        <CardHeader className="border-b bg-gradient-to-r from-emerald-50 to-teal-50">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <CardTitle className="flex items-center gap-3">
+              <span className="text-2xl font-bold text-slate-900">
+                {hasFilters
+                  ? `Results (${totalCount})`
+                  : `All Products (${totalSearchCount})`}
+              </span>
+              <Badge variant="outline" className="text-sm font-normal">
+                {inStockCount} In Stock
+              </Badge>
+            </CardTitle>
 
-          {/* Search and Filter Controls */}
-          <div className="flex flex-col gap-3 w-full xl:w-auto">
-            {/* Search Input - Full width on mobile */}
-            <div className="w-full xl:w-72">
-              <SearchInput
-                value={search}
-                onChange={setSearch}
-                placeholder="Search products..."
-                aria-label="Search products"
-                debounceMs={300}
-              />
-            </div>
+            {/* Search and Filter Controls */}
+            <div className="flex flex-col gap-3 w-full xl:w-auto">
+              {/* Search Input - Full width on mobile */}
+              <div className="w-full xl:w-72">
+                <SearchInput
+                  value={search}
+                  onChange={setSearch}
+                  placeholder="Search products..."
+                  aria-label="Search products"
+                  debounceMs={300}
+                />
+              </div>
 
-            {/* Filters Row - Wraps on smaller screens */}
-            <div className="flex flex-wrap gap-2">
-              {/* Category Filter */}
-              <StatusFilter<CategoryFilter>
-                value={categoryFilter}
-                onChange={(value) => setFilter('category', value)}
-                options={categoryOptions}
-                aria-label="Filter by category"
-                placeholder="All Categories"
-                showIcon={false}
-                className="w-[150px]"
-              />
+              {/* Filters Row - Wraps on smaller screens */}
+              <div className="flex flex-wrap gap-2">
+                {/* Category Filter */}
+                <StatusFilter<CategoryFilter>
+                  value={categoryFilter}
+                  onChange={(value) => setFilter('category', value)}
+                  options={categoryOptions}
+                  aria-label="Filter by category"
+                  placeholder="All Categories"
+                  showIcon={false}
+                  className="w-[150px]"
+                />
 
-              {/* Stock Filter */}
-              <StatusFilter<StockFilter>
-                value={stockFilter}
-                onChange={(value) => setFilter('stock', value)}
-                options={stockOptions}
-                aria-label="Filter by stock status"
-                placeholder="All Stock"
-                showIcon={false}
-                className="w-[140px]"
-              />
+                {/* Stock Filter */}
+                <StatusFilter<StockFilter>
+                  value={stockFilter}
+                  onChange={(value) => setFilter('stock', value)}
+                  options={stockOptions}
+                  aria-label="Filter by stock status"
+                  placeholder="All Stock"
+                  showIcon={false}
+                  className="w-[140px]"
+                />
 
-              {/* Export Button */}
-              <ExportButton
-                onExport={handleExportAll}
-                recordCount={products.length}
-                theme="tenant-admin"
-                disabled={products.length === 0}
-              />
+                {/* Export Button */}
+                <ExportButton
+                  onExport={handleExportAll}
+                  recordCount={products.length}
+                  theme="tenant-admin"
+                  disabled={products.length === 0}
+                />
+              </div>
             </div>
           </div>
-        </div>
-      </CardHeader>
+        </CardHeader>
 
-      <CardContent className="p-0">
-        {noResults ? (
-          <EmptyState
-            icon={Search}
-            heading="No products found"
-            description={emptyDescription}
-            variant="muted"
-            size="default"
-            action={{
-              label: 'Clear filters',
-              onClick: handleClearFilters,
-              variant: 'outline',
-            }}
-            className="my-8"
-          />
-        ) : products.length === 0 && !hasFilters ? (
-          <EmptyState
-            icon={Package}
-            heading="No products yet"
-            description="Sync your products from Dr Green Admin to get started with your store catalog."
-            size="lg"
-            theme="emerald"
-            showDecoration
-            action={{
-              label: 'Sync from Dr Green Admin',
-              href: '/tenant-admin/settings',
-              icon: RefreshCw,
-            }}
-            className="my-8"
-          />
-        ) : (
-          <div className="overflow-x-auto">
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-slate-50/50">
-                    {/* Drag Handle Column */}
-                    <TableHead className="w-12" />
-                    {/* Select All Checkbox */}
-                    <TableHead className="w-12">
-                      <Checkbox
-                        checked={isAllSelected}
-                        onCheckedChange={handleSelectAll}
-                        aria-label={
-                          isAllSelected
-                            ? 'Deselect all products'
-                            : 'Select all products'
-                        }
-                        className={cn(
-                          'border-emerald-400 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600',
-                          isSomeSelected && 'data-[state=checked]:bg-emerald-400'
-                        )}
-                        {...(isSomeSelected && { 'data-state': 'checked' })}
-                      />
-                    </TableHead>
-                  <SortableTableHeader
-                    columnKey="name"
-                    label="Name"
-                    sortState={sort}
-                    onSort={setSort}
-                  />
-                  <SortableTableHeader
-                    columnKey="category"
-                    label="Category"
-                    sortState={sort}
-                    onSort={setSort}
-                  />
-                  <TableHead className="font-semibold text-slate-700">Strain</TableHead>
-                  <SortableTableHeader
-                    columnKey="thcContent"
-                    label="THC %"
-                    sortState={sort}
-                    onSort={setSort}
-                    align="center"
-                  />
-                  <SortableTableHeader
-                    columnKey="cbdContent"
-                    label="CBD %"
-                    sortState={sort}
-                    onSort={setSort}
-                    align="center"
-                  />
-                  <SortableTableHeader
-                    columnKey="price"
-                    label="Price"
-                    sortState={sort}
-                    onSort={setSort}
-                    align="right"
-                  />
-                  <SortableTableHeader
-                    columnKey="stock"
-                    label="Stock"
-                    sortState={sort}
-                    onSort={setSort}
-                    align="center"
-                  />
-                  <TableHead className="font-semibold text-slate-700">Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <SortableContext
-                items={orderedProducts.map((p) => p.id)}
-                strategy={verticalListSortingStrategy}
-              >
-                <TableBody>
-                  {orderedProducts.map((product) => (
-                    <SortableProductRow
-                      key={product.id}
-                      product={product}
-                      isSelected={selectedIds.has(product.id)}
-                      onSelectOne={handleSelectOne}
-                      getStrainBadgeClasses={getStrainBadgeClasses}
-                      getStrainLabel={getStrainLabel}
-                    />
-                  ))}
-                </TableBody>
-              </SortableContext>
-            </Table>
-          </DndContext>
-          </div>
-        )}
-
-        {/* Pagination Controls */}
-        {products.length > 0 && (
-          <div className="border-t border-slate-200 bg-slate-50/50">
-            <Pagination
-              page={page}
-              pageSize={pageSize}
-              totalItems={totalCount}
-              onPageChange={setPage}
-              onPageSizeChange={setPageSize}
-              pageSizeOptions={[10, 20, 50, 100]}
-              showPageSizeSelector
-              showFirstLast
+        <CardContent className="p-0">
+          {noResults ? (
+            <EmptyState
+              icon={Search}
+              heading="No products found"
+              description={emptyDescription}
+              variant="muted"
+              size="default"
+              action={{
+                label: 'Clear filters',
+                onClick: handleClearFilters,
+                variant: 'outline',
+              }}
+              className="my-8"
             />
-          </div>
-        )}
-      </CardContent>
-    </Card>
-
-    {/* Bulk Action Bar */}
-    <BulkActionBar
-      selectedCount={selectedIds.size}
-      itemLabel="products"
-      actions={bulkActions}
-      onClearSelection={clearSelection}
-    />
-
-    {/* Confirmation Dialog */}
-    <Dialog
-      open={confirmAction !== null}
-      onOpenChange={(open) => !open && setConfirmAction(null)}
-    >
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            {confirmAction === 'delete' ? (
-              <>
-                <Trash2 className="h-5 w-5 text-red-500" />
-                <span>Delete Products</span>
-              </>
-            ) : confirmAction === 'set-in-stock' ? (
-              <>
-                <PackageCheck className="h-5 w-5 text-emerald-500" />
-                <span>Set In Stock</span>
-              </>
-            ) : (
-              <>
-                <AlertTriangle className="h-5 w-5 text-amber-500" />
-                <span>Set Out of Stock</span>
-              </>
-            )}
-          </DialogTitle>
-          <DialogDescription className="pt-2">
-            {confirmAction === 'delete' ? (
-              <span className="text-red-600">
-                Are you sure you want to delete{' '}
-                <strong>{selectedIds.size}</strong> product
-                {selectedIds.size === 1 ? '' : 's'}? This cannot be undone.
-              </span>
-            ) : confirmAction === 'set-in-stock' ? (
-              <span>
-                Set <strong>{selectedIds.size}</strong> product
-                {selectedIds.size === 1 ? '' : 's'} to In Stock?
-              </span>
-            ) : (
-              <span>
-                Set <strong>{selectedIds.size}</strong> product
-                {selectedIds.size === 1 ? '' : 's'} to Out of Stock?
-              </span>
-            )}
-          </DialogDescription>
-        </DialogHeader>
-
-        {/* Show product names */}
-        {selectedProductNames.length > 0 && (
-          <div className="py-2">
-            <p className="text-xs text-muted-foreground mb-2">
-              Affected products:
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {selectedProductNames.map((name) => (
-                <Badge
-                  key={name}
-                  variant="secondary"
-                  className="text-xs font-normal"
-                >
-                  {name}
-                </Badge>
-              ))}
-              {selectedIds.size > 5 && (
-                <Badge variant="outline" className="text-xs font-normal">
-                  +{selectedIds.size - 5} more
-                </Badge>
-              )}
-            </div>
-          </div>
-        )}
-
-        <DialogFooter className="gap-2 sm:gap-0">
-          <Button
-            variant="outline"
-            onClick={() => setConfirmAction(null)}
-            disabled={isProcessing}
-          >
-            Cancel
-          </Button>
-          <Button
-            variant={confirmAction === 'delete' ? 'destructive' : 'default'}
-            onClick={handleConfirmAction}
-            disabled={isProcessing}
-            className={cn(
-              confirmAction === 'set-in-stock' &&
-                'bg-emerald-600 hover:bg-emerald-700',
-              confirmAction === 'set-out-of-stock' &&
-                'bg-amber-600 hover:bg-amber-700'
-            )}
-          >
-            {isProcessing ? (
-              <>
-                <span className="animate-spin mr-2">
-                  <svg
-                    className="h-4 w-4"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
+          ) : products.length === 0 && !hasFilters ? (
+            <EmptyState
+              icon={Package}
+              heading="No products yet"
+              description="Sync your products from Dr Green Admin to get started with your store catalog."
+              size="lg"
+              theme="emerald"
+              showDecoration
+              action={{
+                label: 'Sync from Dr Green Admin',
+                href: '/tenant-admin/settings',
+                icon: RefreshCw,
+              }}
+              className="my-8"
+            />
+          ) : (
+            <div className="overflow-x-auto">
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-slate-50/50">
+                      {/* Drag Handle Column - hidden on mobile */}
+                      <TableHead className="w-12 hidden md:table-cell" />
+                      {/* Select All Checkbox - hidden on mobile */}
+                      <TableHead className="w-12 hidden sm:table-cell">
+                        <Checkbox
+                          checked={isAllSelected}
+                          onCheckedChange={handleSelectAll}
+                          aria-label={
+                            isAllSelected
+                              ? 'Deselect all products'
+                              : 'Select all products'
+                          }
+                          className={cn(
+                            'border-emerald-400 data-[state=checked]:bg-emerald-600 data-[state=checked]:border-emerald-600',
+                            isSomeSelected && 'data-[state=checked]:bg-emerald-400'
+                          )}
+                          {...(isSomeSelected && { 'data-state': 'checked' })}
+                        />
+                      </TableHead>
+                      <SortableTableHeader
+                        columnKey="name"
+                        label="Name"
+                        sortState={sort}
+                        onSort={setSort}
+                      />
+                      <SortableTableHeader
+                        columnKey="category"
+                        label="Category"
+                        sortState={sort}
+                        onSort={setSort}
+                        className="hidden md:table-cell"
+                      />
+                      <TableHead className="font-semibold text-slate-700 hidden lg:table-cell">Strain</TableHead>
+                      <SortableTableHeader
+                        columnKey="thcContent"
+                        label="THC %"
+                        sortState={sort}
+                        onSort={setSort}
+                        align="center"
+                        className="hidden lg:table-cell"
+                      />
+                      <SortableTableHeader
+                        columnKey="cbdContent"
+                        label="CBD %"
+                        sortState={sort}
+                        onSort={setSort}
+                        align="center"
+                        className="hidden lg:table-cell"
+                      />
+                      <SortableTableHeader
+                        columnKey="price"
+                        label="Price"
+                        sortState={sort}
+                        onSort={setSort}
+                        align="right"
+                      />
+                      <SortableTableHeader
+                        columnKey="stock"
+                        label="Stock"
+                        sortState={sort}
+                        onSort={setSort}
+                        align="center"
+                        className="hidden sm:table-cell"
+                      />
+                      <TableHead className="font-semibold text-slate-700">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <SortableContext
+                    items={orderedProducts.map((p) => p.id)}
+                    strategy={verticalListSortingStrategy}
                   >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    />
-                  </svg>
+                    <TableBody>
+                      {orderedProducts.map((product) => (
+                        <SortableProductRow
+                          key={product.id}
+                          product={product}
+                          isSelected={selectedIds.has(product.id)}
+                          onSelectOne={handleSelectOne}
+                          getStrainBadgeClasses={getStrainBadgeClasses}
+                          getStrainLabel={getStrainLabel}
+                        />
+                      ))}
+                    </TableBody>
+                  </SortableContext>
+                </Table>
+              </DndContext>
+            </div>
+          )}
+
+          {/* Pagination Controls */}
+          {products.length > 0 && (
+            <div className="border-t border-slate-200 bg-slate-50/50">
+              <Pagination
+                page={page}
+                pageSize={pageSize}
+                totalItems={totalCount}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+                pageSizeOptions={[10, 20, 50, 100]}
+                showPageSizeSelector
+                showFirstLast
+              />
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Bulk Action Bar */}
+      <BulkActionBar
+        selectedCount={selectedIds.size}
+        itemLabel="products"
+        actions={bulkActions}
+        onClearSelection={clearSelection}
+      />
+
+      {/* Confirmation Dialog */}
+      <Dialog
+        open={confirmAction !== null}
+        onOpenChange={(open) => !open && setConfirmAction(null)}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {confirmAction === 'delete' ? (
+                <>
+                  <Trash2 className="h-5 w-5 text-red-500" />
+                  <span>Delete Products</span>
+                </>
+              ) : confirmAction === 'set-in-stock' ? (
+                <>
+                  <PackageCheck className="h-5 w-5 text-emerald-500" />
+                  <span>Set In Stock</span>
+                </>
+              ) : (
+                <>
+                  <AlertTriangle className="h-5 w-5 text-amber-500" />
+                  <span>Set Out of Stock</span>
+                </>
+              )}
+            </DialogTitle>
+            <DialogDescription className="pt-2">
+              {confirmAction === 'delete' ? (
+                <span className="text-red-600">
+                  Are you sure you want to delete{' '}
+                  <strong>{selectedIds.size}</strong> product
+                  {selectedIds.size === 1 ? '' : 's'}? This cannot be undone.
                 </span>
-                Processing...
-              </>
-            ) : confirmAction === 'delete' ? (
-              'Delete'
-            ) : confirmAction === 'set-in-stock' ? (
-              'Set In Stock'
-            ) : (
-              'Set Out of Stock'
-            )}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+              ) : confirmAction === 'set-in-stock' ? (
+                <span>
+                  Set <strong>{selectedIds.size}</strong> product
+                  {selectedIds.size === 1 ? '' : 's'} to In Stock?
+                </span>
+              ) : (
+                <span>
+                  Set <strong>{selectedIds.size}</strong> product
+                  {selectedIds.size === 1 ? '' : 's'} to Out of Stock?
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Show product names */}
+          {selectedProductNames.length > 0 && (
+            <div className="py-2">
+              <p className="text-xs text-muted-foreground mb-2">
+                Affected products:
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {selectedProductNames.map((name) => (
+                  <Badge
+                    key={name}
+                    variant="secondary"
+                    className="text-xs font-normal"
+                  >
+                    {name}
+                  </Badge>
+                ))}
+                {selectedIds.size > 5 && (
+                  <Badge variant="outline" className="text-xs font-normal">
+                    +{selectedIds.size - 5} more
+                  </Badge>
+                )}
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setConfirmAction(null)}
+              disabled={isProcessing}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant={confirmAction === 'delete' ? 'destructive' : 'default'}
+              onClick={handleConfirmAction}
+              disabled={isProcessing}
+              className={cn(
+                confirmAction === 'set-in-stock' &&
+                'bg-emerald-600 hover:bg-emerald-700',
+                confirmAction === 'set-out-of-stock' &&
+                'bg-amber-600 hover:bg-amber-700'
+              )}
+            >
+              {isProcessing ? (
+                <>
+                  <span className="animate-spin mr-2">
+                    <svg
+                      className="h-4 w-4"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                  </span>
+                  Processing...
+                </>
+              ) : confirmAction === 'delete' ? (
+                'Delete'
+              ) : confirmAction === 'set-in-stock' ? (
+                'Set In Stock'
+              ) : (
+                'Set Out of Stock'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

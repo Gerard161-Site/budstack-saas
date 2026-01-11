@@ -81,7 +81,7 @@ export default function TenantAuditLogsPage() {
   };
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       {/* Breadcrumbs */}
       <Breadcrumbs
         items={[
@@ -91,23 +91,23 @@ export default function TenantAuditLogsPage() {
         className="mb-4"
       />
 
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Audit Logs</h1>
-        <p className="text-slate-600 mt-2">Track all actions and changes in your dispensary</p>
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">Audit Logs</h1>
+        <p className="text-sm sm:text-base text-slate-600 mt-1 sm:mt-2">Track all actions and changes in your dispensary</p>
       </div>
 
       <Card className="shadow-lg border-slate-200">
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <CardTitle>Activity Log</CardTitle>
               <CardDescription>
                 {pagination.total} total events recorded
               </CardDescription>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <Select value={actionFilter} onValueChange={setActionFilter}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-full sm:w-[180px]">
                   <SelectValue placeholder="Filter by action" />
                 </SelectTrigger>
                 <SelectContent>
@@ -121,7 +121,7 @@ export default function TenantAuditLogsPage() {
                 </SelectContent>
               </Select>
               <Select value={entityFilter} onValueChange={setEntityFilter}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-full sm:w-[180px]">
                   <SelectValue placeholder="Filter by entity" />
                 </SelectTrigger>
                 <SelectContent>
@@ -144,51 +144,59 @@ export default function TenantAuditLogsPage() {
             </div>
           ) : (
             <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Timestamp</TableHead>
-                    <TableHead>Action</TableHead>
-                    <TableHead>Entity</TableHead>
-                    <TableHead>User</TableHead>
-                    <TableHead>IP Address</TableHead>
-                    <TableHead>Details</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {logs.map((log) => (
-                    <TableRow key={log.id}>
-                      <TableCell className="font-mono text-xs">
-                        {format(new Date(log.createdAt), 'MMM dd, HH:mm:ss')}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={getActionBadgeColor(log.action) as any}>
-                          {log.action}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{log.entityType}</TableCell>
-                      <TableCell className="text-sm">
-                        {log.userEmail || 'System'}
-                      </TableCell>
-                      <TableCell className="font-mono text-xs">
-                        {log.ipAddress || 'N/A'}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground truncate max-w-[200px]">
-                        {log.metadata ? JSON.stringify(log.metadata) : 'No details'}
-                      </TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Timestamp</TableHead>
+                      <TableHead>Action</TableHead>
+                      <TableHead className="hidden sm:table-cell">Entity</TableHead>
+                      <TableHead className="hidden md:table-cell">User</TableHead>
+                      <TableHead className="hidden lg:table-cell">IP Address</TableHead>
+                      <TableHead className="hidden lg:table-cell">Details</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {logs.map((log) => (
+                      <TableRow key={log.id}>
+                        <TableCell className="font-mono text-xs">
+                          {format(new Date(log.createdAt), 'MMM dd, HH:mm:ss')}
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <Badge variant={getActionBadgeColor(log.action) as any}>
+                              {log.action}
+                            </Badge>
+                            {/* Show entity inline on mobile */}
+                            <span className="block sm:hidden text-xs text-muted-foreground mt-1">
+                              {log.entityType}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell">{log.entityType}</TableCell>
+                        <TableCell className="text-sm hidden md:table-cell">
+                          {log.userEmail || 'System'}
+                        </TableCell>
+                        <TableCell className="font-mono text-xs hidden lg:table-cell">
+                          {log.ipAddress || 'N/A'}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground truncate max-w-[200px] hidden lg:table-cell">
+                          {log.metadata ? JSON.stringify(log.metadata) : 'No details'}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
 
               {/* Pagination */}
-              <div className="flex items-center justify-between mt-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mt-4">
                 <div className="text-sm text-muted-foreground">
                   Showing {(pagination.page - 1) * pagination.limit + 1} to{' '}
                   {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
                   {pagination.total} results
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 w-full sm:w-auto justify-between sm:justify-end">
                   <Button
                     variant="outline"
                     size="sm"

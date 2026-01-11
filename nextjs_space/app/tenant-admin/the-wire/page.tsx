@@ -35,7 +35,7 @@ export default async function TheWirePage() {
     });
 
     return (
-        <div className="p-8">
+        <div className="p-4 sm:p-6 lg:p-8">
             {/* Breadcrumbs */}
             <Breadcrumbs
                 items={[
@@ -45,13 +45,13 @@ export default async function TheWirePage() {
                 className="mb-4"
             />
 
-            <div className="flex justify-between items-center mb-8">
+            <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center mb-6 sm:mb-8">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-900 tracking-tight">The Wire</h1>
-                    <p className="text-slate-600 mt-2">Manage your news and articles</p>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">The Wire</h1>
+                    <p className="text-sm sm:text-base text-slate-600 mt-1 sm:mt-2">Manage your news and articles</p>
                 </div>
-                <Link href="/tenant-admin/the-wire/new">
-                    <Button className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-medium shadow-md hover:shadow-lg transition-all">
+                <Link href="/tenant-admin/the-wire/new" className="w-full sm:w-auto">
+                    <Button className="w-full sm:w-auto bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-medium shadow-md hover:shadow-lg transition-all">
                         <Plus className="mr-2 h-4 w-4" /> New Article
                     </Button>
                 </Link>
